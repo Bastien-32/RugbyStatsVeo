@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Environnements Python
+.venv/
+**/.venv/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Fichiers générés par PyInstaller
+**/build/
+**/dist/
+
+# Journaux et PID
+*.log
+*.pid
+
+# Fichiers temporaires Excel
+~$*.xls
+~$*.xlsx
+~$*.xlsm
