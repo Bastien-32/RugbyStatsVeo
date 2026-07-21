@@ -1,8 +1,12 @@
 from collections import deque
+from pathlib import Path
 from typing import Literal
 from threading import Lock, Thread
 from time import monotonic
+import os
+import shutil
 import subprocess
+import sys
 import time
 
 
@@ -19,12 +23,75 @@ APP_VERSION = "0.4.0"
 
 VideoTarget = Literal["browser", "vlc"]
 
-VLC_EXECUTABLE = (
-    "/Applications/VLC.app/Contents/MacOS/VLC"
-)
+def trouver_executable_vlc() -> str | None:
+    """
+    Recherche VLC sur macOS et Windows.
 
-dernier_heartbeat = 0.0
-heartbeat_recu = False
+    Retourne le chemin de l'exécutable, ou None si VLC
+    n'est pas installé à un emplacement connu.
+    """
+
+    if sys.platform == "darwin":
+        chemin_mac = Path(
+            "/Applications/VLC.app/Contents/MacOS/VLC"
+        )
+
+        if chemin_mac.is_file():
+            return str(chemin_mac)
+
+        executable_path = shutil.which("vlc")
+
+        if executable_path:
+            return executable_path
+
+        return None
+
+    if sys.platform == "win32":
+        chemins_windows: list[Path] = []
+
+        program_files = os.environ.get("ProgramFiles")
+
+        if program_files:
+            chemins_windows.append(
+                Path(program_files)
+                / "VideoLAN"
+                / "VLC"
+                / "vlc.exe"
+            )
+
+        program_files_x86 = os.environ.get("ProgramFiles(x86)")
+
+        if program_files_x86:
+            chemins_windows.append(
+                Path(program_files_x86)
+                / "VideoLAN"
+                / "VLC"
+                / "vlc.exe"
+            )
+
+        local_app_data = os.environ.get("LOCALAPPDATA")
+
+        if local_app_data:
+            chemins_windows.append(
+                Path(local_app_data)
+                / "Programs"
+                / "VideoLAN"
+                / "VLC"
+                / "vlc.exe"
+            )
+
+        for chemin in chemins_windows:
+            if chemin.is_file():
+                return str(chemin)
+
+        executable_path = shutil.which("vlc.exe")
+
+        if executable_path:
+            return executable_path
+
+        return None
+
+    return shutil.which("vlc")
 
 app = FastAPI(
     title=APP_NAME,
@@ -59,11 +126,7 @@ command_queues = {
 
 command_lock = Lock()
 
-# Dernier signal reçu d’un classeur Stats Rugby.
 dernier_heartbeat = 0.0
-
-# Empêche l’arrêt automatique avant qu’un premier classeur
-# ait réellement contacté le moteur.
 heartbeat_recu = False
 
 vlc = VLCController()
@@ -195,24 +258,40 @@ def vlc_is_available() -> bool:
 
     return vlc.is_reachable()
 
-
 def launch_vlc() -> bool:
+    executable_vlc = trouver_executable_vlc()
+
+    if executable_vlc is None:
+        return False
+
+    arguments = [
+        executable_vlc,
+        "--extraintf",
+        "rc",
+        "--rc-host",
+        "127.0.0.1:4212",
+    ]
+
+    options_creation: dict[str, object] = {
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+
+    if sys.platform == "win32":
+        options_creation["creationflags"] = (
+            subprocess.CREATE_NEW_PROCESS_GROUP
+            | subprocess.DETACHED_PROCESS
+        )
+    else:
+        options_creation["start_new_session"] = True
 
     try:
         subprocess.Popen(
-            [
-                VLC_EXECUTABLE,
-                "--extraintf",
-                "rc",
-                "--rc-host",
-                "127.0.0.1:4212",
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
+            arguments,
+            **options_creation,
         )
 
-        # Attend au maximum 5 secondes que VLC réponde.
+        # Attend au maximum cinq secondes que VLC réponde.
         for _ in range(20):
             time.sleep(0.25)
 
@@ -226,7 +305,6 @@ def launch_vlc() -> bool:
         subprocess.SubprocessError,
     ):
         return False
-
 
 @app.post("/connect-video")
 def connect_video():
