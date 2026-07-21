@@ -1,0 +1,23 @@
+INSTALLATION
+============
+
+1. Décompresse cette archive.
+2. Copie « VeoVideoControl.app » dans le dossier VeoVideoControl, au même niveau que :
+   - Engine
+   - .venv
+   - Extension
+3. Double-clique sur VeoVideoControl.app.
+4. Au premier lancement, macOS peut bloquer l'application :
+   clic droit sur l'app > Ouvrir > Ouvrir.
+5. Le moteur démarre sans fenêtre Terminal et VLC est lancé avec :
+   --extraintf rc --rc-host 127.0.0.1:4212
+
+JOURNAUX
+========
+~/Library/Logs/VeoVideoControl/engine.log
+~/Library/Logs/VeoVideoControl/vlc.log
+
+ARRÊT
+=====
+« Arrêter VeoVideoControl.app » arrête uniquement le moteur Python.
+VLC reste ouvert afin d'éviter de fermer une vidéo par erreur.

@@ -1,0 +1,74 @@
+# VeoVideoControl
+
+> **À propos**
+>
+> VeoVideoControl permet au classeur **MODELE_MATCH.xlsm** de piloter automatiquement une vidéo ouverte dans **Google Chrome** (site Veo) ou dans **VLC**.
+>
+> Il synchronise les commandes vidéo (lecture, pause, avance, retour…) ainsi que le temps réel affiché dans le classeur Excel.
+
+## Installation
+
+### Prérequis
+
+L'arborescence du projet doit être la suivante :
+
+```text
+DOSSIER_A_UTILISER
+│
+├── MODELE_MATCH.xlsm
+├── Matchs
+│
+└── VeoVideoControl
+    ├── .venv
+    ├── Documentation
+    ├── Engine
+    ├── Extension
+    │   └── veo-sync-extension
+    ├── VeoVideoControl.app
+    └── Arreter VeoVideoControl.app
+```
+
+Le dossier **VeoVideoControl** peut être placé où vous le souhaitez, à condition de ne **pas modifier son contenu interne**.
+
+## Installation de l'extension Chrome
+
+1. Ouvrir Google Chrome.
+2. Aller sur `chrome://extensions`.
+3. Activer le **Mode développeur**.
+4. Cliquer sur **Charger l'extension non empaquetée**.
+5. Sélectionner le dossier :
+
+```text
+VeoVideoControl/Extension/veo-sync-extension
+```
+
+## Autorisation d'accès macOS
+
+Lors de la première ouverture du classeur après avoir déplacé le projet ou changé son emplacement, macOS peut afficher une fenêtre demandant à Microsoft Excel d'accéder au dossier `VeoVideoControl.app`.
+
+Dans ce cas :
+
+1. Cliquer sur **Sélectionner…**.
+2. Dans la fenêtre du Finder, ne pas essayer de sélectionner directement `VeoVideoControl.app` : l'application apparaît grisée car macOS demande l'accès au dossier qui la contient.
+3. Sélectionner le dossier **VeoVideoControl**.
+4. Cliquer sur **Accorder l'accès**.
+
+Cette autorisation ne devrait être demandée qu'une seule fois pour cet emplacement. Si le dossier `VeoVideoControl` est déplacé, macOS peut redemander l'autorisation.
+
+## Utilisation
+
+1. Ouvrir la vidéo :
+   - sur le site Veo dans Google Chrome ;
+   - ou dans VLC.
+2. Vérifier que la vidéo est prête à être lue.
+3. Ouvrir `MODELE_MATCH.xlsm`.
+4. Le moteur VeoVideoControl démarre automatiquement et se connecte au lecteur détecté.
+5. Si aucun lecteur n'est détecté automatiquement, cliquer sur **Connecter lecteur vidéo**.
+
+## Arrêt
+
+Pour arrêter complètement le moteur, exécuter l'application **Arreter VeoVideoControl.app** située dans le dossier **VeoVideoControl** :
+
+```text
+Arreter VeoVideoControl.app
+```

@@ -1,0 +1,14 @@
+#!/bin/zsh
+LOG_DIR="$HOME/Library/Logs/VeoVideoControl"
+PID_FILE="$LOG_DIR/engine.pid"
+if [[ -f "$PID_FILE" ]]; then
+  PID="$(cat "$PID_FILE" 2>/dev/null)"
+  if [[ -n "$PID" ]] && kill -0 "$PID" >/dev/null 2>&1; then
+    kill "$PID" >/dev/null 2>&1 || true
+  fi
+  rm -f "$PID_FILE"
+fi
+# Secours si le PID a été perdu.
+pkill -f 'VeoVideoControlEngine' >/dev/null 2>&1 || true
+/usr/bin/osascript -e 'display notification "Moteur arrêté." with title "VeoVideoControl"' >/dev/null 2>&1 || true
+exit 0

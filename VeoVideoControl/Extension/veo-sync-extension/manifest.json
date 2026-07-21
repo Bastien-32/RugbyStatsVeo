@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Rugby Sync",
+  "description": "Synchronisation Veo ↔ Excel",
+  "version": "0.1.0",
+
+  "permissions": [
+    "background"
+  ],
+
+  "host_permissions": [
+    "http://127.0.0.1:48652/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.veo.co/matches/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ] 
+}

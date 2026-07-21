@@ -1,0 +1,56 @@
+#!/bin/zsh
+set -u
+
+APP_DIR="${0:A:h:h:h}"
+PROJECT_DIR="${APP_DIR:h}"
+
+ENGINE_BIN="$PROJECT_DIR/VeoVideoControlEngine/VeoVideoControlEngine"
+
+LOG_DIR="$HOME/Library/Logs/VeoVideoControl"
+ENGINE_LOG="$LOG_DIR/engine.log"
+PID_FILE="$LOG_DIR/engine.pid"
+
+ENGINE_URL="http://127.0.0.1:48652/"
+
+mkdir -p "$LOG_DIR"
+
+alert() {
+  /usr/bin/osascript \
+    -e "display alert \"VeoVideoControl\" message \"$1\" as critical" \
+    >/dev/null 2>&1 || true
+}
+
+engine_ready() {
+  /usr/bin/curl \
+    --silent \
+    --fail \
+    --max-time 1 \
+    "$ENGINE_URL" \
+    >/dev/null 2>&1
+}
+
+# Ne relance pas le moteur s’il fonctionne déjà.
+if engine_ready; then
+  exit 0
+fi
+
+if [[ ! -x "$ENGINE_BIN" ]]; then
+  alert "L’exécutable VeoVideoControlEngine est introuvable ou non exécutable. Vérifie qu’il se trouve dans le dossier VeoVideoControl, à côté de VeoVideoControl.app."
+  exit 1
+fi
+
+nohup "$ENGINE_BIN" >>"$ENGINE_LOG" 2>&1 &
+echo $! > "$PID_FILE"
+
+# Attend au maximum trente secondes.
+for _ in {1..120}; do
+  sleep 0.25
+  engine_ready && break
+done
+
+if ! engine_ready; then
+  alert "Le moteur n’a pas démarré. Consulte le journal : $ENGINE_LOG"
+  exit 1
+fi
+
+exit 0clear
