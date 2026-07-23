@@ -511,9 +511,9 @@ def surveiller_heartbeat(server: uvicorn.Server) -> None:
             monotonic() - dernier_heartbeat
         )
 
-        if duree_sans_heartbeat >= 5:
+        if duree_sans_heartbeat >= 30:
             print(
-                "Aucun heartbeat reçu depuis 5 secondes : "
+                "Aucun heartbeat reçu depuis 30 secondes : "
                 "arrêt de VeoVideoControl.",
                 flush=True,
             )
