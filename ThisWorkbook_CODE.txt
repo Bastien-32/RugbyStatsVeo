@@ -1,0 +1,61 @@
+Option Explicit
+
+Private Sub Workbook_Open()
+
+    InitialiserClasseurStatsRugby
+
+End Sub
+
+Private Sub Workbook_WindowActivate(ByVal Wn As Window)
+
+    If FermetureEnCours Then
+        Exit Sub
+    End If
+
+    On Error Resume Next
+
+    If Wn.ActiveSheet Is shSaisieVideo Then
+
+        ActiverRaccourcisVideo
+        DemarrerAffichageChronoVideo
+
+    Else
+
+        DesactiverRaccourcisVideo
+        ArreterAffichageChronoVideo
+
+    End If
+
+    On Error GoTo 0
+
+End Sub
+
+Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+
+    If FermetureEnCours Then
+        Exit Sub
+    End If
+
+    If Sh Is shSaisieVideo Then
+
+        ActiverRaccourcisVideo
+        DemarrerAffichageChronoVideo
+
+    Else
+
+        DesactiverRaccourcisVideo
+        ArreterAffichageChronoVideo
+
+    End If
+
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+
+    FermetureEnCours = True
+
+    ArreterHeartbeatVideo
+    DesactiverRaccourcisVideo
+    ArreterAffichageChronoVideo
+
+End Sub
