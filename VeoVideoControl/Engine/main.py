@@ -19,7 +19,7 @@ from vlc_controller import VLCController
 
 
 APP_NAME = "VeoVideoControl Engine"
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.5.0"
 
 VideoTarget = Literal["browser", "vlc"]
 
@@ -129,7 +129,15 @@ command_lock = Lock()
 dernier_heartbeat = 0.0
 heartbeat_recu = False
 
-vlc = VLCController()
+VLC_HTTP_HOST = "127.0.0.1"
+VLC_HTTP_PORT = 4212
+VLC_HTTP_PASSWORD = "statsrugby-local"
+
+vlc = VLCController(
+    host=VLC_HTTP_HOST,
+    port=VLC_HTTP_PORT,
+    password=VLC_HTTP_PASSWORD,
+)
 
 
 class BrowserVideoState(BaseModel):
@@ -267,9 +275,13 @@ def launch_vlc() -> bool:
     arguments = [
         executable_vlc,
         "--extraintf",
-        "rc",
-        "--rc-host",
-        "127.0.0.1:4212",
+        "http",
+        "--http-host",
+        VLC_HTTP_HOST,
+        "--http-port",
+        str(VLC_HTTP_PORT),
+        "--http-password",
+        VLC_HTTP_PASSWORD,
     ]
 
     options_creation: dict[str, object] = {
@@ -327,7 +339,7 @@ def connect_video():
             "target": "browser",
         }
 
-    # 2. VLC répond déjà sur le port RC.
+    # 2. VLC répond déjà sur son interface HTTP locale.
     if vlc_is_available():
 
         active_target = "vlc"
@@ -339,7 +351,7 @@ def connect_video():
         }
 
     # 3. Rien de compatible n'est ouvert :
-    #    lancement automatique de VLC en mode RC.
+    #    lancement automatique de VLC avec son interface HTTP.
     if launch_vlc():
 
         active_target = "vlc"
@@ -445,7 +457,7 @@ def send_command(
                 status_code=503,
                 detail=(
                     "VLC n'est pas accessible sur "
-                    "127.0.0.1:4212."
+                    f"{VLC_HTTP_HOST}:{VLC_HTTP_PORT}."
                 ),
             ) from error
 
@@ -474,7 +486,7 @@ def send_command(
 @app.get("/command/{target}")
 def get_command(target: VideoTarget):
 
-    # VLC reçoit ses commandes immédiatement ;
+    # VLC reçoit ses commandes immédiatement via HTTP ;
     # seule l'extension navigateur consomme une file.
     if target == "vlc":
         return {
