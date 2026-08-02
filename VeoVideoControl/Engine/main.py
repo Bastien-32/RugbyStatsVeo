@@ -291,8 +291,8 @@ def launch_vlc() -> bool:
             **options_creation,
         )
 
-        # Attend au maximum cinq secondes que VLC réponde.
-        for _ in range(20):
+        # Attend au maximum quinze secondes que VLC réponde.
+        for _ in range(60):
             time.sleep(0.25)
 
             if vlc_is_available():
