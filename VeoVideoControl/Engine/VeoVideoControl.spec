@@ -24,7 +24,6 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
-
 exe = EXE(
     pyz,
     a.scripts,
@@ -43,7 +42,6 @@ exe = EXE(
     entitlements_file=None,
 )
 
-
 coll = COLLECT(
     exe,
     a.binaries,
@@ -54,7 +52,6 @@ coll = COLLECT(
     name=APPLICATION_NAME,
 )
 
-
 if IS_MACOS:
     app = BUNDLE(
         coll,
@@ -64,7 +61,8 @@ if IS_MACOS:
         info_plist={
             "CFBundleName": APPLICATION_NAME,
             "CFBundleDisplayName": APPLICATION_NAME,
-            "LSUIElement": True,
-            "NSHighResolutionCapable": True,
+            "CFBundleShortVersionString": "0.5.0",
+            "CFBundleVersion": "0.5.0",
+            "LSBackgroundOnly": True,
         },
     )

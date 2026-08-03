@@ -2,7 +2,7 @@
 
 > **À propos**
 >
-> VeoVideoControl permet au classeur **MODELE_MATCH.xlsm** de piloter automatiquement une vidéo ouverte dans **Google Chrome** (site Veo) ou dans **VLC**.
+> VeoVideoControl permet au classeur **Createur de match.xlsm** de piloter automatiquement une vidéo ouverte dans **Google Chrome** (site Veo) ou dans **VLC**.
 >
 > Il synchronise les commandes vidéo (lecture, pause, avance, retour…) ainsi que le temps réel affiché dans le classeur Excel.
 
@@ -10,12 +10,21 @@
 
 ### Prérequis
 
+Avant la première utilisation, installer les logiciels suivants.
+
+- Microsoft Excel 2019, 2021 ou Microsoft 365 avec prise en charge des macros VBA.
+- VLC media player (dernière version stable).
+- Google Chrome (uniquement pour utiliser les vidéos Veo).
+- Lors de la première ouverture, macOS peut demander une autorisation d'accès au dossier **VeoVideoControl** : il faut l'accepter.
+
+L'ensemble du projet doit être copié sans modifier son arborescence. Tous les fichiers et dossiers doivent rester ensemble afin que VeoVideoControl fonctionne correctement.
+
 L'arborescence du projet doit être la suivante :
 
 ```text
 DOSSIER_A_UTILISER
 │
-├── MODELE_MATCH.xlsm
+├── Createur de match.xlsm
 ├── Matchs
 │
 └── VeoVideoControl
@@ -61,14 +70,53 @@ Cette autorisation ne devrait être demandée qu'une seule fois pour cet emplace
    - sur le site Veo dans Google Chrome ;
    - ou dans VLC.
 2. Vérifier que la vidéo est prête à être lue.
-3. Ouvrir `MODELE_MATCH.xlsm`.
+3. Ouvrir `Createur de match.xlsm`.
 4. Le moteur VeoVideoControl démarre automatiquement et se connecte au lecteur détecté.
 5. Si aucun lecteur n'est détecté automatiquement, cliquer sur **Connecter lecteur vidéo**.
 
-## Arrêt
 
-Pour arrêter complètement le moteur, exécuter l'application **Arreter VeoVideoControl.app** située dans le dossier **VeoVideoControl** :
+## Tutoriel de prise en main
 
-```text
-Arreter VeoVideoControl.app
-```
+### 1. Créer le fichier du match
+
+1. Ouvrir **Createur de match.xlsm**.
+2. Renseigner les informations du match dans l'onglet **Compo**.
+3. Cliquer sur **Créer le fichier de match**.
+4. Un nouveau fichier est créé dans le dossier **Matchs**.
+
+> Une fois le fichier créé, travaillez uniquement sur ce fichier de match. Le classeur **Createur de match.xlsm** ne sert qu'à générer de nouveaux matchs.
+
+### 2. Préparer le match
+
+Dans l'onglet **Compo** :
+
+- compléter la composition de l'équipe ;
+- renseigner le groupe de chaque joueur ;
+- renseigner l'état de jeu de chaque joueur.
+
+### 3. Lancer la saisie vidéo
+
+1. Ouvrir l'onglet **Saisie vidéo**.
+2. Vérifier que le lecteur vidéo est connecté.
+3. Si le voyant n'est pas vert, cliquer sur **Connecter lecteur vidéo**.
+4. Dès que le voyant devient vert, la saisie peut commencer.
+
+> **Important (macOS)** : ne lancez pas VLC manuellement avant d'ouvrir Excel. Utilisez toujours **Connecter lecteur vidéo** pour que VeoVideoControl lance VLC avec la bonne configuration.
+
+### 4. Afficher le Journal d'action
+
+Pour suivre la saisie en direct :
+
+1. **Affichage → Nouvelle fenêtre**
+2. **Affichage → Réorganiser tout**
+3. Afficher **Saisie vidéo** dans une fenêtre.
+4. Afficher **Journal d'action** dans l'autre.
+
+### 5. Consulter les statistiques
+
+L'onglet **Stat** est entièrement automatique. Aucune saisie n'y est nécessaire.
+
+### Bonnes pratiques
+
+- **N'ouvrez qu'un seul fichier de match à la fois.** VeoVideoControl pilote un seul lecteur vidéo. Ouvrir plusieurs fichiers de match simultanément peut provoquer des conflits de pilotage ou de synchronisation.
+- À la fermeture du fichier de match, **VeoVideoControl s'arrête automatiquement**. Aucune manipulation supplémentaire n'est nécessaire.
