@@ -538,6 +538,8 @@ if __name__ == "__main__":
         app,
         host="127.0.0.1",
         port=48652,
+    	log_config=None,
+    	access_log=False
     )
 
     server = uvicorn.Server(configuration)
