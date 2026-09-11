@@ -49,10 +49,47 @@ function arreterToutesLesMinuteries() {
 }
 
 
+let moteurInjoignableSignale = false;
+
+
+/*
+ * Le moteur n'est lance qu'avec Excel : son absence est un
+ * etat normal, pas une erreur. On l'annonce une seule fois,
+ * et en console.log pour ne pas alimenter le gestionnaire
+ * d'extensions de Chrome.
+ */
+function signalerMoteurInjoignable(message) {
+    if (moteurInjoignableSignale) {
+        return;
+    }
+
+    moteurInjoignableSignale = true;
+
+    console.log(
+        "VeoVideoControl : moteur injoignable " +
+        "(Excel est-il ouvert ?) —",
+        message
+    );
+}
+
+
+function signalerMoteurJoignable() {
+    if (!moteurInjoignableSignale) {
+        return;
+    }
+
+    moteurInjoignableSignale = false;
+
+    console.log(
+        "VeoVideoControl : liaison avec le moteur rétablie"
+    );
+}
+
+
 function signalerContexteInvalide() {
     arreterToutesLesMinuteries();
 
-    console.warn(
+    console.log(
         "VeoVideoControl : l’extension a été rechargée. " +
         "Rechargez cette page (Cmd+R) pour rétablir la " +
         "connexion avec Excel."
@@ -155,20 +192,17 @@ function envoyerEtatVideo(video) {
                     return;
                 }
 
-                console.error(
-                    "VeoVideoControl — envoi de l’état impossible :",
-                    message
-                );
+                signalerMoteurInjoignable(message);
 
                 return;
             }
 
             if (!response?.ok) {
-                console.error(
-                    "VeoVideoControl — état vidéo refusé :",
-                    response?.error
-                );
+                signalerMoteurInjoignable(response?.error);
+                return;
             }
+
+            signalerMoteurJoignable();
         }
     );
 }
@@ -263,7 +297,7 @@ function naviguerActionVeo(direction) {
     const bouton = document.querySelector(selecteur);
 
     if (!bouton) {
-        console.error(
+        console.log(
             `VeoVideoControl : bouton d’action ${direction} introuvable`
         );
         return;
@@ -281,7 +315,7 @@ async function executerCommande(command) {
     const video = trouverVideo();
 
     if (!video) {
-        console.error(
+        console.log(
             "VeoVideoControl : aucune vidéo disponible"
         );
 
@@ -294,7 +328,7 @@ async function executerCommande(command) {
                 try {
                     await video.play();
                 } catch (error) {
-                    console.error(
+                    console.log(
                         "VeoVideoControl : lecture impossible",
                         error
                     );
@@ -356,6 +390,11 @@ function verifierCommandes() {
         return;
     }
 
+    // Une page Veo sans lecteur ne pilote rien.
+    if (!trouverVideo()) {
+        return;
+    }
+
     envoyerMessage(
         {
             type: "VEOVIDEOCONTROL_GET_COMMAND"
@@ -374,22 +413,18 @@ function verifierCommandes() {
                     return;
                 }
 
-                console.error(
-                    "VeoVideoControl — communication impossible :",
-                    message
-                );
+                signalerMoteurInjoignable(message);
 
                 return;
             }
 
             if (!response?.ok) {
-                console.error(
-                    "VeoVideoControl — récupération impossible :",
-                    response?.error
-                );
+                signalerMoteurInjoignable(response?.error);
 
                 return;
             }
+
+            signalerMoteurJoignable();
 
             if (!response.command) {
                 return;
