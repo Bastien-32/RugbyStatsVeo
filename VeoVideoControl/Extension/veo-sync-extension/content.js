@@ -1,8 +1,79 @@
+/*
+ * Le script peut etre injecte deux fois sur la meme page :
+ * une fois automatiquement par Chrome, une fois par le
+ * service worker pour les onglets deja ouverts. On evite
+ * alors de dedoubler les minuteries.
+ */
+if (window.__veoVideoControlCharge) {
+
+    console.log(
+        "VeoVideoControl : extension deja active sur cet onglet"
+    );
+
+} else {
+
+    window.__veoVideoControlCharge = true;
+
+    demarrerVeoVideoControl();
+}
+
+
+function demarrerVeoVideoControl() {
+
 console.log(
     "VeoVideoControl : extension chargée sur Veo ✅"
 );
 
 let videoInitialisee = null;
+
+let urlCourante = window.location.href;
+
+const minuteries = [];
+
+
+/*
+ * Quand l'extension est rechargee (page « Extensions » de
+ * Chrome), les scripts deja en place deviennent orphelins :
+ * plus aucun message ne passe. On arrete alors proprement et
+ * on previent dans la console au lieu d'echouer en silence.
+ */
+function contexteValide() {
+    return Boolean(chrome.runtime?.id);
+}
+
+
+function arreterToutesLesMinuteries() {
+    while (minuteries.length > 0) {
+        clearInterval(minuteries.pop());
+    }
+}
+
+
+function signalerContexteInvalide() {
+    arreterToutesLesMinuteries();
+
+    console.warn(
+        "VeoVideoControl : l’extension a été rechargée. " +
+        "Rechargez cette page (Cmd+R) pour rétablir la " +
+        "connexion avec Excel."
+    );
+}
+
+
+/*
+ * sendMessage leve une exception synchrone lorsque
+ * l'extension vient d'etre rechargee : sans cette
+ * protection, l'erreur remonte dans le gestionnaire
+ * d'extensions de Chrome.
+ */
+function envoyerMessage(message, rappel) {
+    try {
+        chrome.runtime.sendMessage(message, rappel);
+
+    } catch (error) {
+        signalerContexteInvalide();
+    }
+}
 
 
 function extraireMatchId() {
@@ -14,8 +85,46 @@ function extraireMatchId() {
 }
 
 
+/*
+ * Les pages Veo peuvent contenir plusieurs balises video
+ * (apercus, vignettes). On retient celle qui porte une vraie
+ * duree de match, sinon la premiere trouvee.
+ */
+function trouverVideo() {
+    const videos = Array.from(
+        document.querySelectorAll("video")
+    );
+
+    if (videos.length === 0) {
+        return null;
+    }
+
+    let meilleure = null;
+
+    for (const video of videos) {
+        if (!Number.isFinite(video.duration)) {
+            continue;
+        }
+
+        if (
+            meilleure === null
+            || video.duration > meilleure.duration
+        ) {
+            meilleure = video;
+        }
+    }
+
+    return meilleure || videos[0];
+}
+
+
 function envoyerEtatVideo(video) {
     if (!video) {
+        return;
+    }
+
+    if (!contexteValide()) {
+        signalerContexteInvalide();
         return;
     }
 
@@ -27,7 +136,7 @@ function envoyerEtatVideo(video) {
         source: "browser"
     };
 
-    chrome.runtime.sendMessage(
+    envoyerMessage(
         {
             type: "VEOVIDEOCONTROL_VIDEO_STATE",
             payload
@@ -42,6 +151,7 @@ function envoyerEtatVideo(video) {
                         "Extension context invalidated"
                     )
                 ) {
+                    signalerContexteInvalide();
                     return;
                 }
 
@@ -72,7 +182,8 @@ function initialiserVideo(video) {
     videoInitialisee = video;
 
     console.log(
-        "VeoVideoControl : vidéo détectée"
+        "VeoVideoControl : vidéo détectée",
+        extraireMatchId()
     );
 
     envoyerEtatVideo(video);
@@ -104,8 +215,36 @@ function initialiserVideo(video) {
 }
 
 
+/*
+ * Veo est une application monopage : passer d'un match a
+ * l'autre ne recharge pas le document. Il faut donc relacher
+ * la video precedente pour raccrocher la nouvelle.
+ */
+function surveillerChangementDeMatch() {
+    if (window.location.href === urlCourante) {
+        return;
+    }
+
+    urlCourante = window.location.href;
+
+    videoInitialisee = null;
+
+    console.log(
+        "VeoVideoControl : changement de match détecté",
+        extraireMatchId()
+    );
+}
+
+
 function attendreVideo() {
-    const video = document.querySelector("video");
+    if (!contexteValide()) {
+        signalerContexteInvalide();
+        return;
+    }
+
+    surveillerChangementDeMatch();
+
+    const video = trouverVideo();
 
     if (video) {
         initialiserVideo(video);
@@ -113,6 +252,7 @@ function attendreVideo() {
 
     setTimeout(attendreVideo, 500);
 }
+
 
 function naviguerActionVeo(direction) {
     const selecteur =
@@ -138,7 +278,7 @@ function naviguerActionVeo(direction) {
 
 
 async function executerCommande(command) {
-    const video = document.querySelector("video");
+    const video = trouverVideo();
 
     if (!video) {
         console.error(
@@ -211,11 +351,12 @@ async function executerCommande(command) {
 
 
 function verifierCommandes() {
-    if (!chrome.runtime?.id) {
+    if (!contexteValide()) {
+        signalerContexteInvalide();
         return;
     }
 
-    chrome.runtime.sendMessage(
+    envoyerMessage(
         {
             type: "VEOVIDEOCONTROL_GET_COMMAND"
         },
@@ -229,6 +370,7 @@ function verifierCommandes() {
                         "Extension context invalidated"
                     )
                 ) {
+                    signalerContexteInvalide();
                     return;
                 }
 
@@ -270,15 +412,21 @@ attendreVideo();
  * Deux interrogations par seconde.
  * Plus tard, on pourra remplacer ce polling par WebSocket.
  */
-setInterval(verifierCommandes, 500);
-
-setInterval(
-    () => {
-        const video = document.querySelector("video");
-
-        if (video) {
-            envoyerEtatVideo(video);
-        }
-    },
-    1000
+minuteries.push(
+    setInterval(verifierCommandes, 500)
 );
+
+minuteries.push(
+    setInterval(
+        () => {
+            const video = trouverVideo();
+
+            if (video) {
+                envoyerEtatVideo(video);
+            }
+        },
+        1000
+    )
+);
+
+}
