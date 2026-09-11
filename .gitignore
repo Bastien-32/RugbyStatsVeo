@@ -26,3 +26,5 @@ __pycache__/
 # Le fichier déjà suivi reste versionné comme exemple.
 Matchs/*
 !Matchs/25-26_R1_Rabastens-Coufouleux_Premiere_EXT.xlsm
+# Marqueur garantissant que le dossier existe toujours.
+!Matchs/.gitkeep
