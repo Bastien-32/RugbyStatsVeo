@@ -7,7 +7,7 @@ const ENGINE_BROWSER_COMMAND_URL =
     `${ENGINE_BASE_URL}/command/browser`;
 
 const CIBLES_VEO = [
-    "https://app.veo.co/matches/*"
+    "https://app.veo.co/*"
 ];
 
 /*
@@ -173,8 +173,8 @@ async function injecterDansOngletsExistants() {
         });
 
     } catch (error) {
-        console.error(
-            "VeoVideoControl — onglets Veo introuvables :",
+        console.log(
+            "VeoVideoControl : onglets Veo introuvables —",
             error.message
         );
 
@@ -198,8 +198,10 @@ async function injecterDansOngletsExistants() {
             );
 
         } catch (error) {
-            console.error(
-                "VeoVideoControl — injection impossible :",
+            console.log(
+                "VeoVideoControl : injection ignorée pour",
+                onglet.url,
+                "—",
                 error.message
             );
         }
