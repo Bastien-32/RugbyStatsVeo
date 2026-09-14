@@ -20,14 +20,23 @@ if [ -z "$(git diff --cached --name-only -- "$CLASSEUR")" ]; then
     exit 0
 fi
 
-if ! python3 -c "import oletools" 2>/dev/null; then
+# L'environnement du projet est prefere au Python du systeme, que
+# Homebrew protege contre les installations de paquets (PEP 668).
+if [ -x ".venv/bin/python" ]; then
+    PYTHON=".venv/bin/python"
+else
+    PYTHON="python3"
+fi
+
+if ! "$PYTHON" -c "import oletools" 2>/dev/null; then
     echo "pre-commit : oletools est necessaire pour exporter le VBA."
-    echo "  python3 -m pip install oletools"
+    echo "  python3 -m venv .venv"
+    echo "  .venv/bin/pip install oletools"
     echo "  (ou git commit --no-verify pour passer outre)"
     exit 1
 fi
 
-if ! python3 outils/export_vba.py "$CLASSEUR"; then
+if ! "$PYTHON" outils/export_vba.py "$CLASSEUR"; then
     echo "pre-commit : l'export du VBA a echoue, commit interrompu."
     exit 1
 fi
