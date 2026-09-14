@@ -26,6 +26,7 @@ Usage :
     python3 outils/preparer_distribution.py
     python3 outils/preparer_distribution.py --zip
     python3 outils/preparer_distribution.py --classeur "copie.xlsm"
+    python3 outils/preparer_distribution.py --controler --classeur "copie.xlsm"
     python3 outils/preparer_distribution.py --destination /tmp/paquet
 
 Le dossier de destination est efface puis reconstruit a chaque appel.
@@ -367,7 +368,13 @@ def compresser(destination):
     return archive
 
 
-def preparer(destination, avec_zip=False, classeur=None, forcer=False):
+def preparer(
+    destination,
+    avec_zip=False,
+    classeur=None,
+    forcer=False,
+    controler_seulement=False,
+):
 
     racine = racine_projet()
 
@@ -398,6 +405,16 @@ def preparer(destination, avec_zip=False, classeur=None, forcer=False):
             )
 
         print("  (--forcer : le paquet est prepare quand meme)\n")
+
+    elif controler_seulement:
+
+        print(
+            f"{os.path.basename(chemin_classeur)} ne contient plus "
+            "de donnees de club."
+        )
+
+    if controler_seulement:
+        return 0
 
     destination = os.path.abspath(destination)
 
@@ -453,6 +470,16 @@ def analyser_arguments(arguments):
     )
 
     analyseur.add_argument(
+        "--controler",
+        action="store_true",
+        dest="controler_seulement",
+        help=(
+            "verifie seulement que le classeur est vide de donnees, "
+            "sans fabriquer le paquet"
+        ),
+    )
+
+    analyseur.add_argument(
         "--forcer",
         action="store_true",
         help="prepare le paquet malgre des donnees de club restantes",
@@ -479,6 +506,7 @@ def main(arguments=None):
             avec_zip=options.avec_zip,
             classeur=options.classeur,
             forcer=options.forcer,
+            controler_seulement=options.controler_seulement,
         )
 
     except ErreurPreparation as erreur:

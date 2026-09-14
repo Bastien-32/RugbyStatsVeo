@@ -112,6 +112,16 @@ End Sub
 ' Vide un tableau structure en conservant ses en-tetes et
 ' une ligne vide, pour que les formules qui s'y referent
 ' continuent de fonctionner.
+'
+' Le tableau retreci laisse derriere lui des lignes qui ont
+' garde son habillage : bordures et bandes de couleur sur
+' des cellules desormais hors du tableau. On efface donc ce
+' format, puis on repose un fond blanc.
+'
+' Le fond blanc n'est pas une coquetterie : sans remplissage,
+' le quadrillage d'Excel reapparait, alors que le reste de la
+' feuille le masque avec un blanc uni. Une zone simplement
+' effacee se verrait donc comme un rectangle quadrille.
 ' =========================================================
 
 Private Sub ViderTableau( _
@@ -119,21 +129,58 @@ Private Sub ViderTableau( _
     ByVal NomTableau As String _
 )
 
+    Dim ws As Worksheet
     Dim loTableau As ListObject
 
-    Set loTableau = _
-        ThisWorkbook.Worksheets(NomFeuille).ListObjects(NomTableau)
+    Dim ColonneDebut As Long
+    Dim NbColonnes As Long
+
+    Dim DerniereLigneAvant As Long
+    Dim PremiereLigneLiberee As Long
+
+    Set ws = ThisWorkbook.Worksheets(NomFeuille)
+
+    Set loTableau = ws.ListObjects(NomTableau)
 
     If loTableau.DataBodyRange Is Nothing Then
         Exit Sub
     End If
+
+    ColonneDebut = loTableau.Range.Column
+
+    NbColonnes = loTableau.ListColumns.Count
+
+    DerniereLigneAvant = _
+        loTableau.Range.Row + loTableau.Range.Rows.Count - 1
 
     loTableau.DataBodyRange.ClearContents
 
     If loTableau.ListRows.Count > 1 Then
 
         loTableau.Resize _
-            loTableau.Range.Resize(2, loTableau.ListColumns.Count)
+            loTableau.Range.Resize(2, NbColonnes)
+
+    End If
+
+    PremiereLigneLiberee = _
+        loTableau.Range.Row + loTableau.Range.Rows.Count
+
+    If PremiereLigneLiberee <= DerniereLigneAvant Then
+
+        With ws.Range( _
+            ws.Cells(PremiereLigneLiberee, ColonneDebut), _
+            ws.Cells( _
+                DerniereLigneAvant, _
+                ColonneDebut + NbColonnes - 1 _
+            ) _
+        )
+
+            .ClearFormats
+
+            .Interior.Pattern = xlSolid
+            .Interior.Color = RGB(255, 255, 255)
+
+        End With
 
     End If
 
