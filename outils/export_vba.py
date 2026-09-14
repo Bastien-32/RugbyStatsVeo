@@ -24,8 +24,13 @@ Avec --verifier, rien n'est ecrit : la commande signale les ecarts
 entre le classeur et l'export, et rend un code de sortie non nul.
 Pratique pour controler avant un commit que l'export est a jour.
 
-Necessite oletools :
-    python3 -m pip install oletools
+Necessite oletools. Sur un Python installe par Homebrew, pip refuse
+d'ecrire dans l'environnement du systeme (PEP 668) : on passe donc
+par l'environnement du projet, que .gitignore laisse de cote.
+
+    python3 -m venv .venv
+    .venv/bin/pip install oletools
+    .venv/bin/python outils/export_vba.py "Createur de match.xlsm"
 """
 
 import argparse
@@ -53,7 +58,9 @@ def charger_extracteur():
 
         raise ErreurExport(
             "oletools est necessaire pour lire le code VBA.\n"
-            "Installation : python3 -m pip install oletools"
+            "Installation :\n"
+            "  python3 -m venv .venv\n"
+            "  .venv/bin/pip install oletools"
         )
 
     return VBA_Parser
