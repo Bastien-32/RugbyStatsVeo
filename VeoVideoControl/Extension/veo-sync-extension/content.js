@@ -32,6 +32,33 @@ const minuteries = [];
 
 
 /*
+ * Lecture arriere.
+ *
+ * Aucun navigateur ne lit une video a l'envers : un
+ * playbackRate negatif est ignore. On recule donc
+ * currentTime par petits pas a intervalle regulier, ce qui
+ * donne un defilement arriere continu.
+ *
+ * 0,2 s toutes les 100 ms = vitesse x2 en arriere.
+ */
+const REWIND_PAS_SECONDES = 0.2;
+
+const REWIND_INTERVALLE_MS = 100;
+
+/*
+ * Chaque saut declenche un evenement seeked, donc un envoi
+ * d'etat. A dix sauts par seconde, on inonderait le moteur :
+ * pendant le rewind, on limite les envois a quatre par
+ * seconde, ce qui suffit au chrono d'Excel.
+ */
+const REWIND_ETAT_INTERVALLE_MS = 250;
+
+let rewindMinuterie = null;
+
+let rewindDernierEtatEnvoye = 0;
+
+
+/*
  * Quand l'extension est rechargee (page « Extensions » de
  * Chrome), les scripts deja en place deviennent orphelins :
  * plus aucun message ne passe. On arrete alors proprement et
@@ -163,6 +190,19 @@ function envoyerEtatVideo(video) {
     if (!contexteValide()) {
         signalerContexteInvalide();
         return;
+    }
+
+    if (rewindMinuterie !== null) {
+        const maintenant = Date.now();
+
+        if (
+            maintenant - rewindDernierEtatEnvoye
+            < REWIND_ETAT_INTERVALLE_MS
+        ) {
+            return;
+        }
+
+        rewindDernierEtatEnvoye = maintenant;
     }
 
     const payload = {
@@ -311,6 +351,65 @@ function naviguerActionVeo(direction) {
 }
 
 
+function rewindActif() {
+    return rewindMinuterie !== null;
+}
+
+
+function arreterRewind() {
+    if (rewindMinuterie === null) {
+        return;
+    }
+
+    clearInterval(rewindMinuterie);
+
+    rewindMinuterie = null;
+
+    console.log("VeoVideoControl : lecture arrière arrêtée");
+}
+
+
+function demarrerRewind(video) {
+    if (rewindMinuterie !== null) {
+        return;
+    }
+
+    /*
+     * La lecture normale continuerait d'avancer entre deux
+     * sauts : on met la video en pause pendant le rewind.
+     */
+    video.pause();
+
+    rewindMinuterie = setInterval(
+        () => {
+            const videoCourante = trouverVideo();
+
+            if (!videoCourante) {
+                arreterRewind();
+                return;
+            }
+
+            const nouveauTemps =
+                videoCourante.currentTime
+                - REWIND_PAS_SECONDES;
+
+            if (nouveauTemps <= 0) {
+                videoCourante.currentTime = 0;
+                arreterRewind();
+                return;
+            }
+
+            videoCourante.currentTime = nouveauTemps;
+        },
+        REWIND_INTERVALLE_MS
+    );
+
+    minuteries.push(rewindMinuterie);
+
+    console.log("VeoVideoControl : lecture arrière démarrée");
+}
+
+
 async function executerCommande(command) {
     const video = trouverVideo();
 
@@ -322,7 +421,24 @@ async function executerCommande(command) {
         return;
     }
 
+    /*
+     * Toute commande de transport interrompt la lecture
+     * arriere : play/pause, sauts de 5 s, reset, navigation
+     * entre actions.
+     */
+    if (command !== "rewind_toggle") {
+        arreterRewind();
+    }
+
     switch (command) {
+        case "rewind_toggle":
+            if (rewindActif()) {
+                arreterRewind();
+            } else {
+                demarrerRewind(video);
+            }
+            break;
+
         case "playpause":
             if (video.paused) {
                 try {

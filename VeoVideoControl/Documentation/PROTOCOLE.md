@@ -5,6 +5,7 @@
 PLAY_PAUSE
 SEEK_MINUS_5
 SEEK_PLUS_5
+REWIND_TOGGLE
 RESET
 
 ## Événements Engine → Excel
