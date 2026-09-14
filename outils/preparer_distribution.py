@@ -16,9 +16,16 @@ Ce qui est volontairement laisse de cote :
     office.txt       lien vers une copie piratee d'Office
     .vscode, .DS_Store, .venv, .git
 
+Le classeur ne doit plus contenir de donnees appartenant a un club :
+le script refuse de preparer le paquet tant qu'il y trouve un
+effectif, une composition, des equipes de poule ou un journal. La
+macro ReinitialiserPourDistribution, dans le classeur, fait ce
+menage ; elle s'execute sur une copie.
+
 Usage :
     python3 outils/preparer_distribution.py
     python3 outils/preparer_distribution.py --zip
+    python3 outils/preparer_distribution.py --classeur "copie.xlsm"
     python3 outils/preparer_distribution.py --destination /tmp/paquet
 
 Le dossier de destination est efface puis reconstruit a chaque appel.
@@ -26,10 +33,23 @@ Le dossier de destination est efface puis reconstruit a chaque appel.
 
 import argparse
 import os
+import re
 import shutil
 import sys
 import zipfile
 
+
+CLASSEUR = "Createur de match.xlsm"
+
+# Tableaux qui ne doivent plus rien contenir dans un classeur
+# destine a un autre club. Une colonne precise peut etre visee :
+# la composition garde ses postes, mais pas ses joueurs.
+TABLEAUX_A_CONTROLER = (
+    ("LstEffectif", None, "l'effectif"),
+    ("LstEquipesPoule", None, "les equipes de la poule"),
+    ("JournalActions", None, "le journal d'actions"),
+    ("COMPO", "Nom du joueur", "la composition"),
+)
 
 # Elements recopies tels quels, dans l'ordre d'affichage.
 ELEMENTS = (
@@ -61,6 +81,162 @@ def racine_projet():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# =========================================================
+# Controle des donnees restantes dans le classeur.
+#
+# Le classeur est lu tel quel, sans Excel ni bibliotheque
+# tierce : un .xlsm est une archive zip de fichiers XML.
+# =========================================================
+
+
+def colonne_en_index(lettres):
+    """Convertit "AA" en 27."""
+
+    index = 0
+
+    for caractere in lettres:
+        index = index * 26 + (ord(caractere) - ord("A") + 1)
+
+    return index
+
+
+def decouper_reference(reference):
+    """Renvoie (colonne1, ligne1, colonne2, ligne2) pour "A1:E68"."""
+
+    debut, _, fin = reference.partition(":")
+
+    if not fin:
+        fin = debut
+
+    motif = re.compile(r"([A-Z]+)(\d+)")
+
+    colonne1, ligne1 = motif.match(debut).groups()
+    colonne2, ligne2 = motif.match(fin).groups()
+
+    return (
+        colonne_en_index(colonne1),
+        int(ligne1),
+        colonne_en_index(colonne2),
+        int(ligne2),
+    )
+
+
+def feuille_de_chaque_tableau(archive):
+    """Renvoie {nom du tableau: (chemin de la feuille, ref, colonnes)}."""
+
+    tableaux = {}
+
+    chemins_tables = {}
+
+    for nom in archive.namelist():
+
+        if not nom.startswith("xl/tables/table"):
+            continue
+
+        contenu = archive.read(nom).decode("utf-8")
+
+        chemins_tables[nom] = (
+            re.search(r'name="([^"]+)"', contenu).group(1),
+            re.search(r'ref="([^"]+)"', contenu).group(1),
+            re.findall(r'<tableColumn[^>]*name="([^"]+)"', contenu),
+        )
+
+    for nom in archive.namelist():
+
+        if not re.match(r"xl/worksheets/_rels/sheet\d+\.xml\.rels$", nom):
+            continue
+
+        feuille = nom.replace("_rels/", "").replace(".rels", "")
+
+        rels = archive.read(nom).decode("utf-8")
+
+        for cible in re.findall(r'Target="([^"]+)"', rels):
+
+            chemin = "xl/" + cible.replace("../", "")
+
+            if chemin in chemins_tables:
+
+                nom_tableau, ref, colonnes = chemins_tables[chemin]
+
+                tableaux[nom_tableau] = (feuille, ref, colonnes)
+
+    return tableaux
+
+
+def compter_cellules_remplies(archive, feuille, colonne1, colonne2, ligne1, ligne2):
+    """Compte les cellules porteuses d'une valeur dans la zone."""
+
+    contenu = archive.read(feuille).decode("utf-8")
+
+    total = 0
+
+    for cellule in re.finditer(r"<c\s[^>]*r=\"([A-Z]+)(\d+)\"[^>]*?(/>|>(.*?)</c>)", contenu, re.S):
+
+        colonne = colonne_en_index(cellule.group(1))
+
+        ligne = int(cellule.group(2))
+
+        if not (colonne1 <= colonne <= colonne2):
+            continue
+
+        if not (ligne1 <= ligne <= ligne2):
+            continue
+
+        interieur = cellule.group(4) or ""
+
+        if "<v>" in interieur or "<is>" in interieur:
+            total += 1
+
+    return total
+
+
+def donnees_restantes(chemin_classeur):
+    """Renvoie la liste des donnees de club encore presentes."""
+
+    restes = []
+
+    with zipfile.ZipFile(chemin_classeur) as archive:
+
+        tableaux = feuille_de_chaque_tableau(archive)
+
+        for nom_tableau, colonne_visee, description in TABLEAUX_A_CONTROLER:
+
+            if nom_tableau not in tableaux:
+                continue
+
+            feuille, ref, colonnes = tableaux[nom_tableau]
+
+            colonne1, ligne1, colonne2, ligne2 = decouper_reference(ref)
+
+            # La premiere ligne porte les en-tetes.
+            ligne1 += 1
+
+            if ligne1 > ligne2:
+                continue
+
+            if colonne_visee:
+
+                if colonne_visee not in colonnes:
+                    continue
+
+                colonne1 += colonnes.index(colonne_visee)
+                colonne2 = colonne1
+
+            remplies = compter_cellules_remplies(
+                archive,
+                feuille,
+                colonne1,
+                colonne2,
+                ligne1,
+                ligne2,
+            )
+
+            if remplies:
+                restes.append(f"{description} ({remplies} cellules)")
+
+    return restes
+
+
 def nettoyer(dossier):
     """Supprime les fichiers parasites recopies avec les dossiers."""
 
@@ -78,14 +254,17 @@ def nettoyer(dossier):
                 os.remove(os.path.join(chemin, nom))
 
 
-def copier(racine, destination):
+def copier(racine, destination, chemin_classeur):
     """Recopie la liste blanche et renvoie ce qui a ete copie."""
 
     copies = []
 
     for element in ELEMENTS:
 
-        source = os.path.join(racine, element)
+        if element == CLASSEUR:
+            source = chemin_classeur
+        else:
+            source = os.path.join(racine, element)
 
         if not os.path.exists(source):
             raise ErreurPreparation(f"Element introuvable : {element}")
@@ -188,9 +367,37 @@ def compresser(destination):
     return archive
 
 
-def preparer(destination, avec_zip=False):
+def preparer(destination, avec_zip=False, classeur=None, forcer=False):
 
     racine = racine_projet()
+
+    chemin_classeur = classeur or os.path.join(racine, CLASSEUR)
+
+    if not os.path.isfile(chemin_classeur):
+        raise ErreurPreparation(f"Classeur introuvable : {chemin_classeur}")
+
+    restes = donnees_restantes(chemin_classeur)
+
+    if restes:
+
+        print(
+            f"{os.path.basename(chemin_classeur)} contient encore "
+            "des donnees de club :"
+        )
+
+        for reste in restes:
+            print(f"  - {reste}")
+
+        if not forcer:
+
+            raise ErreurPreparation(
+                "Ouvrir une copie du classeur, y lancer la macro "
+                "ReinitialiserPourDistribution, l'enregistrer, puis "
+                "relancer avec --classeur sur cette copie.\n"
+                "Pour passer outre : --forcer."
+            )
+
+        print("  (--forcer : le paquet est prepare quand meme)\n")
 
     destination = os.path.abspath(destination)
 
@@ -199,7 +406,7 @@ def preparer(destination, avec_zip=False):
 
     os.makedirs(destination)
 
-    copies = copier(racine, destination)
+    copies = copier(racine, destination, chemin_classeur)
 
     nettoyer(destination)
 
@@ -238,6 +445,20 @@ def analyser_arguments(arguments):
     )
 
     analyseur.add_argument(
+        "--classeur",
+        help=(
+            "classeur a placer dans le paquet "
+            "(defaut : celui du projet)"
+        ),
+    )
+
+    analyseur.add_argument(
+        "--forcer",
+        action="store_true",
+        help="prepare le paquet malgre des donnees de club restantes",
+    )
+
+    analyseur.add_argument(
         "--zip",
         action="store_true",
         dest="avec_zip",
@@ -253,7 +474,12 @@ def main(arguments=None):
 
     try:
 
-        return preparer(options.destination, avec_zip=options.avec_zip)
+        return preparer(
+            options.destination,
+            avec_zip=options.avec_zip,
+            classeur=options.classeur,
+            forcer=options.forcer,
+        )
 
     except ErreurPreparation as erreur:
 
