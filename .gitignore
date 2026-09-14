@@ -22,7 +22,5 @@ __pycache__/
 ~$*.xls
 ~$*.xlsx
 ~$*.xlsm
-# Fichiers de match : données de production, jamais versionnées.
-Matchs/*
-# Marqueur garantissant que le dossier existe toujours.
-!Matchs/.gitkeep
+# Fichiers de match : versionnés ici, la branche club servant aussi
+# de sauvegarde des statistiques du club. Sur main, ils sont exclus.
