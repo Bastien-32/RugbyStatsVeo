@@ -22,9 +22,7 @@ __pycache__/
 ~$*.xls
 ~$*.xlsx
 ~$*.xlsm
-# Fichiers de match du club (données de production).
-# Le fichier déjà suivi reste versionné comme exemple.
+# Fichiers de match : données de production, jamais versionnées.
 Matchs/*
-!Matchs/25-26_R1_Rabastens-Coufouleux_Premiere_EXT.xlsm
 # Marqueur garantissant que le dossier existe toujours.
 !Matchs/.gitkeep
