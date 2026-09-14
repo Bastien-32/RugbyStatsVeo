@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/base_library.zip</key>
 		<data>
-		mOQ7ADaKhLMxHYsmrvqPzBmtQ5U=
+		42Rw+yCs1tEstgid0yNetHU/POg=
 		</data>
 		<key>Resources/click-8.4.2.dist-info/INSTALLER</key>
 		<data>
@@ -18,7 +18,11 @@
 		</data>
 		<key>Resources/click-8.4.2.dist-info/RECORD</key>
 		<data>
-		KOklbAJGHmoloSWep6JUYsIxrVg=
+		OhAlYn5FkuUEAcpb5eu8LVr6Iko=
+		</data>
+		<key>Resources/click-8.4.2.dist-info/REQUESTED</key>
+		<data>
+		2jmj7l5rSw0yVb/vlWAYkK/YBwk=
 		</data>
 		<key>Resources/click-8.4.2.dist-info/WHEEL</key>
 		<data>
@@ -91,19 +95,19 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			LjSnoT9MO8n5gO3Hm1eotpQWyCg=
+			ElxkwO62++7gHJDkfHfiXznqmDg=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"2e34a7a13f4c3bc9f980edc79b57a8b69416c828"</string>
+			<string>cdhash H"125c64c0eeb6fbeee01c90e47c77e25f39ea9838"</string>
 		</dict>
 		<key>Frameworks/liblzma.5.dylib</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			wQyysc7FhUk3C2seYtW6L+BG3og=
+			BsSnL75CwDtKP0VbwOSIIe7t6to=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"c10cb2b1cec58549370b6b1e62d5ba2fe046de88"</string>
+			<string>cdhash H"06c4a72fbe42c03b4a3f455bc0e48821eeedeada"</string>
 		</dict>
 		<key>Frameworks/libmpdec.4.dylib</key>
 		<dict>
@@ -118,10 +122,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			y9GghdIjZgxX8nmPC5qNx5Qnpwk=
+			Yjn2TS9ho/MkBJ28M1NND/CQ56c=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"cbd1a085d223660c57f2798f0b9a8dc79427a709"</string>
+			<string>cdhash H"6239f64d2f61a3f324049dbc33534d0ff090e7a7"</string>
 		</dict>
 		<key>Frameworks/pydantic-2.13.4.dist-info</key>
 		<dict>
@@ -638,7 +642,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			LXkPWTUbxuDOhaqPPpAoCOXf30MPecBaM15p0QM9Hac=
+			lE/W3QkezhucFnNnuiwnyo9Gf41CDjN8vSwJkIMgYG0=
 			</data>
 		</dict>
 		<key>Resources/click-8.4.2.dist-info/INSTALLER</key>
@@ -659,7 +663,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ozAvRECTqaaJpCxaG7VFVSMmhPoN39ITLjZbLD5Pu6c=
+			AmJnOELO+jOD0F6iKaXI/IZ51K+7Fds3ncLX5TF4jmM=
+			</data>
+		</dict>
+		<key>Resources/click-8.4.2.dist-info/REQUESTED</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=
 			</data>
 		</dict>
 		<key>Resources/click-8.4.2.dist-info/WHEEL</key>

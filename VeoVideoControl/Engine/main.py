@@ -430,6 +430,9 @@ def send_command(
         "reset",
         "previous_action",
         "next_action",
+        # Lecture arriere continue, geree par l'extension.
+        # Sans equivalent VLC : la commande y est ignoree.
+        "rewind_toggle",
     }
 
     if command not in commandes_autorisees:
