@@ -290,6 +290,12 @@ Public Sub ResetActionButtons()
         
     ApplyFormat ws.Range("BTN_FRANCHISSEMENT"), _
         shParametres.Range("STYLE_BTN_PTS")
+        
+    ApplyFormat ws.Range("BTN_AVANCEE"), _
+        shParametres.Range("STYLE_BTN_PTS")
+
+    ApplyFormat ws.Range("BTN_ATT_NULLE"), _
+        shParametres.Range("STYLE_BTN_PTS")
 
     ApplyFormat ws.Range("BTN_CARTON_ROUGE"), _
         shParametres.Range("STYLE_BTN_CHRONO_RESET")
