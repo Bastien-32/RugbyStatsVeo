@@ -316,10 +316,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
     ' =====================================================
 
     If IsCartonAction(Target) Or _
-        Not Intersect( _
-            Target, _
-            Range("BTN_FRANCHISSEMENT") _
-        ) Is Nothing Or _
+        EstAttitudeAuContact(Target) Or _
         Not Intersect( _
             Target, _
             Range("BTN_TURNOVER") _
@@ -403,13 +400,10 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         SetActiveButton Target
 
         ' =====================================================
-        ' FRANCHISSEMENT
+        ' ATTITUDE AU CONTACT
         ' =====================================================
 
-        If Not Intersect( _
-            Target, _
-            Range("BTN_FRANCHISSEMENT") _
-        ) Is Nothing Then
+        If EstAttitudeAuContact(Target) Then
 
             If CurrentTeam = "Nous" Then
 
@@ -417,8 +411,8 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                     ActionTexte, _
                     TempsVideo, _
                     False, _
-                    "Nous", _
-                    False
+                    "", _
+                    True
 
             Else
 

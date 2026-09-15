@@ -29,6 +29,16 @@ Public Function GetAction( _
         Exit Function
     End If
     
+    If Not Intersect(Target, Range("BTN_AVANCEE")) Is Nothing Then
+        GetAction = Range("ACT_AVANCEE").Value
+        Exit Function
+    End If
+
+    If Not Intersect(Target, Range("BTN_ATT_NULLE")) Is Nothing Then
+        GetAction = Range("ACT_ATT_NULLE").Value
+        Exit Function
+    End If
+
     If Not Intersect(Target, Range("BTN_TURNOVER")) Is Nothing Then
 
         Select Case CurrentTeam
@@ -517,6 +527,35 @@ Public Function IsTurnoverAction(ByVal Target As Range) As Boolean
     End If
 
     IsTurnoverAction = False
+
+End Function
+
+Public Function EstAttitudeAuContact( _
+    ByVal Target As Range _
+) As Boolean
+
+    Dim Boutons As Variant
+    Dim Element As Variant
+
+    Boutons = Array( _
+        "BTN_FRANCHISSEMENT", _
+        "BTN_AVANCEE", _
+        "BTN_ATT_NULLE" _
+    )
+
+    For Each Element In Boutons
+
+        If Not Intersect( _
+            Target, _
+            Range(CStr(Element)) _
+        ) Is Nothing Then
+
+            EstAttitudeAuContact = True
+            Exit Function
+
+        End If
+
+    Next Element
 
 End Function
 
