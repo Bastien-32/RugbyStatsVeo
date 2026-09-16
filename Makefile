@@ -8,8 +8,9 @@ PYTHON = python3
 PYTHON_VENV = .venv/bin/python
 
 # Ce qui passe de club a main : ni Matchs, ni .gitignore.
-ELEMENTS_REPORT = "Createur de match.xlsm" vba outils VeoVideoControl \
-	INSTALLATION.md INSTALLATION.txt "logiciels à installer" Makefile
+ELEMENTS_REPORT = "Createur de match.xlsm" vba vba-recap outils \
+	VeoVideoControl INSTALLATION.md INSTALLATION.txt \
+	"logiciels à installer" Makefile
 
 MESSAGE = chore: report des évolutions depuis club
 
