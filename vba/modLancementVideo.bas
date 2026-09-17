@@ -4,6 +4,8 @@ Option Explicit
 Private Const URL_TEST_MOTEUR As String = _
     "http://127.0.0.1:48652/openapi.json"
 
+Private Const NOM_MOTEUR_WINDOWS As String = _
+    "VeoVideoControl.exe"
 
 Public Sub DemarrerVeoVideoControl()
 
@@ -71,7 +73,7 @@ Public Sub DemarrerVeoVideoControl()
 
     CheminMoteur = _
         DossierMoteur & _
-        "\VeoVideoControl.exe"
+        "\" & NOM_MOTEUR_WINDOWS
 
     ' =====================================================
     ' SECOND CAS :
@@ -90,7 +92,7 @@ Public Sub DemarrerVeoVideoControl()
 
         CheminMoteur = _
             DossierMoteur & _
-            "\VeoVideoControlEngine.exe"
+            "\" & NOM_MOTEUR_WINDOWS
 
     End If
 
