@@ -24,3 +24,9 @@ __pycache__/
 ~$*.xlsm
 # Fichiers de match : versionnés ici, la branche club servant aussi
 # de sauvegarde des statistiques du club. Sur main, ils sont exclus.
+
+# Construction du moteur Windows : environnement local du PC
+# de build, et moteur precedent mis de cote par le script.
+.venv-windows/
+**/.venv-windows/
+**/VeoVideoControlEngine-precedent/
