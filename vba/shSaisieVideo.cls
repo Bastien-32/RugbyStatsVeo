@@ -1137,6 +1137,46 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         End If
         
         ' =====================================================
+        ' TRANSFORMATION
+        '
+        ' Possession Nous : attend le buteur.
+        ' Si une autre action est cliquee avant,
+        ' "?" est ajoute automatiquement.
+        ' Possession Adv : saisie immediate sans joueur.
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_PTS_TRANSFO") _
+        ) Is Nothing Then
+
+            If CurrentTeam = "Nous" Then
+
+                InitialiserActionEnAttente _
+                    ActionTexte, _
+                    TempsVideo, _
+                    False, _
+                    "Nous", _
+                    False
+
+            Else
+
+                FermerActionEnAttente
+
+                AjouterAction _
+                    "", _
+                    ActionTexte, _
+                    TempsVideo
+
+                ReleaseButton
+
+            End If
+
+            Exit Sub
+
+        End If
+
+        ' =====================================================
         ' AUTRES ACTIONS IMMEDIATES
         ' =====================================================
 

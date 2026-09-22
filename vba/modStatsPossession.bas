@@ -589,33 +589,33 @@ Private Sub EcrireTableauSequencesPossession( _
 
     With wsStats
 
-        .Range("B92").Value = "Dur" & ChrW(233) & "es possessions"
-        .Range("C92").Value = "Nous"
-        .Range("D92").Value = "Adv"
+        .Range("B94").Value = "Dur" & ChrW(233) & "es possessions"
+        .Range("C94").Value = "Nous"
+        .Range("D94").Value = "Adv"
 
-        .Range("B93").Value = "0-20 s"
-        .Range("B94").Value = "20-40 s"
-        .Range("B95").Value = "40-60 s"
-        .Range("B96").Value = "60-90 s"
-        .Range("B97").Value = ">90 s"
+        .Range("B95").Value = "0-20 s"
+        .Range("B96").Value = "20-40 s"
+        .Range("B97").Value = "40-60 s"
+        .Range("B98").Value = "60-90 s"
+        .Range("B99").Value = ">90 s"
 
-        .Range("C93").Value = CompteursNous(1)
-        .Range("C94").Value = CompteursNous(2)
-        .Range("C95").Value = CompteursNous(3)
-        .Range("C96").Value = CompteursNous(4)
-        .Range("C97").Value = CompteursNous(5)
+        .Range("C95").Value = CompteursNous(1)
+        .Range("C96").Value = CompteursNous(2)
+        .Range("C97").Value = CompteursNous(3)
+        .Range("C98").Value = CompteursNous(4)
+        .Range("C99").Value = CompteursNous(5)
 
-        .Range("D93").Value = CompteursAdv(1)
-        .Range("D94").Value = CompteursAdv(2)
-        .Range("D95").Value = CompteursAdv(3)
-        .Range("D96").Value = CompteursAdv(4)
-        .Range("D97").Value = CompteursAdv(5)
+        .Range("D95").Value = CompteursAdv(1)
+        .Range("D96").Value = CompteursAdv(2)
+        .Range("D97").Value = CompteursAdv(3)
+        .Range("D98").Value = CompteursAdv(4)
+        .Range("D99").Value = CompteursAdv(5)
 
         ' =====================================================
         ' MISE EN FORME
         ' =====================================================
 
-        With .Range("B92:D97")
+        With .Range("B94:D99")
 
             .Font.Name = "Calibri"
             .Font.Size = 12
@@ -629,11 +629,11 @@ Private Sub EcrireTableauSequencesPossession( _
 
         End With
 
-        ' En-ttes un peu plus gros
-        .Range("B92:D92").Font.Size = 13
+        ' En-tetes un peu plus gros
+        .Range("B94:D94").Font.Size = 13
 
-        ' Colonne Dur_e
-        With .Range("B92:B97")
+        ' Colonne Duree
+        With .Range("B94:B99")
 
             .Interior.Color = RGB(78, 167, 46)
             .Font.Color = RGB(255, 255, 255)
@@ -641,7 +641,7 @@ Private Sub EcrireTableauSequencesPossession( _
         End With
 
         ' Colonne Nous
-        With .Range("C92:C97")
+        With .Range("C94:C99")
 
             .Interior.Color = RGB(226, 239, 218)
             .Font.Color = RGB(0, 0, 0)
@@ -649,7 +649,7 @@ Private Sub EcrireTableauSequencesPossession( _
         End With
 
         ' Colonne Adv
-        With .Range("D92:D97")
+        With .Range("D94:D99")
 
             .Interior.Color = RGB(255, 255, 255)
             .Font.Color = RGB(0, 0, 0)
@@ -657,11 +657,11 @@ Private Sub EcrireTableauSequencesPossession( _
         End With
 
         ' Bordure ext_rieure _paisse
-        With .Range("B92:D97")
+        With .Range("B94:D99")
 
             .BorderAround _
                 LineStyle:=xlContinuous, _
-                Weight:=xlThick
+                Weight:=xlMedium
 
         End With
 
@@ -691,8 +691,8 @@ Public Sub ActualiserGraphiqueSequencesPossession()
 
         Set Graphique = _
             wsStats.ChartObjects.Add( _
-                Left:=wsStats.Range("B110").Left, _
-                Top:=wsStats.Range("B110").Top, _
+                Left:=wsStats.Range("B112").Left, _
+                Top:=wsStats.Range("B112").Top, _
                 Width:=520, _
                 Height:=300 _
             )
@@ -707,7 +707,7 @@ Public Sub ActualiserGraphiqueSequencesPossession()
         .ChartType = xlColumnClustered
 
         .SetSourceData _
-            Source:=wsStats.Range("B92:D97")
+            Source:=wsStats.Range("B94:D99")
 
         .HasTitle = True
 

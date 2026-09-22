@@ -414,15 +414,19 @@ Public Sub CreerFichierMatch()
         Procedure:=NomProcedureInitialisation, _
         Schedule:=True
 
-    If BoutonIntrouvable Then
-
+    If NumeroErreur = 1004 Then
+    
         MsgBox _
-            "Le fichier du match a ete cree, mais la forme " & _
-            "BTN_CREER_FICHIER_MATCH est introuvable.", _
+            "Le fichier du match n'a pas pu etre cree." & _
+            vbCrLf & vbCrLf & _
+            "Erreur " & NumeroErreur & " : " & DescriptionErreur & _
+            vbCrLf & vbCrLf & _
+            "Chemin vise :" & vbCrLf & CheminChoisi, _
             vbExclamation, _
-            "Bouton introuvable"
-
+            "Creation du fichier de match"
+    
     Else
+
 
         MsgBox _
             "Le fichier du match a ete cree :" & _
