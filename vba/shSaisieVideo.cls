@@ -1108,7 +1108,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 InitialiserActionEnAttente _
                     ActionTexte, _
                     TempsVideo, _
-                    False, _
+                    True, _
                     "Nous", _
                     False
 
@@ -1120,6 +1120,8 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                     "", _
                     ActionTexte, _
                     TempsVideo
+                    
+                ToggleCurrentTeam
 
                 If ActionDeclencheArretAutomatique(ActionTexte) Then
 
@@ -1150,12 +1152,61 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             Range("BTN_PTS_TRANSFO") _
         ) Is Nothing Then
 
+            ' L'essai a deja fait basculer la possession :
+            ' celui qui transforme est donc l'equipe qui
+            ' vient de perdre le ballon.
+            If CurrentTeam = "Adv" Then
+
+                InitialiserActionEnAttente _
+                    ActionTexte, _
+                    TempsVideo, _
+                    True, _
+                    "Nous", _
+                    False
+
+            Else
+
+                FermerActionEnAttente
+
+                SetCurrentTeam "Adv"
+
+                AjouterAction _
+                    "", _
+                    ActionTexte, _
+                    TempsVideo
+
+                ToggleCurrentTeam
+
+                ReleaseButton
+
+            End If
+
+            Exit Sub
+
+        End If
+
+        ' =====================================================
+        ' DROP
+        '
+        ' Possession Nous : attend le buteur.
+        ' Si une autre action est cliquee avant,
+        ' "?" est ajoute automatiquement.
+        ' Possession Adv : saisie immediate sans joueur.
+        ' La possession bascule : le renvoi revient a
+        ' l'equipe qui encaisse.
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_PTS_DROP") _
+        ) Is Nothing Then
+
             If CurrentTeam = "Nous" Then
 
                 InitialiserActionEnAttente _
                     ActionTexte, _
                     TempsVideo, _
-                    False, _
+                    True, _
                     "Nous", _
                     False
 
@@ -1167,6 +1218,15 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                     "", _
                     ActionTexte, _
                     TempsVideo
+
+                ToggleCurrentTeam
+
+                If ActionDeclencheArretAutomatique(ActionTexte) Then
+
+                    AjouterArretJeuAutomatique _
+                        TempsVideo
+
+                End If
 
                 ReleaseButton
 
@@ -1188,7 +1248,11 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 "", _
                 ActionTexte, _
                 TempsVideo
-        
+            
+            If EstActionSuivieDunRenvoi(ActionTexte) Then
+                ToggleCurrentTeam
+            End If
+            
             If ActionDeclencheArretAutomatique( _
                 ActionTexte _
             ) Then
@@ -1212,7 +1276,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             InitialiserActionEnAttente _
                 ActionTexte, _
                 TempsVideo, _
-                False, _
+                EstActionSuivieDunRenvoi(ActionTexte), _
                 "", _
                 True
 
@@ -1221,6 +1285,11 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             FermerActionEnAttente
 
             AjouterAction "", ActionTexte, TempsVideo
+            
+            If EstActionSuivieDunRenvoi(ActionTexte) Then
+                ToggleCurrentTeam
+            End If
+            
             ReleaseButton
 
         End If

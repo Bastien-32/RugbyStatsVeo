@@ -559,6 +559,39 @@ Public Function EstAttitudeAuContact( _
 
 End Function
 
+Public Function EstActionSuivieDunRenvoi( _
+    ByVal ActionTexte As String _
+) As Boolean
+
+    Dim Actions As Variant
+    Dim Element As Variant
+
+    ' La transformation n'y figure pas : la possession a
+    ' deja bascule au moment de l'essai.
+    Actions = Array( _
+        "ACT_PTS_ESSAI", _
+        "ACT_PTS_ESSAI_PEN", _
+        "ACT_PTS_PENALITE", _
+        "ACT_PTS_DROP" _
+    )
+
+    For Each Element In Actions
+
+        If StrComp( _
+            ActionTexte, _
+            CStr(Range(CStr(Element)).Value), _
+            vbTextCompare _
+        ) = 0 Then
+
+            EstActionSuivieDunRenvoi = True
+            Exit Function
+
+        End If
+
+    Next Element
+
+End Function
+
 Public Function IsPenaltyReasonButton( _
     ByVal Target As Range) As Boolean
 
