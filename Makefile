@@ -7,10 +7,17 @@ PYTHON = python3
 # oletools n'est installe que dans l'environnement du projet.
 PYTHON_VENV = .venv/bin/python
 
-# Ce qui passe de club a main : ni Matchs, ni .gitignore.
-ELEMENTS_REPORT = "Createur de match.xlsm" vba vba-recap outils \
+# Ce qui passe de club a main : ni Matchs, ni .gitignore, ni le
+# classeur lui-meme. Celui de club porte l'effectif et les equipes
+# du club : il ne doit jamais atterrir sur main.
+ELEMENTS_REPORT = vba vba-recap outils \
 	VeoVideoControl INSTALLATION.md INSTALLATION.txt \
 	"logiciels à installer" Makefile
+
+# Copie videe par la macro ReinitialiserPourDistribution. Elle seule
+# peut devenir le "Createur de match.xlsm" de main, et seulement si
+# le controle la declare vierge. Absente, main garde son classeur.
+VIERGE = dist/Createur de match - vierge.xlsm
 
 MESSAGE = chore: report des évolutions depuis club
 
@@ -57,8 +64,19 @@ report: ## reporte les evolutions de club vers main
 		echo "Des modifications ne sont pas validees : committer d'abord."; \
 		exit 1; \
 	fi; \
+	if [ -f "$(VIERGE)" ]; then \
+		$(PYTHON) outils/preparer_distribution.py --controler \
+			--classeur "$(VIERGE)"; \
+	fi; \
 	git checkout main; \
 	git checkout club -- $(ELEMENTS_REPORT); \
+	if [ -f "$(VIERGE)" ]; then \
+		cp "$(VIERGE)" "$(CLASSEUR)"; \
+		git add "$(CLASSEUR)"; \
+	else \
+		echo "Pas de classeur vierge dans dist/ :"; \
+		echo "  main conserve le classeur qu'il a deja."; \
+	fi; \
 	if git diff --cached --quiet; then \
 		echo "main est deja a jour."; \
 	else \
