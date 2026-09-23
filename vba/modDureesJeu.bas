@@ -521,6 +521,17 @@ Private Sub EcrireTableauDureesJeu( _
                 CompteursMT1(i) + CompteursMT2(i)
 
         Next i
+        
+        With .Range( _
+            COLONNE_LIBELLES & LigneEntete & _
+            ":" & COLONNE_TOTAL & LigneEntete + NB_TRANCHES _
+        )
+
+            .BorderAround _
+                LineStyle:=xlContinuous, _
+                Weight:=xlMedium
+
+        End With
 
     End With
 

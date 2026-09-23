@@ -1,0 +1,16 @@
+# Dependances du moteur pour la construction Windows.
+#
+# requirements.txt est un releve complet de l'environnement
+# macOS : il contient macholib, inutile ici, et toutes les
+# dependances indirectes. Cette liste ne garde que ce que
+# main.py importe reellement, plus PyInstaller. pip se
+# charge du reste.
+#
+# Les versions sont celles du moteur macOS en service, pour
+# que les deux plateformes tournent sur le meme code.
+
+fastapi==0.139.2
+uvicorn==0.51.0
+pydantic==2.13.4
+
+pyinstaller==6.21.0
