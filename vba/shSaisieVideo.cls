@@ -21,9 +21,11 @@ End Sub
 
 Private Sub Worksheet_Deactivate()
 
+    ' Pas de reinitialisation ici : la possession et la
+    ' mi-temps doivent survivre au passage sur la popup.
+    
     DesactiverRaccourcisVideo
     ArreterAffichageChronoVideo
-    ReinitialiserSelectionSaisieVideo
 
 End Sub
 
