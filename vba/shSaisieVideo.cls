@@ -354,7 +354,20 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         End If
     
-        If JeuActuellementArrete Then
+        If CurrentTeam = "" Then
+
+            MsgBox _
+                "S" & ChrW(233) & _
+                "lectionne d'abord la possession.", _
+                vbExclamation, _
+                "Possession manquante"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+        If JeuNonRepris Then
     
             If Not EstActionAutoriseePendantArret(Target) Then
     
@@ -364,9 +377,9 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 ) Is Nothing Then
     
                     MsgBox _
-                        "Le jeu est actuellement arr" & _
-                        ChrW(234) & _
-                        "t" & ChrW(233) & "." & _
+                        "Le jeu n'est pas ouvert : aucune " & _
+                        "reprise ne pr" & ChrW(233) & "c" & _
+                        ChrW(232) & "de." & _
                         vbCrLf & vbCrLf & _
                         "La prochaine action doit " & _
                         ChrW(234) & _
@@ -579,251 +592,89 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ' =====================================================
         ' TOUCHES
         '
-        ' Le resultat d_pend de l'equipe qui effectue la touche,
-        ' donc de la possession active.
+        ' Le resultat depend de l'equipe qui effectue la
+        ' touche, donc de la possession active.
+        '
+        ' La popup recueille le sauteur et le detail, puis
+        ' ecrit l'action dans le journal et la ligne dans
+        ' "Touches Melees". Le controle de possession et les
+        ' regles de bascule sont dans
+        ' modTouchesMeleesSaisie.OuvrirTouche :
+        '
+        '   G  : le ballon revient a Nous, quel que soit le
+        '        lanceur, G voulant dire "pour nous" ;
+        '   P  : il reste a Adv ;
+        '   ND : la touche est rejouee par l'autre equipe.
         ' =====================================================
-        
+
         If Not Intersect( _
             Target, _
             Range("BTN_TO_G") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui effectue la touche.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            If CurrentTeam = "Nous" Then
-        
-                ' Touche a nous conservee.
-                '
-                ' Attend le joueur.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession reste a Nous.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    False, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                ' Touche a eux volee.
-                '
-                ' Attend le joueur qui vole le ballon.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession passe ensuite a Nous.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Adv", _
-                    False
-        
-            End If
-        
+
             ReleaseButton
+            OuvrirTouche ActionTexte, TempsVideo, "G"
             Exit Sub
-        
+
         End If
-        
-        
+
+
         If Not Intersect( _
             Target, _
             Range("BTN_TO_P") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui effectue la touche.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            If CurrentTeam = "Nous" Then
-        
-                ' Touche a nous perdue.
-                '
-                ' Attend le joueur.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession passe ensuite a Adv.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                ' Touche a eux perdue.
-                '
-                ' Aucun joueur demande.
-                ' La ligne est creee immediatement.
-                ' La possession reste a adv.
-        
-                FermerActionEnAttente
-        
-                SetCurrentTeam "Adv"
-        
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-        
-                ReleaseButton
-        
-            End If
-        
+
+            ReleaseButton
+            OuvrirTouche ActionTexte, TempsVideo, "P"
             Exit Sub
-        
+
         End If
-        
-        
+
+
         If Not Intersect( _
             Target, _
             Range("BTN_TO_PAS_DROIT") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui effectue la touche.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            If CurrentTeam = "Nous" Then
-        
-                ' Touche a nous pas droite.
-                '
-                ' Attend le joueur.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession passe ensuite a Adv.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                ' Touche a eux pas droite.
-                '
-                ' Aucun joueur demande.
-                ' La ligne est creee immediatement.
-                ' La possession passe a Nous.
-        
-                FermerActionEnAttente
-        
-                SetCurrentTeam "Adv"
-        
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-        
-                SetCurrentTeam "Nous"
-        
-                ReleaseButton
-        
-            End If
-        
+
+            ReleaseButton
+            OuvrirTouche ActionTexte, TempsVideo, "ND"
             Exit Sub
-        
+
         End If
 
         ' =====================================================
         ' MELEES
+        '
+        ' L'action garde la possession en cours, puis celle-ci
+        ' est forcee : Nous si la melee est gagnee, Adv si
+        ' elle est perdue. Voir
+        ' modTouchesMeleesSaisie.OuvrirMelee.
+        '
+        ' Pas de "pas droit" ici : la palette n'a que les
+        ' deux issues.
         ' =====================================================
-        
+
         If Not Intersect( _
             Target, _
             Range("BTN_ME_G") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui introduit la melee.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            FermerActionEnAttente
-        
-            AjouterAction _
-                "", _
-                ActionTexte, _
-                TempsVideo
-                
-            SetCurrentTeam "Nous"
-        
+
             ReleaseButton
+            OuvrirMelee ActionTexte, TempsVideo, "G"
             Exit Sub
-        
+
         End If
-        
-        
+
+
         If Not Intersect( _
             Target, _
             Range("BTN_ME_P") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui introduit la melee.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            FermerActionEnAttente
-        
-            AjouterAction _
-                "", _
-                ActionTexte, _
-                TempsVideo
-        
-            SetCurrentTeam "Adv"
-        
+
             ReleaseButton
+            OuvrirMelee ActionTexte, TempsVideo, "P"
             Exit Sub
-        
+
         End If
 
         ' =====================================================

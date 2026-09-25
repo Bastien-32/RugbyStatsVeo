@@ -13,6 +13,12 @@ Public Sub InitialiserClasseurStatsRugby()
 
     FermetureEnCours = False
 
+    ' Avant toute connexion : remettre la palette a zero
+    ' ne doit pas dependre du demarrage du moteur video,
+    ' qui peut echouer et laisser les boutons dans l'etat
+    ' ou le classeur a ete enregistre.
+    ReinitialiserSelectionSaisieVideo
+    
     DemarrerVeoVideoControl
 
     ' Le premier heartbeat est envoye immediatement.
@@ -21,7 +27,6 @@ Public Sub InitialiserClasseurStatsRugby()
     InitialiserEtatConnexionVideo
     AttendreUneSeconde
     ConnecterVideo
-    ReinitialiserSelectionSaisieVideo
 
     If ActiveSheet Is shSaisieVideo Then
 
