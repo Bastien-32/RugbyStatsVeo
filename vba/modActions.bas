@@ -972,7 +972,7 @@ Public Function EstBoutonRepriseJeu( _
 
 End Function
 
-Private Function EstTexteRepriseOuArret( _
+Public Function EstTexteRepriseOuArret( _
     ByVal ActionTexte As String _
 ) As Boolean
 

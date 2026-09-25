@@ -28,7 +28,7 @@ Private Const TAB_MELEES As String = "DetailMelees"
 
 ' Colonne ou commence la reserve de listes, masquee.
 Private Const COL_LISTES As Long = 23
-Private Const NB_LISTES As Long = 8
+Private Const NB_LISTES As Long = 10
 
 ' Couleurs des mises en forme conditionnelles. Const
 ' n'accepte pas RGB(), d'ou les valeurs calculees :
@@ -36,6 +36,18 @@ Private Const NB_LISTES As Long = 8
 Private Const ROUGE As Long = 192          ' RGB(192, 0, 0)
 Private Const VERT As Long = 32768         ' RGB(0, 128, 0)
 Private Const BLEU As Long = 12611584      ' RGB(0, 112, 192)
+
+' Ancres des recapitulatifs : des plages nommees, qui
+' suivent les decalages quand les tableaux grandissent.
+Private Const ANCRE_TOUCHES As String = "TM_RECAP_TOUCHES"
+Private Const ANCRE_MELEES As String = "TM_RECAP_MELEES"
+
+' Chaque recapitulatif reprend la teinte du tableau qu'il
+' resume : bleu pour les touches, orange pour les melees.
+Private Const BLEU_ENTETE As Long = 12874308  ' RGB(68,114,196)
+Private Const BLEU_CLAIR As Long = 15983321   ' RGB(217,226,243)
+Private Const ORANGE_ENTETE As Long = 3243501 ' RGB(237,125,49)
+Private Const ORANGE_CLAIR As Long = 14083324 ' RGB(252,228,214)
 
 ' Etape en cours, citee par le message d'erreur.
 Private EtapeEnCours As String
@@ -221,6 +233,14 @@ Private Sub EcrireListes(ByVal ws As Worksheet)
     EcrireUneListe ws, 7, "LST_TM_ZONE_LARGEUR", _
         Array("Gauche", "Milieu", "Droit")
 
+    ' Les popups parlent en toutes lettres, les tableaux
+    ' en abrege : deux listes, une conversion a l'ecriture.
+    EcrireUneListe ws, 8, "LST_TM_UTILISATION", _
+        Array("Avants", "3/4", "Pied")
+
+    EcrireUneListe ws, 9, "LST_TM_BALLON_LONG", _
+        Array("Chaud", "Froid")
+
     ws.Range( _
         ws.Columns(COL_LISTES), _
         ws.Columns(COL_LISTES + NB_LISTES - 1)).Hidden = True
@@ -290,7 +310,8 @@ Private Sub SupprimerNomsListes()
         "LST_TM_LANCE_POUR", "LST_TM_ISSUE_TOUCHE", _
         "LST_TM_ISSUE_MELEE", "LST_TM_ZONE_SAUT", _
         "LST_TM_BALLON", "LST_TM_ZONE_LONGUEUR", _
-        "LST_TM_ALIGNEMENT", "LST_TM_ZONE_LARGEUR")
+        "LST_TM_ALIGNEMENT", "LST_TM_ZONE_LARGEUR", _
+        "LST_TM_UTILISATION", "LST_TM_BALLON_LONG")
 
     For i = LBound(Noms) To UBound(Noms)
 
@@ -357,7 +378,8 @@ Private Sub ConstruireTableauMelees(ByVal ws As Worksheet)
     ws.Range("L1").Value = "MELEES"
 
     ws.Range("L2:U2").Value = Array( _
-        "Temps video", "Mi-temps", "Lance pour", "Issue", _
+        "Temps video", "Mi-temps", "Introduction pour", _
+        "Issue", _
         "Zone longueur", "Zone largeur", _
         "Jeu avant", "Jeu 3/4", "Jeu pied", "Observations")
 
@@ -369,12 +391,12 @@ Private Sub ConstruireTableauMelees(ByVal ws As Worksheet)
     lo.Name = TAB_MELEES
     lo.TableStyle = "TableStyleMedium3"
 
-    PoserValidation ws, lo, "Lance pour", 0
+    PoserValidation ws, lo, "Introduction pour", 0
     PoserValidation ws, lo, "Issue", 2
     PoserValidation ws, lo, "Zone longueur", 5
     PoserValidation ws, lo, "Zone largeur", 7
 
-    PoserMFCIssue lo, "Lance pour", "Issue"
+    PoserMFCIssue lo, "Introduction pour", "Issue"
 
     ' Les trois colonnes de jeu recevront leurs puces a
     ' l'etape suivante : un clic y ecrira la coche, et
@@ -576,6 +598,269 @@ Private Sub MettreEnFormeFeuille(ByVal ws As Worksheet)
     ws.Range("A3").Select
     ActiveWindow.FreezePanes = False
     ActiveWindow.FreezePanes = True
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Recapitulatifs
+'
+' Deux lignes sous chaque tableau, du point de vue du
+' lanceur : "pour l'adversaire, perdue" est donc une
+' touche que nous avons prise.
+'
+' Les formules sont en references structurees, donc elles
+' suivent le tableau quand il grandit. Et Excel decale ce
+' qui se trouve sous un tableau, dans ses colonnes
+' seulement : les deux blocs bougent independamment.
+'
+' L'ancre est une plage nommee, qui suit elle aussi les
+' decalages : c'est par elle qu'on retrouve le bloc pour
+' le reconstruire.
+' ---------------------------------------------------------
+
+Public Sub ConstruireRecapitulatifs()
+
+    Dim ws As Worksheet
+
+    On Error GoTo GestionErreur
+
+    Set ws = ThisWorkbook.Sheets(FEUILLE_TM)
+
+    EcrireRecap ws, ANCRE_TOUCHES, TAB_TOUCHES, _
+        "Lance pour", "Touches", True, _
+        BLEU_ENTETE, BLEU_CLAIR
+
+    EcrireRecap ws, ANCRE_MELEES, TAB_MELEES, _
+        "Introduction pour", "Melees", False, _
+        ORANGE_ENTETE, ORANGE_CLAIR
+
+    Exit Sub
+
+GestionErreur:
+
+    MsgBox _
+        "Le recapitulatif n'a pas pu etre construit." & _
+        vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
+Private Sub EcrireRecap( _
+    ByVal ws As Worksheet, _
+    ByVal NomAncre As String, _
+    ByVal NomTableau As String, _
+    ByVal ColonneEquipe As String, _
+    ByVal Titre As String, _
+    ByVal AvecPasDroites As Boolean, _
+    ByVal CouleurEntete As Long, _
+    ByVal CouleurClaire As Long)
+
+    Dim lo As ListObject
+    Dim Ancre As Range
+    Dim NbColonnes As Long
+
+    Set lo = ws.ListObjects(NomTableau)
+
+    NbColonnes = IIf(AvecPasDroites, 4, 3)
+
+    Set Ancre = AncreRecap(ws, NomAncre, lo)
+
+    Ancre.Resize(3, NbColonnes).Clear
+
+    ' En-tete
+    Ancre.Value = Titre
+    Ancre.Offset(0, 1).Value = "Gagnees"
+    Ancre.Offset(0, 2).Value = "Perdues"
+
+    If AvecPasDroites Then
+        Ancre.Offset(0, 3).Value = "Pas droites"
+    End If
+
+    ' Notre lancer : G nous revient, P nous echappe.
+    Ancre.Offset(1, 0).Value = "Pour nous"
+    Ancre.Offset(1, 1).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "N", "G")
+    Ancre.Offset(1, 2).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "N", "P")
+
+    If AvecPasDroites Then
+        Ancre.Offset(1, 3).Formula = _
+            Comptage(NomTableau, ColonneEquipe, "N", "ND")
+    End If
+
+    ' Leur lancer : ce qu'ils gagnent est ce que nous
+    ' n'avons pas pris, d'ou l'inversion.
+    Ancre.Offset(2, 0).Value = "Pour l'adversaire"
+    Ancre.Offset(2, 1).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "E", "P")
+    Ancre.Offset(2, 2).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "E", "G")
+
+    If AvecPasDroites Then
+        Ancre.Offset(2, 3).Formula = _
+            Comptage(NomTableau, ColonneEquipe, "E", "ND")
+    End If
+
+    MettreEnFormeRecap Ancre, NbColonnes, _
+        CouleurEntete, CouleurClaire
+
+End Sub
+
+
+Private Function Comptage( _
+    ByVal NomTableau As String, _
+    ByVal ColonneEquipe As String, _
+    ByVal Equipe As String, _
+    ByVal Issue As String) As String
+
+    Comptage = "=COUNTIFS(" & _
+        NomTableau & "[" & ColonneEquipe & "]," & _
+        """" & Equipe & """," & _
+        NomTableau & "[Issue]," & _
+        """" & Issue & """)"
+
+End Function
+
+
+Private Function AncreRecap( _
+    ByVal ws As Worksheet, _
+    ByVal NomAncre As String, _
+    ByVal lo As ListObject) As Range
+
+    Dim Ligne As Long
+
+    On Error Resume Next
+    Set AncreRecap = ThisWorkbook.Names(NomAncre) _
+        .RefersToRange
+    On Error GoTo 0
+
+    If Not AncreRecap Is Nothing Then Exit Function
+
+    ' Deux lignes de respiration sous le tableau.
+    Ligne = lo.Range.Row + lo.Range.Rows.Count + 1
+
+    Set AncreRecap = ws.Cells(Ligne, lo.Range.Column)
+
+    ThisWorkbook.Names.Add _
+        Name:=NomAncre, _
+        RefersTo:=AncreRecap
+
+End Function
+
+
+Private Sub MettreEnFormeRecap( _
+    ByVal Ancre As Range, _
+    ByVal NbColonnes As Long, _
+    ByVal CouleurEntete As Long, _
+    ByVal CouleurClaire As Long)
+
+    With Ancre.Resize(1, NbColonnes)
+        .Interior.Color = CouleurEntete
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+    End With
+
+    Ancre.HorizontalAlignment = xlLeft
+
+    With Ancre.Offset(1, 0).Resize(1, NbColonnes)
+        .Interior.Color = CouleurClaire
+    End With
+
+    With Ancre.Resize(3, NbColonnes)
+        .Borders.LineStyle = xlContinuous
+        .Borders.Color = RGB(0, 0, 0)
+    End With
+
+    With Ancre.Offset(1, 1).Resize(2, NbColonnes - 1)
+        .HorizontalAlignment = xlCenter
+    End With
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Puces du tableau des melees
+'
+' Appele par Worksheet_BeforeDoubleClick de la feuille :
+' un double-clic dans Jeu avant, Jeu 3/4 ou Jeu pied pose
+' la coche, un second la retire.
+'
+' Le double-clic plutot que le clic simple : parcourir le
+' tableau ne doit jamais effacer une saisie par megarde.
+'
+' Les trois colonnes s'excluent : poser une coche efface
+' les deux autres, qu'elles viennent de la popup ou d'un
+' double-clic precedent.
+' ---------------------------------------------------------
+
+Public Sub BasculerPuceMelee(ByVal Target As Range)
+
+    Dim lo As ListObject
+    Dim Colonnes As Variant
+    Dim Ligne As Range
+    Dim Cellule As Range
+    Dim i As Long
+    Dim Index As Long
+    Dim EtaitCochee As Boolean
+
+    If Target.Cells.Count > 1 Then Exit Sub
+
+    On Error GoTo Sortie
+
+    Set lo = ThisWorkbook.Sheets(FEUILLE_TM) _
+        .ListObjects(TAB_MELEES)
+
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    If Intersect(Target, lo.DataBodyRange) Is Nothing Then
+        Exit Sub
+    End If
+
+    Colonnes = Array("Jeu avant", "Jeu 3/4", "Jeu pied")
+
+    ' Le clic doit tomber dans l'une des trois colonnes.
+    Index = -1
+
+    For i = 0 To 2
+
+        If Target.Column = lo.ListColumns( _
+            CStr(Colonnes(i))).Range.Column Then
+
+            Index = i
+            Exit For
+
+        End If
+
+    Next i
+
+    If Index < 0 Then Exit Sub
+
+    Set Ligne = Intersect( _
+        Target.EntireRow, lo.DataBodyRange)
+
+    EtaitCochee = (Trim(CStr(Target.Value)) <> "")
+
+    Application.EnableEvents = False
+
+    For i = 0 To 2
+
+        Set Cellule = Ligne.Cells( _
+            1, lo.ListColumns(CStr(Colonnes(i))).Index)
+
+        Cellule.ClearContents
+
+    Next i
+
+    If Not EtaitCochee Then Target.Value = CocheTM
+
+Sortie:
+
+    Application.EnableEvents = True
 
 End Sub
 
