@@ -51,6 +51,10 @@ Private Const NB_LIGNES_SAISIE As Long = 5
 ' qui termine la rencontre sur le terrain.
 Private Const DUREE_MATCH As Long = 80
 
+' Minute la plus tardive acceptee : au-dela des 80, pour
+' couvrir les arrets de jeu et une eventuelle prolongation.
+Private Const MINUTE_MAX As Long = 110
+
 ' Derniere colonne du tableau COMPO : son format sert de
 ' modele aux colonnes de mouvement.
 Private Const COL_MODELE As Long = 8
@@ -145,7 +149,7 @@ Public Sub ConstruirePopupRemplacement()
         .HorizontalAlignment = xlCenter
     End With
 
-    ws.Range("B5").Value = "Minute de jeu"
+    ws.Range("B5").Value = "Minute de remplacement"
     ws.Range("B5").Font.Bold = True
 
     With ws.Range("D5")
@@ -321,9 +325,11 @@ Public Function PostesSurLeTerrain( _
 
                     On Error Resume Next
 
-                    If Marque = "S" Then
+                    ' La marque porte son rang : seule la
+                    ' premiere lettre nous interesse ici.
+                    If Left(Marque, 1) = "S" Then
                         Presents.Remove Poste
-                    ElseIf Marque = "E" Then
+                    ElseIf Left(Marque, 1) = "E" Then
                         Presents.Add Poste, Poste
                     End If
 
@@ -340,6 +346,90 @@ Public Function PostesSurLeTerrain( _
     Loop
 
     Set PostesSurLeTerrain = Presents
+
+End Function
+
+
+' Poste occupant un emplacement du terrain a un instant
+' donne. L'emplacement porte le numero du titulaire ; le
+' remplacant qui entre en prend la place, et ainsi de
+' suite si lui-meme est remplace.
+Public Function OccupantEmplacement( _
+    ByVal Emplacement As Long, _
+    ByVal TempsVideo As Double) As String
+
+    Dim ws As Worksheet
+    Dim Colonnes As Variant
+    Dim i As Long
+    Dim Colonne As Long
+    Dim Ligne As Long
+    Dim Courant As String
+    Dim Marque As String
+    Dim Rang As String
+
+    Set ws = ThisWorkbook.Sheets("Compo")
+
+    Courant = CStr(Emplacement)
+
+    Colonnes = ColonnesParMinute(ws)
+
+    For i = 0 To UBound(Colonnes)
+
+        If Colonnes(i) = "" Then Exit For
+
+        Colonne = CLng(Split(CStr(Colonnes(i)), ":")(1))
+
+        If TempsMouvement(ws, Colonne) <= TempsVideo Then
+
+            ' On cherche le couple dont le sortant occupe
+            ' l'emplacement suivi, puis on prend son
+            ' entrant de meme rang.
+            Rang = ""
+
+            For Ligne = PREMIER_POSTE To DERNIER_POSTE
+
+                Marque = UCase(Trim(CStr( _
+                    ws.Cells(Ligne, Colonne).Value)))
+
+                If Left(Marque, 1) = "S" Then
+
+                    If Trim(CStr(ws.Cells(Ligne, _
+                        COL_POSTE).Value)) = Courant Then
+
+                        Rang = Mid(Marque, 2)
+                        Exit For
+
+                    End If
+
+                End If
+
+            Next Ligne
+
+            If Rang <> "" Then
+
+                For Ligne = PREMIER_POSTE To DERNIER_POSTE
+
+                    Marque = UCase(Trim(CStr( _
+                        ws.Cells(Ligne, Colonne).Value)))
+
+                    If Marque = "E" & Rang Then
+
+                        Courant = Trim(CStr(ws.Cells( _
+                            Ligne, COL_POSTE).Value))
+
+                        Exit For
+
+                    End If
+
+                Next Ligne
+
+            End If
+
+        End If
+
+    Next i
+
+    OccupantEmplacement = Courant
 
 End Function
 
@@ -401,7 +491,7 @@ Public Sub OuvrirPopupRemplacement(ByVal TempsVideo As Double)
     RempOuverte = True
 
     FermerActionEnAttente
-    MettreVideoEnPause
+    SuspendreVideoPourPopup TempsVideo
 
     Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_REMP)
 
@@ -442,34 +532,6 @@ Sortie:
 End Sub
 
 
-' Le moteur ne dit pas s'il lit : on regarde si le temps
-' avance entre deux releves.
-Private Sub MettreVideoEnPause()
-
-    Dim Apres As Double
-    Dim Fin As Single
-
-    On Error Resume Next
-
-    If RempTempsVideo <= 0 Then Exit Sub
-
-    Fin = Timer + 0.3
-
-    Do While Timer < Fin
-        DoEvents
-    Loop
-
-    Apres = GetTimeVideo()
-
-    If Apres < 0 Then Exit Sub
-
-    If Abs(Apres - RempTempsVideo) > 0.05 Then
-        PlayPauseChronoVideo
-    End If
-
-    On Error GoTo 0
-
-End Sub
 
 
 ' Les deux listes sont refaites a chaque ouverture : elles
@@ -578,23 +640,52 @@ Public Sub ValiderPopupRemplacement()
     Dim Sortant As String
     Dim Entrant As String
     Dim Ecrits As Long
+    Dim Sortants() As String
+    Dim Entrants() As String
 
     If Not RempOuverte Then Exit Sub
 
     Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_REMP)
 
-    Minute = ws.Range("REMP_MINUTE").Value
+    ' Une cellule vide rend Empty, et IsNumeric(Empty)
+    ' vaut True : sans ce passage par le texte, une minute
+    ' oubliee s'ecrirait en zero.
+    Minute = Trim(CStr(ws.Range("REMP_MINUTE").Value))
 
-    If Not IsNumeric(Minute) Then
+    If Minute = "" Or Not IsNumeric(Minute) Then
 
         MsgBox _
-            "Renseigne la minute de jeu avant de valider.", _
+            "Renseigne la minute de remplacement avant " & _
+            "de valider.", _
             vbExclamation, _
             "Minute manquante"
 
+        ws.Range("REMP_MINUTE").Select
         Exit Sub
 
     End If
+
+    If CDbl(Minute) < 0 Or CDbl(Minute) > MINUTE_MAX Then
+
+        MsgBox _
+            "La minute doit etre comprise entre 0 et " & _
+            MINUTE_MAX & "." & vbCrLf & vbCrLf & _
+            "Valeur lue : " & Minute, _
+            vbExclamation, _
+            "Minute hors limites"
+
+        ws.Range("REMP_MINUTE").Select
+        Exit Sub
+
+    End If
+
+    ' Une ligne a moitie remplie est une erreur de saisie,
+    ' pas une ligne vide : il vaut mieux le dire que
+    ' l'ignorer en silence.
+    If Not LignesCompletes(ws) Then Exit Sub
+
+    ReDim Sortants(1 To NB_LIGNES_SAISIE)
+    ReDim Entrants(1 To NB_LIGNES_SAISIE)
 
     For i = 1 To NB_LIGNES_SAISIE
 
@@ -606,12 +697,17 @@ Public Sub ValiderPopupRemplacement()
 
         If Sortant <> "" And Entrant <> "" Then
 
-            EcrireMouvement CLng(Minute), Sortant, Entrant
             Ecrits = Ecrits + 1
+            Sortants(Ecrits) = Sortant
+            Entrants(Ecrits) = Entrant
 
         End If
 
     Next i
+
+    If Ecrits > 0 Then
+        EcrireMouvements CLng(Minute), Sortants, Entrants, Ecrits
+    End If
 
     If Ecrits > 0 Then RecalculerTempsDeJeu
 
@@ -632,6 +728,48 @@ Public Sub ValiderPopupRemplacement()
 End Sub
 
 
+' Chaque ligne veut ses deux joueurs, ou aucun.
+Private Function LignesCompletes( _
+    ByVal ws As Worksheet) As Boolean
+
+    Dim i As Long
+    Dim Sortant As String
+    Dim Entrant As String
+
+    For i = 1 To NB_LIGNES_SAISIE
+
+        Sortant = Trim(CStr( _
+            ws.Range("REMP_SORTANTS").Cells(i, 1).Value))
+
+        Entrant = Trim(CStr( _
+            ws.Range("REMP_ENTRANTS").Cells(i, 1).Value))
+
+        If (Sortant = "") <> (Entrant = "") Then
+
+            MsgBox _
+                "La ligne " & i & " est incomplete." & _
+                vbCrLf & vbCrLf & _
+                "Un remplacement demande un sortant et " & _
+                "un entrant. Laisse la ligne entierement " & _
+                "vide si elle ne sert pas.", _
+                vbExclamation, _
+                "Remplacement incomplet"
+
+            ws.Range( _
+                IIf(Sortant = "", "REMP_SORTANTS", _
+                    "REMP_ENTRANTS")).Cells(i, 1).Select
+
+            Exit Function
+
+        End If
+
+    Next i
+
+    LignesCompletes = True
+
+End Function
+
+
 Public Sub AnnulerPopupRemplacement()
 
     If Not RempOuverte Then Exit Sub
@@ -641,19 +779,75 @@ Public Sub AnnulerPopupRemplacement()
 End Sub
 
 
-' Un mouvement, une colonne : la minute en tete, le temps
-' video en pied, "S" et "E" sur les lignes concernees.
-Private Sub EcrireMouvement( _
+' La colonne neuve imite le tableau voisin.
+'
+' Copier le format de la colonne modele ne suffit pas :
+' les bandes viennent du style du tableau, applique par
+' le ListObject et non porte par les cellules. On lit
+' donc la couleur reellement affichee, ligne par ligne.
+Private Sub HabillerColonne( _
+    ByVal ws As Worksheet, _
+    ByVal Colonne As Long)
+
+    Dim Ligne As Long
+    Dim Modele As Range
+    Dim Cible As Range
+
+    For Ligne = LIGNE_ENTETE To DERNIER_POSTE
+
+        Set Modele = ws.Cells(Ligne, COL_MODELE)
+        Set Cible = ws.Cells(Ligne, Colonne)
+
+        On Error Resume Next
+
+        Cible.Interior.Color = _
+            Modele.DisplayFormat.Interior.Color
+
+        Cible.Font.Color = _
+            Modele.DisplayFormat.Font.Color
+
+        Cible.Font.Bold = Modele.DisplayFormat.Font.Bold
+
+        On Error GoTo 0
+
+        With Cible.Borders
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+            .Color = RGB(150, 150, 150)
+        End With
+
+    Next Ligne
+
+End Sub
+
+
+' Tous les mouvements d'une meme validation tiennent dans
+' une seule colonne : ils ont lieu a la meme minute.
+'
+' Le tableau COMPO s'arrete a la colonne du temps de jeu.
+' Sans couper l'extension automatique, Excel l'etendrait
+' jusqu'ici et renommerait les minutes en doublon.
+Private Sub EcrireMouvements( _
     ByVal Minute As Long, _
-    ByVal Sortant As String, _
-    ByVal Entrant As String)
+    ByRef Sortants() As String, _
+    ByRef Entrants() As String, _
+    ByVal Nombre As Long)
 
     Dim ws As Worksheet
     Dim Colonne As Long
     Dim Ligne As Long
     Dim Poste As String
+    Dim i As Long
+    Dim EtatExtension As Boolean
 
     Set ws = ThisWorkbook.Sheets("Compo")
+
+    EtatExtension = _
+        Application.AutoCorrect.AutoExpandListRange
+
+    On Error GoTo Sortie
+
+    Application.AutoCorrect.AutoExpandListRange = False
 
     Colonne = PREMIERE_COL_MOUVEMENT
 
@@ -662,19 +856,7 @@ Private Sub EcrireMouvement( _
         Colonne = Colonne + 1
     Loop
 
-    ' La colonne neuve reprend le format du tableau :
-    ' sans cela elle garde le fond de la feuille et
-    ' tranche avec les bandes.
-    ws.Range( _
-        ws.Cells(LIGNE_ENTETE, COL_MODELE), _
-        ws.Cells(DERNIER_POSTE, COL_MODELE)).Copy
-
-    ws.Range( _
-        ws.Cells(LIGNE_ENTETE, Colonne), _
-        ws.Cells(DERNIER_POSTE, Colonne)) _
-        .PasteSpecial xlPasteFormats
-
-    Application.CutCopyMode = False
+    HabillerColonne ws, Colonne
 
     ws.Columns(Colonne).ColumnWidth = 6
 
@@ -691,11 +873,19 @@ Private Sub EcrireMouvement( _
         Poste = Trim(CStr( _
             ws.Cells(Ligne, COL_POSTE).Value))
 
-        If Poste = Sortant Then
-            ws.Cells(Ligne, Colonne).Value = "S"
-        ElseIf Poste = Entrant Then
-            ws.Cells(Ligne, Colonne).Value = "E"
-        End If
+        For i = 1 To Nombre
+
+            ' Le rang du couple accompagne la marque :
+            ' une colonne peut porter trois sorties et
+            ' trois entrees, et rien d'autre ne dirait
+            ' qui remplace qui.
+            If Poste = Sortants(i) Then
+                ws.Cells(Ligne, Colonne).Value = "S" & i
+            ElseIf Poste = Entrants(i) Then
+                ws.Cells(Ligne, Colonne).Value = "E" & i
+            End If
+
+        Next i
 
         ws.Cells(Ligne, Colonne).HorizontalAlignment = _
             xlCenter
@@ -703,6 +893,11 @@ Private Sub EcrireMouvement( _
     Next Ligne
 
     ws.Rows(LIGNE_TEMPS_VIDEO).Hidden = True
+
+Sortie:
+
+    Application.AutoCorrect.AutoExpandListRange = _
+        EtatExtension
 
 End Sub
 
@@ -772,12 +967,13 @@ Private Function TempsDuPoste( _
             Ligne, _
             CLng(Split(CStr(Colonnes(i)), ":")(1))).Value)))
 
-        If Marque = "S" And SurLeTerrain Then
+        If Left(Marque, 1) = "S" And SurLeTerrain Then
 
             Total = Total + (Minute - Entree)
             SurLeTerrain = False
 
-        ElseIf Marque = "E" And Not SurLeTerrain Then
+        ElseIf Left(Marque, 1) = "E" And _
+            Not SurLeTerrain Then
 
             Entree = Minute
             SurLeTerrain = True
@@ -860,6 +1056,8 @@ Private Sub FermerPopupRemplacement()
     Dim ws As Worksheet
 
     RempOuverte = False
+
+    ReprendreVideoApresPopup
 
     Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_REMP)
 

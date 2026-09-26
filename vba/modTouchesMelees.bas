@@ -235,8 +235,10 @@ Private Sub EcrireListes(ByVal ws As Worksheet)
 
     ' Les popups parlent en toutes lettres, les tableaux
     ' en abrege : deux listes, une conversion a l'ecriture.
+    ' "3/4" serait converti en date par Excel dans une
+    ' liste deroulante, et s'afficherait "03-avr".
     EcrireUneListe ws, 8, "LST_TM_UTILISATION", _
-        Array("Avants", "3/4", "Pied")
+        Array("Avants", "Trois-quart", "Pied")
 
     EcrireUneListe ws, 9, "LST_TM_BALLON_LONG", _
         Array("Chaud", "Froid")

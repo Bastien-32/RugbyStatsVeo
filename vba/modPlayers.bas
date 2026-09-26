@@ -122,6 +122,7 @@ Public Sub ActualiserJoueursJournal()
     Dim wsJournal As Worksheet
     Dim rngCompo As Range
     Dim rngListe As Range
+    Dim wsListe As Worksheet
     Dim loJournal As ListObject
     Dim joueurs() As String
     Dim i As Long
@@ -136,7 +137,12 @@ Public Sub ActualiserJoueursJournal()
     Set rngCompo = wsCompo.Range("COMPO")
     Set loJournal = wsJournal.ListObjects("JournalActions")
 
-    Set rngListe = wsCompo.Range("AA1:AA30")
+    ' La liste vit sur Parametres, pas sur Compo : les
+    ' colonnes de remplacement s'etendent vers la droite
+    ' depuis I et finiraient par l'atteindre.
+    Set wsListe = shParametres
+    Set rngListe = wsListe.Range("AA1:AA30")
+
     rngListe.ClearContents
 
     For i = 1 To rngCompo.Rows.Count
@@ -171,10 +177,11 @@ Public Sub ActualiserJoueursJournal()
     rngListe.Cells(ligneDest, 1).Value = "Collectif"
     rngListe.Cells(ligneDest + 1, 1).Value = "?"
 
-    wsCompo.Columns("AA").Hidden = True
+    wsListe.Columns("AA").Hidden = True
 
-    formuleListe = "='" & wsCompo.Name & "'!" & _
-        wsCompo.Range("AA1:AA" & ligneDest + 1).Address
+    formuleListe = "='" & wsListe.Name & "'!" & _
+        wsListe.Range("AA1:AA" & ligneDest + 1).Address
+
 
     With loJournal.ListColumns("Joueur").DataBodyRange.Validation
         .Delete
