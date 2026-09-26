@@ -50,7 +50,7 @@ End Sub
 Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     Dim ActionTexte As String
-    Dim joueur As String
+    Dim Joueur As String
     Dim NumeroJoueur As String
     Dim TempsVideo As Double
     Dim MotifPenalite As String
@@ -680,30 +680,27 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ' =====================================================
         ' PENALITE POUR NOUS
         '
-        ' Aucun joueur demande.
-        ' La possession passe a Nous.
+        ' La popup recueille le motif et le fautif.
+        ' L'action est enregistree sous notre possession.
         ' =====================================================
 
-         If Not Intersect( _
+        If Not Intersect( _
             Target, _
             Range("BTN_PEN_CONTRE_ADV") _
         ) Is Nothing Then
 
-            InitialiserPenalite _
-                ActionTexte, _
-                TempsVideo, _
-                "Nous", _
-                False
-
+            ReleaseButton
+            OuvrirPopupPenalite ActionTexte, TempsVideo, "Nous"
             Exit Sub
 
         End If
 
+
         ' =====================================================
         ' PENALITE POUR ADV
         '
-        ' Attend le joueur de notre equipe ayant commis la faute.
-        ' Si aucun joueur n'est saisi, "?" sera ajoute.
+        ' La popup recueille le motif et le joueur de notre
+        ' equipe ayant commis la faute. Sans choix, "?".
         ' =====================================================
 
         If Not Intersect( _
@@ -711,15 +708,12 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             Range("BTN_PEN_CONTRE_NOUS") _
         ) Is Nothing Then
 
-            InitialiserPenalite _
-                ActionTexte, _
-                TempsVideo, _
-                "Adv", _
-                True
-
+            ReleaseButton
+            OuvrirPopupPenalite ActionTexte, TempsVideo, "Adv"
             Exit Sub
 
         End If
+
 
         ' =====================================================
         ' GRATTAGE / CONTRE-RUCK SANS PENALITE
@@ -1178,7 +1172,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 Exit Sub
             End If
 
-            joueur = GetPlayerName(NumeroJoueur)
+            Joueur = GetPlayerName(NumeroJoueur)
 
             If PendingActionTimeAvailable Then
 
@@ -1216,7 +1210,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             GroupeFautif = ""
 
             If PendingGroupeFautifRequired Then
-                GroupeFautif = GetPlayerGroup(joueur)
+                GroupeFautif = GetPlayerGroup(Joueur)
             End If
 
             ActionJoueurFinalisee = PendingAction
@@ -1227,7 +1221,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 )
             
             AjouterAction _
-                joueur, _
+                Joueur, _
                 ActionJoueurFinalisee, _
                 TempsVideo, _
                 PendingMotifPenalite, _

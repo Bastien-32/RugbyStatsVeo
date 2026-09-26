@@ -192,11 +192,11 @@ Public Sub ActualiserPaletteJoueurs()
     Dim wsCompo As Worksheet
     Dim rngCompo As Range
     Dim i As Long
-    Dim poste As String
-    Dim joueur As String
+    Dim Poste As String
+    Dim Joueur As String
     Dim nomBouton As String
-    Dim mots() As String
-    Dim mot As Variant
+    Dim Mots() As String
+    Dim Mot As Variant
     Dim nomFamille As String
 
     Set wsSaisie = shSaisieVideo
@@ -205,27 +205,27 @@ Public Sub ActualiserPaletteJoueurs()
 
     For i = 1 To rngCompo.Rows.Count
 
-        poste = Trim(CStr(rngCompo.Cells(i, 1).Value))
-        joueur = Trim(CStr(rngCompo.Cells(i, 2).Value))
+        Poste = Trim(CStr(rngCompo.Cells(i, 1).Value))
+        Joueur = Trim(CStr(rngCompo.Cells(i, 2).Value))
 
-        If poste <> "" Then
+        If Poste <> "" Then
 
-            nomBouton = "BTN_JO_" & poste
+            nomBouton = "BTN_JO_" & Poste
 
             nomFamille = ""
 
-            If joueur <> "" Then
+            If Joueur <> "" Then
 
-                mots = Split(joueur, " ")
+                Mots = Split(Joueur, " ")
 
-                For Each mot In mots
+                For Each Mot In Mots
 
-                    If CStr(mot) = UCase(CStr(mot)) Then
+                    If CStr(Mot) = UCase(CStr(Mot)) Then
 
                         If nomFamille = "" Then
-                            nomFamille = CStr(mot)
+                            nomFamille = CStr(Mot)
                         Else
-                            nomFamille = nomFamille & " " & CStr(mot)
+                            nomFamille = nomFamille & " " & CStr(Mot)
                         End If
 
                     Else
@@ -234,16 +234,16 @@ Public Sub ActualiserPaletteJoueurs()
 
                     End If
 
-                Next mot
+                Next Mot
 
-                joueur = nomFamille
+                Joueur = nomFamille
 
-                wsSaisie.Range(nomBouton).Value = poste & vbLf & joueur
+                wsSaisie.Range(nomBouton).Value = Poste & vbLf & Joueur
 
             Else
 
-                joueur = ""
-                wsSaisie.Range(nomBouton).Value = poste
+                Joueur = ""
+                wsSaisie.Range(nomBouton).Value = Poste
 
             End If
 
@@ -253,12 +253,12 @@ Public Sub ActualiserPaletteJoueurs()
                 .HorizontalAlignment = xlCenter
                 .VerticalAlignment = xlCenter
 
-                .Characters(1, Len(poste)).Font.Size = 18
-                .Characters(1, Len(poste)).Font.Bold = True
+                .Characters(1, Len(Poste)).Font.Size = 18
+                .Characters(1, Len(Poste)).Font.Bold = True
 
-                If joueur <> "" Then
-                    .Characters(Len(poste) + 2, Len(joueur)).Font.Size = 9
-                    .Characters(Len(poste) + 2, Len(joueur)).Font.Bold = False
+                If Joueur <> "" Then
+                    .Characters(Len(Poste) + 2, Len(Joueur)).Font.Size = 9
+                    .Characters(Len(Poste) + 2, Len(Joueur)).Font.Bold = False
                 End If
 
             End With
