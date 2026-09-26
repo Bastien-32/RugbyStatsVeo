@@ -338,6 +338,25 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     End If
 
+    ' =====================================================
+    ' REMPLACEMENT
+    '
+    ' Ni action de jeu ni ligne de journal : traite avant
+    ' GetAction, qui ne le connait pas, et sans exiger de
+    ' possession ni de reprise.
+    ' =====================================================
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_REMPLACEMENT") _
+    ) Is Nothing Then
+
+        ReleaseButton
+        OuvrirPopupRemplacement GetTimeVideo()
+        Exit Sub
+
+    End If
+
     ActionTexte = GetAction(Target)
     
     If ActionTexte <> "" Then
