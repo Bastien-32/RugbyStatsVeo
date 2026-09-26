@@ -43,6 +43,11 @@ Private Const COL_CONTEXTE As Long = 3
 Private Const LARGEUR_JOUEUR As Long = 3
 
 Private Const PREMIERE_LIGNE As Long = 7
+
+' Bandeau de la composition : K4:U5, fusionne et mis en
+' forme dans la feuille. K4 en est l'ancre.
+Private Const LIGNE_TITRE_JOUEURS As Long = 4
+Private Const COL_TITRE_JOUEURS As Long = 11
 Private Const LIGNE_BOUTONS As Long = 29
 
 Private Const GRIS As Long = 15132390     ' RGB(230,230,230)
@@ -51,12 +56,22 @@ Private Const VERT As Long = 32768        ' RGB(0,128,0)
 Private Const ROUGE As Long = 192         ' RGB(192,0,0)
 Private Const SABLE As Long = 14083324    ' RGB(252,228,214)
 Private Const CIEL As Long = 15983321     ' RGB(217,226,243)
+Private Const MARINE As Long = 6567967    ' RGB(31,56,100)
 
 ' Contexte de la penalite en cours de saisie.
 Private PenaliteAction As String
 Private PenaliteTemps As Double
 Private PenaliteEquipe As String
 Private PenaliteOuverte As Boolean
+
+' Vrai quand le fautif est des notres : seule une penalite
+' contre nous designe un joueur.
+Private PenaliteAvecJoueur As Boolean
+
+' Poste occupant chaque emplacement du terrain au moment
+' de la penalite : l'emplacement 12 peut porter le 20 si
+' un remplacement a eu lieu.
+Private PostesAffiches(1 To 15) As String
 
 
 ' ---------------------------------------------------------
@@ -70,28 +85,30 @@ Private PenaliteOuverte As Boolean
 Private Function MotifsDisposes() As Variant
 
     MotifsDisposes = Array( _
-        "11:2:Maul", _
-        "11:5:Ruck", _
+        "9:2:En-avant volontaire", _
+        "9:5:Parle arbitre", _
+        "9:8:Brutalit" & ChrW(233), _
+        "11:5:Ruck - Soutient va au-del" & ChrW(224), _
         "11:8:Plaquage " & ChrW(224) & " 2", _
-        "13:2:Entrer sur le c" & ChrW(244) & "t" & _
-            ChrW(233) & " maul", _
-        "13:5:Talonnage " & ChrW(224) & " la main", _
+        "13:2:Maul - Entrer sur le c" & ChrW(244) & "t" & ChrW(233), _
+        "13:5:Ruck - Soutient couch" & ChrW(233) & " sur porteur", _
         "13:8:Plaquage haut", _
-        "15:2:Maul " & ChrW(233) & "croul" & ChrW(233), _
-        "15:5:Retard soutient", _
+        "15:2:Maul - Ecroulement", _
+        "15:5:Ruck - Retard soutient", _
         "15:8:Plaquage sans ballon", _
-        "17:2:Melee poussee avant introduction", _
-        "17:5:Soutient va au-del" & ChrW(224), _
+        "17:2:Melee - Poussee avant introduction", _
+        "17:5:Ruck - Garde le ballon au sol", _
         "17:8:Plaquage " & ChrW(224) & " retardement", _
-        "19:5:Soutient couch" & ChrW(233) & " sur porteur", _
-        "21:2:En-avant volontaire", _
-        "21:5:4 appuis", _
-        "23:2:Parle arbitre", _
-        "23:5:Plaqueur qui ne sort pas", _
+        "19:5:Ruck - Saisie relayeur", _
+        "19:8:Plaquage en l'air", _
+        "21:2:Touche - Saisie bras sauteur", _
+        "21:5:Ruck - Talonnage " & ChrW(224) & " la main", _
+        "23:2:Touche - Plaquage sauteur avant retomb" & ChrW(233) & "e", _
+        "23:5:Ruck - Plaqueur qui ne sort pas", _
         "23:8:Hors-jeu", _
-        "25:2:Brutalit" & ChrW(233), _
-        "25:5:Garde le ballon au sol", _
-        "25:8:Hors-jeu - d" & ChrW(233) & "part devant botteur")
+        "25:2:Touche - Pouss" & ChrW(233) & "e avant retomb" & ChrW(233) & "e sauteur", _
+        "25:5:Ruck - 4 appuis", _
+        "27:8:Autre")
 
 End Function
 
@@ -161,6 +178,7 @@ Public Sub ConstruirePopupPenalite()
 
     EcrireTitre ws
     EcrireContexte ws
+    EcrireBandeauJoueurs ws
     EcrireMotifs ws
     EcrireJoueurs ws
     EcrireBoutons ws
@@ -214,6 +232,32 @@ Private Sub EcrireTitre(ByVal ws As Worksheet)
         .Font.Size = 16
         .Font.Color = BLEU
     End With
+
+End Sub
+
+
+' Bandeau au-dessus de la composition. Son texte est pose
+' a l'ouverture, selon qu'une penalite designe ou non un
+' de nos joueurs ; sa mise en forme, elle, appartient a la
+' construction et doit survivre a une reconstruction.
+Private Sub EcrireBandeauJoueurs(ByVal ws As Worksheet)
+
+    With ws.Range( _
+        ws.Cells(LIGNE_TITRE_JOUEURS, COL_TITRE_JOUEURS), _
+        ws.Cells(LIGNE_TITRE_JOUEURS + 1, 21))
+
+        .Merge
+        .Interior.Color = MARINE
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .Font.Size = 12
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+
+    End With
+
+    ws.Cells(LIGNE_TITRE_JOUEURS, COL_TITRE_JOUEURS).Value = _
+        "JOUEUR FAUTIF"
 
 End Sub
 
@@ -313,6 +357,12 @@ Private Sub EcrireJoueurs(ByVal ws As Worksheet)
                 CLng(Champ(CStr(Entrees(i)), 1))), _
             Champ(CStr(Entrees(i)), 2)
 
+    Next i
+
+    ' Les sept rangs du terrain portent deux lignes de
+    ' texte : le numero puis le nom.
+    For i = PREMIERE_LIGNE To 19 Step 2
+        ws.Rows(i).RowHeight = 32
     Next i
 
     NommerPlage ws, _
@@ -472,6 +522,18 @@ Private Sub EcrireCaseJoueur( _
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
 
+        ' Une case eteinte a perdu son fond et ses
+        ' bordures : il faut les lui rendre.
+        .Interior.Color = CIEL
+
+        If .MergeCells Then
+            .MergeArea.Borders.LineStyle = xlContinuous
+            .MergeArea.Borders.Color = RGB(150, 150, 150)
+        Else
+            .Borders.LineStyle = xlContinuous
+            .Borders.Color = RGB(150, 150, 150)
+        End If
+
         If Nom = Poste Then
 
             ' Sans compo, ou pour Collectif et "?", il n'y
@@ -497,28 +559,121 @@ Private Sub EcrireCaseJoueur( _
 End Sub
 
 
-' Les libelles suivent la compo, qui change d'un match a
-' l'autre : ils sont refaits a chaque ouverture.
-Private Sub RafraichirLibelles(ByVal ws As Worksheet)
+' Seuls les joueurs presents a cet instant de la video
+' sont montres : les quinze emplacements du terrain
+' portent leur occupant du moment, les cases des
+' remplacants sont eteintes.
+'
+' Les lignes ne peuvent pas etre masquees : les motifs
+' occupent les memes. Les cases inutiles sont donc videes
+' et rendues invisibles.
+Private Sub RafraichirLibelles( _
+    ByVal ws As Worksheet, _
+    ByVal TempsVideo As Double, _
+    ByVal AvecJoueur As Boolean)
 
     Dim Entrees As Variant
     Dim i As Long
+    Dim Etiquette As String
+    Dim Emplacement As Long
+    Dim Cellule As Range
+
+    ' Les evenements sont rendus meme en cas d'erreur :
+    ' coupes, plus aucun clic ne passerait ensuite.
+    On Error GoTo Sortie
 
     Application.EnableEvents = False
+
+    ' Deux lignes de texte par case : sans cette hauteur,
+    ' le renvoi a la ligne masque le nom et seul le numero
+    ' reste visible.
+    For i = PREMIERE_LIGNE To 19 Step 2
+        ws.Rows(i).RowHeight = 32
+    Next i
+
+    ' Une penalite contre l'adversaire ne designe pas un
+    ' de nos joueurs : la composition disparait alors.
+    ws.Cells(LIGNE_TITRE_JOUEURS, COL_TITRE_JOUEURS) _
+        .Value = IIf(AvecJoueur, "JOUEUR FAUTIF", "")
 
     Entrees = JoueursDisposes
 
     For i = 0 To UBound(Entrees)
 
-        EcrireCaseJoueur _
-            ws.Cells( _
-                CLng(Champ(CStr(Entrees(i)), 0)), _
-                CLng(Champ(CStr(Entrees(i)), 1))), _
-            Champ(CStr(Entrees(i)), 2)
+        Etiquette = Champ(CStr(Entrees(i)), 2)
+
+        Set Cellule = ws.Cells( _
+            CLng(Champ(CStr(Entrees(i)), 0)), _
+            CLng(Champ(CStr(Entrees(i)), 1)))
+
+        If Not AvecJoueur Then
+
+            EteindreCase Cellule
+
+        ElseIf Not IsNumeric(Etiquette) Then
+
+            ' Collectif et l'inconnu restent toujours la.
+            EcrireCaseJoueur Cellule, Etiquette
+
+        Else
+
+            Emplacement = CLng(Etiquette)
+
+            If Emplacement <= 15 Then
+
+                PostesAffiches(Emplacement) = _
+                    OccupantEmplacement(Emplacement, TempsVideo)
+
+                EcrireCaseJoueur Cellule, _
+                    PostesAffiches(Emplacement)
+
+            Else
+
+                EteindreCase Cellule
+
+            End If
+
+        End If
 
     Next i
 
+Sortie:
+
     Application.EnableEvents = True
+
+    If Err.Number <> 0 Then
+
+        MsgBox _
+            "La composition n'a pas pu etre mise a jour." & _
+            vbCrLf & vbCrLf & _
+            "Erreur " & Err.Number & " : " & _
+            Err.Description & vbCrLf & vbCrLf & _
+            "Emplacement en cours : " & Etiquette, _
+            vbExclamation, _
+            "Penalites"
+
+    End If
+
+End Sub
+
+
+Private Sub EteindreCase(ByVal Cellule As Range)
+
+    Dim Zone As Range
+
+    ' Les bordures se posent sur la zone fusionnee entiere,
+    ' jamais sur son ancre seule : Excel refuse la seconde.
+    If Cellule.MergeCells Then
+        Set Zone = Cellule.MergeArea
+    Else
+        Set Zone = Cellule
+    End If
+
+    With Zone
+        .ClearContents
+        .Interior.Color = RGB(255, 255, 255)
+        .Borders.LineStyle = xlNone
+    End With
 
 End Sub
 
@@ -538,11 +693,13 @@ Public Sub OuvrirPopupPenalite( _
     PenaliteTemps = TempsVideo
     PenaliteEquipe = Equipe
     PenaliteOuverte = True
+    PenaliteAvecJoueur = (Equipe = "Adv")
 
     ' Une action restee en attente doit etre close avant
     ' que la penalite prenne la main, comme le faisait
     ' InitialiserPenalite.
     FermerActionEnAttente
+    SuspendreVideoPourPopup TempsVideo
 
     Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_PEN)
 
@@ -550,13 +707,16 @@ Public Sub OuvrirPopupPenalite( _
     ws.Activate
 
     EffacerSelections ws
-    RafraichirLibelles ws
+    RafraichirLibelles ws, TempsVideo, PenaliteAvecJoueur
 
     With ws.Range("PEN_CONTEXTE")
         .Cells(1, 1).Value = FormaterTemps(TempsVideo)
         .Cells(2, 1).Value = CurrentHalf
+        ' Equipe est la possession qui suit la penalite :
+        ' si le ballon nous revient, c'est l'adversaire
+        ' qui a commis la faute.
         .Cells(3, 1).Value = _
-            IIf(Equipe = "Nous", "Nous", "Adversaire")
+            IIf(Equipe = "Nous", "Adversaire", "Nous")
     End With
 
     ' La touche Entree vaut validation, comme le fait deja
@@ -579,15 +739,25 @@ Public Sub ValiderPopupPenalite()
 
     If Motif = "" Then Motif = "?"
 
-    ' GetPlayerName accepte un numero, "Collectif" ou "?"
-    ' et rend le nom porte par la compo.
-    If Joueur = "" Then
-        Joueur = "?"
-    Else
-        Joueur = GetPlayerName(Joueur)
-    End If
+    If Not PenaliteAvecJoueur Then
 
-    If Trim(Joueur) = "" Then Joueur = "?"
+        ' Penalite contre l'adversaire : le fautif est
+        ' chez eux, les deux colonnes restent vides.
+        Joueur = ""
+
+    ElseIf Joueur = "" Then
+
+        Joueur = "?"
+
+    Else
+
+        ' GetPlayerName accepte un numero, "Collectif" ou
+        ' "?" et rend le nom porte par la compo.
+        Joueur = GetPlayerName(Joueur)
+
+        If Trim(Joueur) = "" Then Joueur = "?"
+
+    End If
 
     SetCurrentTeam PenaliteEquipe
 
@@ -596,7 +766,9 @@ Public Sub ValiderPopupPenalite()
         PenaliteAction, _
         PenaliteTemps, _
         Motif, _
-        GetPlayerGroup(Joueur)
+        IIf(Joueur = "", "", GetPlayerGroup(Joueur))
+
+    ArreterLeJeu
 
     FermerPopupPenalite
 
@@ -612,13 +784,26 @@ Public Sub AnnulerPopupPenalite()
     SetCurrentTeam PenaliteEquipe
 
     AjouterAction _
-        "?", _
+        IIf(PenaliteAvecJoueur, "?", ""), _
         PenaliteAction, _
         PenaliteTemps, _
         "?", _
-        "?"
+        IIf(PenaliteAvecJoueur, "?", "")
+
+    ArreterLeJeu
 
     FermerPopupPenalite
+
+End Sub
+
+
+' Une penalite arrete le jeu : la palette ajoutait cette
+' ligne d'elle-meme, la popup doit continuer de le faire.
+Private Sub ArreterLeJeu()
+
+    If ActionDeclencheArretAutomatique(PenaliteAction) Then
+        AjouterArretJeuAutomatique PenaliteTemps
+    End If
 
 End Sub
 
@@ -628,6 +813,8 @@ Private Sub FermerPopupPenalite()
     Dim ws As Worksheet
 
     PenaliteOuverte = False
+
+    ReprendreVideoApresPopup
 
     Application.OnKey "~"
     Application.OnKey "{ENTER}"
@@ -703,6 +890,10 @@ Private Sub BasculerSelection( _
 
     DejaChoisie = (Target.Interior.Color = BLEU)
 
+    ' Les evenements sont rendus meme en cas d'erreur :
+    ' coupes, plus aucun clic ne passerait ensuite.
+    On Error GoTo Sortie
+
     Application.EnableEvents = False
 
     For Each Cellule In Grille
@@ -719,7 +910,21 @@ Private Sub BasculerSelection( _
         Target.Font.Color = RGB(255, 255, 255)
     End If
 
+Sortie:
+
     Application.EnableEvents = True
+
+    If Err.Number <> 0 Then
+
+        MsgBox _
+            "La selection n'a pas pu etre appliquee." & _
+            vbCrLf & vbCrLf & _
+            "Erreur " & Err.Number & " : " & _
+            Err.Description, _
+            vbExclamation, _
+            "Penalites"
+
+    End If
 
 End Sub
 
@@ -744,6 +949,18 @@ Private Function PosteSelectionne() As String
             .Interior.Color = BLEU Then
 
             PosteSelectionne = Champ(CStr(Entrees(i)), 2)
+
+            ' Un emplacement rend son occupant du moment,
+            ' qui n'est pas forcement le titulaire.
+            If IsNumeric(PosteSelectionne) Then
+
+                If CLng(PosteSelectionne) <= 15 Then
+                    PosteSelectionne = _
+                        PostesAffiches(CLng(PosteSelectionne))
+                End If
+
+            End If
+
             Exit Function
 
         End If
@@ -773,10 +990,14 @@ End Function
 
 Private Sub EffacerSelections(ByVal ws As Worksheet)
 
+    On Error GoTo Sortie
+
     Application.EnableEvents = False
 
     RendreGrille ws, "PEN_MOTIFS", SABLE
     RendreGrille ws, "PEN_JOUEURS", CIEL
+
+Sortie:
 
     Application.EnableEvents = True
 

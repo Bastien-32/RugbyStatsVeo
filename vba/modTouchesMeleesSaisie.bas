@@ -168,7 +168,7 @@ Public Sub OuvrirPopupTouche( _
     MemoriserContexte ActionTexte, TempsVideo, _
         EquipeAction, PossessionApres, LancePour, Issue
 
-    MettreVideoEnPause
+    SuspendreVideoPourPopup TempsVideo
 
     AfficherPopup FEUILLE_POPUP_TO, _
         "POPUP_TO_CONTEXTE", "POPUP_TO_CHAMPS"
@@ -189,7 +189,7 @@ Public Sub OuvrirPopupMelee( _
     MemoriserContexte ActionTexte, TempsVideo, _
         EquipeAction, PossessionApres, LancePour, Issue
 
-    MettreVideoEnPause
+    SuspendreVideoPourPopup TempsVideo
 
     AfficherPopup FEUILLE_POPUP_ME, _
         "POPUP_ME_CONTEXTE", "POPUP_ME_CHAMPS"
@@ -311,6 +311,8 @@ Private Sub FermerPopup(ByVal NomFeuille As String)
 
     PopupOuverte = False
 
+    ReprendreVideoApresPopup
+
     Set ws = ThisWorkbook.Sheets(NomFeuille)
 
     ' shSaisieVideo est le nom de code VBA de la feuille :
@@ -391,16 +393,24 @@ Private Sub EcrireMelee( _
     ' Une seule liste a la saisie, trois colonnes au
     ' tableau : la puce est posee dans celle qui
     ' correspond.
-    Select Case Utilisation
+    ' Le libelle de la liste peut etre reecrit dans le
+    ' classeur : on reconnait le debut du mot plutot que
+    ' de figer une orthographe.
+    Select Case True
 
-        Case "Avants"
+        Case Utilisation = ""
+            ' Rien a cocher.
+
+        Case UCase(Left(Utilisation, 2)) = "AV"
             EcrireCellule Ligne, "Jeu avant", CocheTM
 
-        Case "3/4"
-            EcrireCellule Ligne, "Jeu 3/4", CocheTM
-
-        Case "Pied"
+        Case UCase(Left(Utilisation, 2)) = "PI"
             EcrireCellule Ligne, "Jeu pied", CocheTM
+
+        Case Else
+            ' Trois-quart, trois-quarts, 3/4 : tout le
+            ' reste designe le jeu au large.
+            EcrireCellule Ligne, "Jeu 3/4", CocheTM
 
     End Select
 
@@ -502,7 +512,10 @@ Private Sub PoserListeSauteur()
     ActualiserJoueursJournal
     On Error GoTo 0
 
-    Set wsCompo = ThisWorkbook.Sheets("Compo")
+    ' La liste est tenue sur Parametres par
+    ' ActualiserJoueursJournal, a l'abri des colonnes de
+    ' remplacement qui s'etendent sur Compo.
+    Set wsCompo = shParametres
 
     Derniere = wsCompo.Cells( _
         wsCompo.Rows.Count, "AA").End(xlUp).Row
@@ -534,44 +547,6 @@ End Sub
 ' popup relancerait la video au lieu de l'arreter.
 ' ---------------------------------------------------------
 
-Private Sub MettreVideoEnPause()
-
-    On Error Resume Next
-
-    If VideoEnLecture Then PlayPauseChronoVideo
-
-    On Error GoTo 0
-
-End Sub
-
-
-' Le moteur ne dit pas s'il lit : on regarde si le temps
-' avance.
-'
-' La premiere mesure est celle que la palette vient de
-' prendre pour horodater l'action : la reutiliser epargne
-' une requete au moteur, qui n'en recevra que deux au lieu
-' de trois a chaque popup.
-Private Function VideoEnLecture() As Boolean
-
-    Dim Apres As Double
-    Dim Fin As Single
-
-    If PopupTemps <= 0 Then Exit Function
-
-    Fin = Timer + 0.3
-
-    Do While Timer < Fin
-        DoEvents
-    Loop
-
-    Apres = GetTimeVideo()
-
-    If Apres < 0 Then Exit Function
-
-    VideoEnLecture = (Abs(Apres - PopupTemps) > 0.05)
-
-End Function
 
 
 ' ---------------------------------------------------------
