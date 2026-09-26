@@ -595,32 +595,13 @@ End Function
 Public Function IsPenaltyReasonButton( _
     ByVal Target As Range) As Boolean
 
-    If Not Intersect(Target, Range("BTN_PEN_MAUL")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_RUCK")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_HORS_JEU")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_A_2")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_HAUT")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    IsPenaltyReasonButton = False
+    ' Les boutons de motif ont quitte la palette : le
+    ' motif se choisit dans la popup des penalites.
+    '
+    ' La fonction subsiste parce que shSaisieVideo
+    ' l'appelle encore, dans un bloc que plus rien
+    ' n'active : PendingPenaltyActive reste False depuis
+    ' qu'InitialiserPenalite n'est plus appelee.
 
 End Function
 
@@ -628,32 +609,8 @@ End Function
 Public Function GetPenaltyReason( _
     ByVal Target As Range) As String
 
-    If Not Intersect(Target, Range("BTN_PEN_MAUL")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_MAUL").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_RUCK")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_RUCK").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_HORS_JEU")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_HORS_JEU").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_A_2")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_PL_A_2").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_HAUT")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_PL_HAUT").Value
-        Exit Function
-    End If
-
-    GetPenaltyReason = ""
+    ' Voir IsPenaltyReasonButton : code conserve pour la
+    ' compilation, jamais atteint.
 
 End Function
 

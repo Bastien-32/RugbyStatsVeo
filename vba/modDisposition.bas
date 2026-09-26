@@ -326,12 +326,9 @@ Private Sub PlacerActionsPleinEcran(ByVal ws As Worksheet)
     DeplacerComposant ws, "LBL_PENALITE", "R20"
     DeplacerComposant ws, "BTN_PEN_CONTRE_ADV", "T20"
     DeplacerComposant ws, "BTN_PEN_CONTRE_NOUS", "V20"
-    DeplacerComposant ws, "LBL_MOTIF_PENALITE", "X20"
-    DeplacerComposant ws, "BTN_PEN_MAUL", "Z20"
-    DeplacerComposant ws, "BTN_PEN_RUCK", "AB20"
-    DeplacerComposant ws, "BTN_PEN_HORS_JEU", "AD20"
-    DeplacerComposant ws, "BTN_PEN_PL_A_2", "AF20"
-    DeplacerComposant ws, "BTN_PEN_PL_HAUT", "AH20"
+    ' Les motifs de penalite se saisissent dans la popup :
+    ' la palette n'en porte plus.
+    DeplacerComposant ws, "BTN_REMPLACEMENT", "AF8"
 
 End Sub
 
@@ -388,19 +385,16 @@ Private Sub PlacerActionsBandeau(ByVal ws As Worksheet)
     DeplacerComposant ws, "BTN_PEN_CONTRE_ADV", "F28"
     DeplacerComposant ws, "BTN_PEN_CONTRE_NOUS", "H28"
 
-    DeplacerComposant ws, "LBL_MOTIF_PENALITE", "D30"
-    DeplacerComposant ws, "BTN_PEN_MAUL", "F30"
-    DeplacerComposant ws, "BTN_PEN_RUCK", "H30"
-    DeplacerComposant ws, "BTN_PEN_HORS_JEU", "J30"
-    DeplacerComposant ws, "BTN_PEN_PL_A_2", "L30"
-    DeplacerComposant ws, "BTN_PEN_PL_HAUT", "N30"
+    ' Les motifs de penalite se saisissent dans la popup :
+    ' la palette n'en porte plus.
+    DeplacerComposant ws, "BTN_REMPLACEMENT", "N20"
 
-    DeplacerComposant ws, "LBL_POINTS", "D32"
-    DeplacerComposant ws, "BTN_PTS_ESSAI", "F32"
-    DeplacerComposant ws, "BTN_PTS_ESSAI_PEN", "H32"
-    DeplacerComposant ws, "BTN_PTS_TRANSFO", "J32"
-    DeplacerComposant ws, "BTN_PTS_PENALITE", "L32"
-    DeplacerComposant ws, "BTN_PTS_DROP", "N32"
+    DeplacerComposant ws, "LBL_POINTS", "D30"
+    DeplacerComposant ws, "BTN_PTS_ESSAI", "F30"
+    DeplacerComposant ws, "BTN_PTS_ESSAI_PEN", "H30"
+    DeplacerComposant ws, "BTN_PTS_TRANSFO", "J30"
+    DeplacerComposant ws, "BTN_PTS_PENALITE", "L30"
+    DeplacerComposant ws, "BTN_PTS_DROP", "N30"
 
 End Sub
 
@@ -450,35 +444,35 @@ End Sub
 
 Private Sub PlacerJoueursBandeau(ByVal ws As Worksheet)
 
-    DeplacerComposant ws, "TITRE_PALETTE_JOUEURS", "D36:N36"
+    DeplacerComposant ws, "TITRE_PALETTE_JOUEURS", "D34:N34"
 
-    DeplacerComposant ws, "BTN_JO_1", "D38"
-    DeplacerComposant ws, "BTN_JO_2", "F38"
-    DeplacerComposant ws, "BTN_JO_3", "H38"
-    DeplacerComposant ws, "BTN_JO_4", "J38"
-    DeplacerComposant ws, "BTN_JO_5", "L38"
-    DeplacerComposant ws, "BTN_JO_6", "N38"
+    DeplacerComposant ws, "BTN_JO_1", "D36"
+    DeplacerComposant ws, "BTN_JO_2", "F36"
+    DeplacerComposant ws, "BTN_JO_3", "H36"
+    DeplacerComposant ws, "BTN_JO_4", "J36"
+    DeplacerComposant ws, "BTN_JO_5", "L36"
+    DeplacerComposant ws, "BTN_JO_6", "N36"
 
-    DeplacerComposant ws, "BTN_JO_7", "D40"
-    DeplacerComposant ws, "BTN_JO_8", "F40"
-    DeplacerComposant ws, "BTN_JO_9", "H40"
-    DeplacerComposant ws, "BTN_JO_10", "J40"
-    DeplacerComposant ws, "BTN_JO_11", "L40"
-    DeplacerComposant ws, "BTN_JO_12", "N40"
+    DeplacerComposant ws, "BTN_JO_7", "D38"
+    DeplacerComposant ws, "BTN_JO_8", "F38"
+    DeplacerComposant ws, "BTN_JO_9", "H38"
+    DeplacerComposant ws, "BTN_JO_10", "J38"
+    DeplacerComposant ws, "BTN_JO_11", "L38"
+    DeplacerComposant ws, "BTN_JO_12", "N38"
 
-    DeplacerComposant ws, "BTN_JO_13", "D42"
-    DeplacerComposant ws, "BTN_JO_14", "F42"
-    DeplacerComposant ws, "BTN_JO_15", "H42"
-    DeplacerComposant ws, "BTN_JO_16", "J42"
-    DeplacerComposant ws, "BTN_JO_17", "L42"
-    DeplacerComposant ws, "BTN_JO_18", "N42"
+    DeplacerComposant ws, "BTN_JO_13", "D40"
+    DeplacerComposant ws, "BTN_JO_14", "F40"
+    DeplacerComposant ws, "BTN_JO_15", "H40"
+    DeplacerComposant ws, "BTN_JO_16", "J40"
+    DeplacerComposant ws, "BTN_JO_17", "L40"
+    DeplacerComposant ws, "BTN_JO_18", "N40"
 
-    DeplacerComposant ws, "BTN_JO_19", "D44"
-    DeplacerComposant ws, "BTN_JO_20", "F44"
-    DeplacerComposant ws, "BTN_JO_21", "H44"
-    DeplacerComposant ws, "BTN_JO_22", "J44"
-    DeplacerComposant ws, "BTN_JO_COLLECTIF", "L44"
-    DeplacerComposant ws, "BTN_JO_NON_IDENTIFIE", "N44"
+    DeplacerComposant ws, "BTN_JO_19", "D42"
+    DeplacerComposant ws, "BTN_JO_20", "F42"
+    DeplacerComposant ws, "BTN_JO_21", "H42"
+    DeplacerComposant ws, "BTN_JO_22", "J42"
+    DeplacerComposant ws, "BTN_JO_COLLECTIF", "L42"
+    DeplacerComposant ws, "BTN_JO_NON_IDENTIFIE", "N42"
 
     ReaffecterPlagesJoueurs ws, MODE_BANDEAU
 
@@ -525,13 +519,13 @@ End Sub
 
 Private Sub PlacerChronoBandeau(ByVal ws As Worksheet)
 
-    DeplacerComposant ws, "TITRE_CHRONO_VIDEO", "D48:N48"
-    DeplacerComposant ws, "LBL_POSITION_VIDEO", "D50"
-    DeplacerComposant ws, "CELL_CHRONO_VIDEO", "D52:F52"
-    DeplacerComposant ws, "BTN_CHRONO_MINUS_5_SEC", "H52"
-    DeplacerComposant ws, "BTN_CHRONO_PLAY_PAUSE", "J52"
-    DeplacerComposant ws, "BTN_CHRONO_PLUS_5_SEC", "L52"
-    DeplacerComposant ws, "BTN_CHRONO_RESET", "N52"
+    DeplacerComposant ws, "TITRE_CHRONO_VIDEO", "D46:N46"
+    DeplacerComposant ws, "LBL_POSITION_VIDEO", "D48"
+    DeplacerComposant ws, "CELL_CHRONO_VIDEO", "D50:F50"
+    DeplacerComposant ws, "BTN_CHRONO_MINUS_5_SEC", "H50"
+    DeplacerComposant ws, "BTN_CHRONO_PLAY_PAUSE", "J50"
+    DeplacerComposant ws, "BTN_CHRONO_PLUS_5_SEC", "L50"
+    DeplacerComposant ws, "BTN_CHRONO_RESET", "N50"
 
 End Sub
 
@@ -568,8 +562,8 @@ Private Sub AppliquerDimensionsPleinEcran(ByVal ws As Worksheet)
     ws.Columns("AH").ColumnWidth = 10
     ws.Columns("AI").ColumnWidth = 1
     
-    ' Les lignes utilisées par le bandeau reprennent une
-    ' hauteur neutre : elles sont vides en plein écran.
+    ' Les lignes utilisees par le bandeau reprennent une
+    ' hauteur neutre : elles sont vides en plein ecran.
     ws.Rows("33:53").RowHeight = 15
 
 
@@ -589,31 +583,30 @@ Private Sub AppliquerDimensionsBandeau(ByVal ws As Worksheet)
     ws.Rows(29).RowHeight = 10
     ws.Rows(30).RowHeight = 42
     ws.Rows(31).RowHeight = 10
-    ws.Rows(32).RowHeight = 42
-    ws.Rows(33).RowHeight = 10
+    ws.Rows(32).RowHeight = 10
 
     ' Palette joueurs
-    ws.Rows(35).RowHeight = 10
-    ws.Rows(36).RowHeight = 15
-    ws.Rows(37).RowHeight = 13
+    ws.Rows(33).RowHeight = 10
+    ws.Rows(34).RowHeight = 15
+    ws.Rows(35).RowHeight = 13
+    ws.Rows(36).RowHeight = 42
+    ws.Rows(37).RowHeight = 10
     ws.Rows(38).RowHeight = 42
     ws.Rows(39).RowHeight = 10
     ws.Rows(40).RowHeight = 42
     ws.Rows(41).RowHeight = 10
     ws.Rows(42).RowHeight = 42
     ws.Rows(43).RowHeight = 10
-    ws.Rows(44).RowHeight = 42
+    ws.Rows(44).RowHeight = 10
     ws.Rows(45).RowHeight = 10
-    ws.Rows(46).RowHeight = 10
-    ws.Rows(47).RowHeight = 10
 
     ' Gestion chrono et video
+    ws.Rows(46).RowHeight = 15
+    ws.Rows(47).RowHeight = 11
     ws.Rows(48).RowHeight = 15
-    ws.Rows(49).RowHeight = 11
-    ws.Rows(50).RowHeight = 15
-    ws.Rows(51).RowHeight = 6
-    ws.Rows(52).RowHeight = 42
-    ws.Rows(53).RowHeight = 93
+    ws.Rows(49).RowHeight = 6
+    ws.Rows(50).RowHeight = 42
+    ws.Rows(51).RowHeight = 93
 
     ws.Columns("P").ColumnWidth = 1
     ws.Columns("Q").ColumnWidth = 1
@@ -718,15 +711,15 @@ End Sub
 Private Sub DessinerCadresBandeau(ByVal ws As Worksheet)
 
     ' Palette Actions
-    AppliquerCadreVert ws, ws.Range("C11:O33")
+    AppliquerCadreVert ws, ws.Range("C11:O31")
 
     ' Palette Joueurs
-    AppliquerCadreVert ws, ws.Range("C35:O45")
+    AppliquerCadreVert ws, ws.Range("C33:O43")
 
     ' Gestion chrono et video
-    AppliquerCadreVert ws, ws.Range("C47:O53")
+    AppliquerCadreVert ws, ws.Range("C45:O51")
 
-    AppliquerBorduresBlanchesZone ws.Range("C3:O53")
+    AppliquerBorduresBlanchesZone ws.Range("C3:O51")
     AppliquerBorduresBlanchesZone ws.Range("P3:AI21")
 
 
@@ -839,7 +832,7 @@ Public Sub PasserEnModePleinEcran()
 
     End If
 
-    AppliquerBorduresBlanchesZone ws.Range("C3:O53")
+    AppliquerBorduresBlanchesZone ws.Range("C3:O51")
 
     PositionnerFormesVideo
     MettreAJourBoutonSwitchMode
@@ -923,7 +916,7 @@ Public Sub PasserEnModeBandeau()
 
     End If
 
-    If ws.Range("BTN_JO_1").Row <> 38 Then
+    If ws.Range("BTN_JO_1").Row <> 36 Then
 
         Err.Raise _
             vbObjectError + 5011, _
@@ -932,7 +925,7 @@ Public Sub PasserEnModeBandeau()
 
     End If
 
-    If ws.Range("CELL_CHRONO_VIDEO").Row <> 52 Then
+    If ws.Range("CELL_CHRONO_VIDEO").Row <> 50 Then
 
         Err.Raise _
             vbObjectError + 5012, _
