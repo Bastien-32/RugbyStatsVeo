@@ -270,6 +270,12 @@ Public Sub ResetActionButtons()
     ApplyFormat ws.Range("BTN_PEN_CONTRE_ADV"), _
         shParametres.Range("STYLE_BTN_PEN")
 
+    ApplyFormat ws.Range("BTN_CF_CONTRE_ADV"), _
+        shParametres.Range("STYLE_BTN_PEN")
+
+    ApplyFormat ws.Range("BTN_CF_CONTRE_NOUS"), _
+        shParametres.Range("STYLE_BTN_PEN")
+
     ApplyFormat ws.Range("BTN_PEN_CONTRE_NOUS"), _
         shParametres.Range("STYLE_BTN_PEN")
 

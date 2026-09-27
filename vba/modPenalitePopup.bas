@@ -68,6 +68,10 @@ Private PenaliteOuverte As Boolean
 ' contre nous designe un joueur.
 Private PenaliteAvecJoueur As Boolean
 
+' "PEN" ou "CF" : la popup sert aux deux, seuls les
+' motifs et le titre changent.
+Private PenaliteType As String
+
 ' Poste occupant chaque emplacement du terrain au moment
 ' de la penalite : l'emplacement 12 peut porter le 20 si
 ' un remplacement a eu lieu.
@@ -82,33 +86,95 @@ Private PostesAffiches(1 To 15) As String
 ' reste lisible telle qu'elle a ete dessinee.
 ' ---------------------------------------------------------
 
+' Motifs de la faute en cours. La popup est commune aux
+' penalites et aux coups francs : deux tables, une seule
+' mecanique.
 Private Function MotifsDisposes() As Variant
 
-    MotifsDisposes = Array( _
-        "9:2:En-avant volontaire", _
-        "9:5:Parle arbitre", _
-        "9:8:Brutalit" & ChrW(233), _
-        "11:5:Ruck - Soutient va au-del" & ChrW(224), _
-        "11:8:Plaquage " & ChrW(224) & " 2", _
-        "13:2:Maul - Entrer sur le c" & ChrW(244) & "t" & ChrW(233), _
-        "13:5:Ruck - Soutient couch" & ChrW(233) & " sur porteur", _
-        "13:8:Plaquage haut", _
-        "15:2:Maul - Ecroulement", _
-        "15:5:Ruck - Retard soutient", _
-        "15:8:Plaquage sans ballon", _
-        "17:2:Melee - Poussee avant introduction", _
-        "17:5:Ruck - Garde le ballon au sol", _
-        "17:8:Plaquage " & ChrW(224) & " retardement", _
-        "19:5:Ruck - Saisie relayeur", _
-        "19:8:Plaquage en l'air", _
-        "21:2:Touche - Saisie bras sauteur", _
-        "21:5:Ruck - Talonnage " & ChrW(224) & " la main", _
-        "23:2:Touche - Plaquage sauteur avant retomb" & ChrW(233) & "e", _
-        "23:5:Ruck - Plaqueur qui ne sort pas", _
-        "23:8:Hors-jeu", _
-        "25:2:Touche - Pouss" & ChrW(233) & "e avant retomb" & ChrW(233) & "e sauteur", _
-        "25:5:Ruck - 4 appuis", _
-        "27:8:Autre")
+    If PenaliteType = "CF" Then
+        MotifsDisposes = MotifsCoupFranc
+    Else
+        MotifsDisposes = MotifsPenalite
+    End If
+
+End Function
+
+
+Private Function MotifsCoupFranc() As Variant
+
+    Dim T As String
+
+    ' La liste est assemblee famille par famille : VBA
+    ' n'accepte que vingt-quatre continuations de ligne
+    ' dans une meme instruction.
+
+    T = "9:2:Melee - Mise en place trop longue" & vbTab & _
+        "11:2:Melee - Engagement anticip" & ChrW(233) & vbTab & _
+        "13:2:Melee - Pouss" & ChrW(233) & "e anticip" & ChrW(233) & "e" & vbTab & _
+        "15:2:Melee - Introduction irreguliere" & vbTab & _
+        "17:2:Melee - Talonnage irregulier" & vbTab & _
+        "21:2:Jeu-rapide 10m de plus"
+
+    T = T & vbTab & _
+        "9:5:Touche - Mise en place trop longue" & vbTab & _
+        "11:5:Touche - Alignement irregulier" & vbTab & _
+        "13:5:Touche - Lancer non conforme" & vbTab & _
+        "15:5:Touche - Saut ou soutien premature" & vbTab & _
+        "17:5:Touche - Sauteur mal redescendu" & vbTab & _
+        "21:5:Autre"
+
+    T = T & vbTab & _
+        "9:8:Ruck - Fausse sortie" & vbTab & _
+        "11:8:Perte de temps" & vbTab & _
+        "15:8:Passage " & ChrW(224) & " vide"
+
+    MotifsCoupFranc = Split(T, vbTab)
+
+End Function
+
+
+Private Function MotifsPenalite() As Variant
+
+    Dim T As String
+
+    ' Meme decoupage que MotifsCoupFranc, pour la meme
+    ' raison.
+
+    T = "9:2:En-avant volontaire" & vbTab & _
+        "9:5:Parle arbitre" & vbTab & _
+        "9:8:Brutalit" & ChrW(233) & vbTab & _
+        "11:5:Ruck - Soutient va au-del" & ChrW(224) & vbTab & _
+        "11:8:Plaquage " & ChrW(224) & " 2" & vbTab & _
+        "13:2:Maul - Entrer sur le c" & ChrW(244) & "t" & ChrW(233) & vbTab & _
+        "13:5:Ruck - Soutient couch" & ChrW(233) & " sur porteur" & vbTab & _
+        "13:8:Plaquage haut"
+
+    T = T & vbTab & _
+        "15:2:Maul - Ecroulement" & vbTab & _
+        "15:5:Ruck - Retard soutient" & vbTab & _
+        "15:8:Plaquage sans ballon" & vbTab & _
+        "17:2:Melee - Poussee avant introduction" & vbTab & _
+        "17:5:Ruck - Garde le ballon au sol" & vbTab & _
+        "17:8:Plaquage " & ChrW(224) & " retardement" & vbTab & _
+        "19:5:Ruck - Saisie relayeur" & vbTab & _
+        "19:8:Plaquage en l'air"
+
+    T = T & vbTab & _
+        "21:2:Touche - Saisie bras sauteur" & vbTab & _
+        "21:5:Ruck - Talonnage " & ChrW(224) & " la main" & vbTab & _
+        "23:2:Touche - Plaquage sauteur avant retomb" & _
+        ChrW(233) & "e" & vbTab & _
+        "23:5:Ruck - Plaqueur qui ne sort pas" & vbTab & _
+        "23:8:Hors-jeu"
+
+    T = T & vbTab & _
+        "25:2:Touche - Pouss" & ChrW(233) & _
+        "e avant retomb" & ChrW(233) & "e sauteur" & vbTab & _
+        "25:5:Ruck - 4 appuis" & vbTab & _
+        "27:5:Faute sur le coup de pied - 10m" & vbTab & _
+        "27:8:Autre"
+
+    MotifsPenalite = Split(T, vbTab)
 
 End Function
 
@@ -290,6 +356,32 @@ Private Sub EcrireContexte(ByVal ws As Worksheet)
             ws.Cells(4, COL_CONTEXTE), _
             ws.Cells(6, COL_CONTEXTE)).Address, _
         "PEN_CONTEXTE"
+
+End Sub
+
+
+' Efface la zone des motifs puis y ecrit ceux du type en
+' cours. Les deux tables n'occupent pas les memes cases :
+' un reste de l'autre faute resterait cliquable.
+Private Sub RedessinerMotifs(ByVal ws As Worksheet)
+
+    Dim Zone As Range
+
+    Set Zone = ws.Range( _
+        ws.Cells(PREMIERE_LIGNE, COL_MOTIF_1), _
+        ws.Cells(LIGNE_BOUTONS - 1, _
+            COL_MOTIF_3 + LARGEUR_MOTIF - 1))
+
+    Zone.UnMerge
+    Zone.ClearContents
+    Zone.Borders.LineStyle = xlNone
+
+    ' Blanc, et non "aucun remplissage" : sans cela le
+    ' quadrillage de la feuille reapparait sous les
+    ' emplacements laisses vides par l'autre liste.
+    Zone.Interior.Color = RGB(255, 255, 255)
+
+    EcrireMotifs ws
 
 End Sub
 
@@ -687,8 +779,30 @@ Public Sub OuvrirPopupPenalite( _
     ByVal TempsVideo As Double, _
     ByVal Equipe As String)
 
+    OuvrirPopupFaute ActionTexte, TempsVideo, Equipe, "PEN"
+
+End Sub
+
+
+Public Sub OuvrirPopupCoupFranc( _
+    ByVal ActionTexte As String, _
+    ByVal TempsVideo As Double, _
+    ByVal Equipe As String)
+
+    OuvrirPopupFaute ActionTexte, TempsVideo, Equipe, "CF"
+
+End Sub
+
+
+Private Sub OuvrirPopupFaute( _
+    ByVal ActionTexte As String, _
+    ByVal TempsVideo As Double, _
+    ByVal Equipe As String, _
+    ByVal TypeFaute As String)
+
     Dim ws As Worksheet
 
+    PenaliteType = TypeFaute
     PenaliteAction = ActionTexte
     PenaliteTemps = TempsVideo
     PenaliteEquipe = Equipe
@@ -705,6 +819,11 @@ Public Sub OuvrirPopupPenalite( _
 
     ws.Visible = xlSheetVisible
     ws.Activate
+
+    ws.Cells(2, COL_MOTIF_1).Value = _
+        IIf(TypeFaute = "CF", "COUP FRANC", "PENALITE")
+
+    RedessinerMotifs ws
 
     EffacerSelections ws
     RafraichirLibelles ws, TempsVideo, PenaliteAvecJoueur
