@@ -230,6 +230,8 @@ Public Sub ConstruirePopupRemplacement()
 
     ws.Cells.Font.Name = "Calibri"
 
+    If ModeSilencieux Then Exit Sub
+
     MsgBox _
         "La popup des remplacements est prete.", _
         vbInformation, _

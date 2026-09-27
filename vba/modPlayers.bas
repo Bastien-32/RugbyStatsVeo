@@ -182,6 +182,12 @@ Public Sub ActualiserJoueursJournal()
     formuleListe = "='" & wsListe.Name & "'!" & _
         wsListe.Range("AA1:AA" & ligneDest + 1).Address
 
+    ' Un journal entierement vide n'a plus de ligne de
+    ' donnees : il n'y aurait aucune cellule ou poser la
+    ' liste deroulante.
+    If loJournal.ListRows.Count = 0 Then
+        loJournal.ListRows.Add
+    End If
 
     With loJournal.ListColumns("Joueur").DataBodyRange.Validation
         .Delete
@@ -260,13 +266,27 @@ Public Sub ActualiserPaletteJoueurs()
                 .HorizontalAlignment = xlCenter
                 .VerticalAlignment = xlCenter
 
-                .Characters(1, Len(Poste)).Font.Size = 18
-                .Characters(1, Len(Poste)).Font.Bold = True
+                If Joueur = "" Then
 
-                If Joueur <> "" Then
-                    .Characters(Len(Poste) + 2, Len(Joueur)).Font.Size = 9
-                    .Characters(Len(Poste) + 2, Len(Joueur)).Font.Bold = False
+                    ' Sans nom, le bouton ne porte que le
+                    ' numero, qu'Excel stocke en nombre :
+                    ' Characters n'a alors aucune prise
+                    ' dessus et leve l'erreur 91.
+                    .Font.Size = 18
+                    .Font.Bold = True
+
+                Else
+
+                    .Characters(1, Len(Poste)).Font.Size = 18
+                    .Characters(1, Len(Poste)).Font.Bold = True
+
+                    .Characters(Len(Poste) + 2, Len(Joueur)) _
+                        .Font.Size = 9
+                    .Characters(Len(Poste) + 2, Len(Joueur)) _
+                        .Font.Bold = False
+
                 End If
+
 
             End With
 
