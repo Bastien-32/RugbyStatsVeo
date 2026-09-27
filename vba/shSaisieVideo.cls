@@ -733,6 +733,36 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         End If
 
+        ' =====================================================
+        ' COUP FRANC POUR NOUS
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_CF_CONTRE_ADV") _
+        ) Is Nothing Then
+
+            ReleaseButton
+            OuvrirPopupCoupFranc ActionTexte, TempsVideo, "Nous"
+            Exit Sub
+
+        End If
+
+
+        ' =====================================================
+        ' COUP FRANC POUR ADV
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_CF_CONTRE_NOUS") _
+        ) Is Nothing Then
+
+            ReleaseButton
+            OuvrirPopupCoupFranc ActionTexte, TempsVideo, "Adv"
+            Exit Sub
+
+        End If
 
         ' =====================================================
         ' GRATTAGE / CONTRE-RUCK SANS PENALITE

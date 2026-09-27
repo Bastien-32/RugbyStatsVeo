@@ -326,6 +326,13 @@ Private Sub PlacerActionsPleinEcran(ByVal ws As Worksheet)
     DeplacerComposant ws, "LBL_PENALITE", "R20"
     DeplacerComposant ws, "BTN_PEN_CONTRE_ADV", "T20"
     DeplacerComposant ws, "BTN_PEN_CONTRE_NOUS", "V20"
+
+    ' COUPS FRANCS
+    ' A la suite des penalites, sur la meme ligne.
+    DeplacerComposant ws, "LBL_COUP_FRANC", "Z20"
+    DeplacerComposant ws, "BTN_CF_CONTRE_ADV", "AB20"
+    DeplacerComposant ws, "BTN_CF_CONTRE_NOUS", "AD20"
+
     ' Les motifs de penalite se saisissent dans la popup :
     ' la palette n'en porte plus.
     DeplacerComposant ws, "BTN_REMPLACEMENT", "AF8"
@@ -384,6 +391,10 @@ Private Sub PlacerActionsBandeau(ByVal ws As Worksheet)
     DeplacerComposant ws, "LBL_PENALITE", "D28"
     DeplacerComposant ws, "BTN_PEN_CONTRE_ADV", "F28"
     DeplacerComposant ws, "BTN_PEN_CONTRE_NOUS", "H28"
+
+    DeplacerComposant ws, "LBL_COUP_FRANC", "J28"
+    DeplacerComposant ws, "BTN_CF_CONTRE_ADV", "L28"
+    DeplacerComposant ws, "BTN_CF_CONTRE_NOUS", "N28"
 
     ' Les motifs de penalite se saisissent dans la popup :
     ' la palette n'en porte plus.

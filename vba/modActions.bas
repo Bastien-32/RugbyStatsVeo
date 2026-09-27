@@ -267,6 +267,16 @@ Public Function GetAction( _
         Exit Function
     End If
     
+    If Not Intersect(Target, Range("BTN_CF_CONTRE_ADV")) Is Nothing Then
+        GetAction = Range("ACT_CF_CONTRE_ADV").Value
+        Exit Function
+    End If
+
+    If Not Intersect(Target, Range("BTN_CF_CONTRE_NOUS")) Is Nothing Then
+        GetAction = Range("ACT_CF_CONTRE_NOUS").Value
+        Exit Function
+    End If
+
     If Not Intersect(Target, Range("BTN_ARRACHAGE")) Is Nothing Then
         GetAction = Range("ACT_ARRACHAGE").Value
         Exit Function
@@ -1325,6 +1335,27 @@ Public Function EstActionAutoriseePendantArret( _
     ) Is Nothing Then
 
         EstActionAutoriseePendantArret = True
+        Exit Function
+
+    End If
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_CF_CONTRE_ADV") _
+    ) Is Nothing Then
+
+        EstActionAutoriseePendantArret = True
+        Exit Function
+
+    End If
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_CF_CONTRE_NOUS") _
+    ) Is Nothing Then
+
+        EstActionAutoriseePendantArret = True
+        Exit Function
 
     End If
 
