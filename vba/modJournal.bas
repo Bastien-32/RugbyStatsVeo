@@ -138,24 +138,24 @@ Private Sub AppliquerValidationListe( _
     ByVal Cellule As Range, _
     ByVal NomListe As String)
 
-    Dim nomExiste As Boolean
+    Dim NomExiste As Boolean
     Dim nomTest As Name
 
-    nomExiste = False
+    NomExiste = False
 
     For Each nomTest In ThisWorkbook.Names
 
         If UCase(Split(nomTest.Name, "!")(UBound(Split(nomTest.Name, "!")))) = _
             UCase(NomListe) Then
 
-            nomExiste = True
+            NomExiste = True
             Exit For
 
         End If
 
     Next nomTest
 
-    If Not nomExiste Then
+    If Not NomExiste Then
 
         MsgBox _
             "La plage nomm" & ChrW(233) & _

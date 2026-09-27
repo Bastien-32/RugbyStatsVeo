@@ -67,6 +67,8 @@ Public Sub ConstruirePopupsTouchesMelees()
 
     Application.ScreenUpdating = EtatAffichage
 
+    If ModeSilencieux Then Exit Sub
+
     MsgBox _
         "Les deux popups sont pretes." & vbCrLf & vbCrLf & _
         "Elles sont visibles pour que tu en verifies le " & _

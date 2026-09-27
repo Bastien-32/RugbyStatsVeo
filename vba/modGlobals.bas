@@ -1,6 +1,10 @@
 Attribute VB_Name = "modGlobals"
 Option Explicit
 
+' Met en sourdine les messages de fin des procedures de
+' construction, que la reinitialisation enchaine.
+Public ModeSilencieux As Boolean
+
 Public CurrentTeam As String
 Public CurrentHalf As String
 

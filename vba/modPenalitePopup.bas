@@ -250,6 +250,8 @@ Public Sub ConstruirePopupPenalite()
     EcrireBoutons ws
     MettreEnForme ws
 
+    If ModeSilencieux Then Exit Sub
+
     MsgBox _
         "La popup des penalites est prete.", _
         vbInformation, _

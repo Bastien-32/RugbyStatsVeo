@@ -23,6 +23,16 @@ Private Const NOM_FEUILLE_COMPO As String = "Compo"
 
 Private Const NOM_FEUILLE_JOURNAL As String = "Journal actions"
 
+Private Const NOM_FEUILLE_TM As String = "Touches Melees"
+
+' La composition occupe les colonnes E a H : les colonnes
+' de remplacement commencent juste apres.
+Private Const PREMIERE_COL_REMPLACEMENT As Long = 9
+
+' Nomme l'etape en cours pour que le message d'erreur dise
+' ou la reinitialisation s'est arretee.
+Private EtapeDistribution As String
+
 
 Public Sub ReinitialiserPourDistribution()
 
@@ -38,7 +48,9 @@ Public Sub ReinitialiserPourDistribution()
         "- l'effectif ;" & vbCrLf & _
         "- les " & ChrW(233) & "quipes de la poule ;" & vbCrLf & _
         "- la composition et l'en-t" & ChrW(234) & "te du match ;" & vbCrLf & _
-        "- le journal d'actions et les statistiques." & _
+        "- le journal d'actions et les statistiques ;" & vbCrLf & _
+        "- le detail des touches et des melees ;" & vbCrLf & _
+        "- les remplacements et le temps de jeu." & _
         vbCrLf & vbCrLf & _
         "L'effacement est d" & ChrW(233) & "finitif." & vbCrLf & _
         "N'utilise cette macro que sur une copie." & _
@@ -60,18 +72,59 @@ Public Sub ReinitialiserPourDistribution()
     Application.EnableEvents = False
     Application.ScreenUpdating = False
 
+    EtapeDistribution = "effectif"
     ViderTableau NOM_FEUILLE_LISTES, "LstEffectif"
+
+    EtapeDistribution = "equipes de la poule"
     ViderTableau NOM_FEUILLE_LISTES, "LstEquipesPoule"
+
+    EtapeDistribution = "journal d'actions"
     ViderTableau NOM_FEUILLE_JOURNAL, "JournalActions"
 
+    EtapeDistribution = "detail des touches"
+    ViderTableau NOM_FEUILLE_TM, "DetailTouches"
+
+    EtapeDistribution = "detail des melees"
+    ViderTableau NOM_FEUILLE_TM, "DetailMelees"
+
+    EtapeDistribution = "composition"
     ViderComposition
+
+    EtapeDistribution = "colonnes de remplacement"
+    ViderColonnesRemplacement
+
+    EtapeDistribution = "en-tete du match"
     ViderEnteteMatch
 
     ' Le journal est vide : les tableaux de statistiques
     ' ecrits par le VBA repassent a zero.
+    EtapeDistribution = "statistiques du match"
     RecalculerStatsMatch
 
+    ' Les deux tableaux sont vides : leurs recapitulatifs
+    ' aussi.
+    EtapeDistribution = "recapitulatifs touches et melees"
+    ConstruireRecapitulatifs
+
+    ' Les trois listes de joueurs se reconstruisent depuis
+    ' une composition desormais vide : le tableau du
+    ' journal, la colonne qui alimente sa validation, et
+    ' les boutons de la palette.
+    EtapeDistribution = "liste des joueurs du journal"
     shSaisieVideo.ActualiserListeJoueursJournal
+
+    EtapeDistribution = "validation des joueurs du journal"
+    ActualiserJoueursJournal
+
+    EtapeDistribution = "palette des joueurs"
+    ActualiserPaletteJoueurs
+
+    ' Les popups gardent la derniere saisie affichee, noms
+    ' de joueurs compris : on les redessine.
+    EtapeDistribution = "popups"
+    ReconstruirePopups
+
+    EtapeDistribution = ""
 
     Application.ScreenUpdating = EtatAffichage
     Application.EnableEvents = EtatEvenements
@@ -89,16 +142,20 @@ Public Sub ReinitialiserPourDistribution()
 GestionErreur:
 
     Dim DescriptionErreur As String
+    Dim NumeroErreur As Long
 
     DescriptionErreur = Err.Description
+    NumeroErreur = Err.Number
 
     Application.ScreenUpdating = EtatAffichage
     Application.EnableEvents = EtatEvenements
 
     MsgBox _
         "La r" & ChrW(233) & "initialisation a " & _
-        ChrW(233) & "chou" & ChrW(233) & "." & _
+        ChrW(233) & "chou" & ChrW(233) & " pendant : " & _
+        EtapeDistribution & "." & _
         vbCrLf & vbCrLf & _
+        "Erreur " & NumeroErreur & " : " & _
         DescriptionErreur & _
         vbCrLf & vbCrLf & _
         "Ferme ce classeur sans enregistrer.", _
@@ -223,6 +280,7 @@ Private Sub ViderEnteteMatch()
     Champs = Array( _
         "MATCH_SAISON", _
         "MATCH_DATE", _
+        "MATCH_NOUS", _
         "MATCH_ADV", _
         "MATCH_LIEU", _
         "MATCH_PHASE", _
@@ -242,5 +300,82 @@ Private Sub ViderEnteteMatch()
         On Error GoTo 0
 
     Next Champ
+
+End Sub
+
+
+' =========================================================
+' Les remplacements ecrivent une colonne par validation a
+' droite de la composition. Elles sont effacees en entier,
+' habillage compris, et retrouvent leur largeur d'origine.
+'
+' Contrairement aux tableaux vides, il n'y a pas de fond
+' blanc a reposer : cette partie de la feuille n'en a
+' jamais eu.
+' =========================================================
+
+Private Sub ViderColonnesRemplacement()
+
+    Dim ws As Worksheet
+    Dim DerniereColonne As Long
+
+    Set ws = ThisWorkbook.Worksheets(NOM_FEUILLE_COMPO)
+
+    DerniereColonne = ws.UsedRange.Column + _
+        ws.UsedRange.Columns.Count - 1
+
+    If DerniereColonne < PREMIERE_COL_REMPLACEMENT Then
+        Exit Sub
+    End If
+
+    With ws.Range( _
+        ws.Columns(PREMIERE_COL_REMPLACEMENT), _
+        ws.Columns(DerniereColonne) _
+    )
+
+        .Clear
+        .ColumnWidth = ws.StandardWidth
+
+    End With
+
+End Sub
+
+
+' =========================================================
+' Les quatre popups sont redessinees a partir de leur code,
+' puis remasquees : leur construction les laisse visibles
+' pour que l'on en verifie le rendu.
+' =========================================================
+
+Private Sub ReconstruirePopups()
+
+    ModeSilencieux = True
+
+    On Error GoTo Sortie
+
+    ConstruirePopupsTouchesMelees
+    ConstruirePopupPenalite
+    ConstruirePopupRemplacement
+
+Sortie:
+
+    ModeSilencieux = False
+
+    MasquerPopup "Popup touche"
+    MasquerPopup "Popup melee"
+    MasquerPopup "Popup penalite"
+    MasquerPopup "Popup remplacement"
+
+End Sub
+
+
+Private Sub MasquerPopup(ByVal NomFeuille As String)
+
+    On Error Resume Next
+
+    ThisWorkbook.Worksheets(NomFeuille).Visible = _
+        xlSheetHidden
+
+    On Error GoTo 0
 
 End Sub
