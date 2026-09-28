@@ -201,6 +201,21 @@ Public Sub ConstruirePopupRemplacement()
 
     ws.Rows(8 + NB_LIGNES_SAISIE + 1).RowHeight = 26
 
+    ' Lecture et pause sans quitter la popup : la video
+    ' reste pilotable pendant la saisie.
+    With ws.Range("E4")
+
+        .Value = "PLAY / PAUSE"
+        .Interior.Color = VERT
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+
+    End With
+
+    NommerPlage ws, "E4", "REMP_PLAY_PAUSE"
+
     NommerPlage ws, "D4", "REMP_TEMPS"
     NommerPlage ws, "D5", "REMP_MINUTE"
 
@@ -228,6 +243,7 @@ Public Sub ConstruirePopupRemplacement()
     ws.Columns("B").ColumnWidth = 26
     ws.Columns("C").ColumnWidth = 3
     ws.Columns("D").ColumnWidth = 26
+    ws.Columns("E").ColumnWidth = 16
 
     ws.Range( _
         ws.Columns(COL_LISTE_SORTANTS), _
@@ -513,6 +529,8 @@ Public Sub OuvrirPopupRemplacement(ByVal TempsVideo As Double)
 
     ' Format texte impose : sans lui, Excel lit "64:48"
     ' comme 64 heures 48 et affiche 16:48.
+    ActiverEspacePopup
+
     ws.Range("REMP_TEMPS").NumberFormat = "@"
     ws.Range("REMP_TEMPS").Value = FormaterTemps(TempsVideo)
     ws.Range("REMP_MINUTE").ClearContents
@@ -1097,6 +1115,14 @@ Public Sub ClicPopupRemplacement(ByVal Target As Range)
     End If
 
     Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_REMP)
+
+    If Not Intersect(Target, ws.Range("REMP_PLAY_PAUSE")) _
+        Is Nothing Then
+
+        BasculerLectureDepuisPopup
+        Exit Sub
+
+    End If
 
     If Not Intersect(Target, ws.Range("REMP_VALIDER")) _
         Is Nothing Then

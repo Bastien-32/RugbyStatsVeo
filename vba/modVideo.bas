@@ -355,6 +355,42 @@ Sortie:
 End Sub
 
 
+' ---------------------------------------------------------
+' Lecture et pause depuis une popup.
+'
+' Le drapeau suit la main de l'utilisateur : s'il relance
+' la video lui-meme, la fermeture de la popup ne doit plus
+' la remettre en pause, et inversement.
+' ---------------------------------------------------------
+
+' La barre d'espace pilote la video depuis une popup.
+'
+' Quitter la feuille de saisie a coupe les raccourcis :
+' chaque popup repose celui-ci pour elle-meme. Nul besoin
+' de le retirer, le retour sur la saisie video rend la
+' main a ActiverRaccourcisVideo.
+Public Sub ActiverEspacePopup()
+
+    On Error Resume Next
+    Application.OnKey " ", "BasculerLectureDepuisPopup"
+    On Error GoTo 0
+
+End Sub
+
+
+Public Sub BasculerLectureDepuisPopup()
+
+    On Error GoTo Sortie
+
+    PlayPauseChronoVideo
+
+    VideoSuspendue = Not VideoSuspendue
+
+Sortie:
+
+End Sub
+
+
 Public Sub ReprendreVideoApresPopup()
 
     If Not VideoSuspendue Then Exit Sub

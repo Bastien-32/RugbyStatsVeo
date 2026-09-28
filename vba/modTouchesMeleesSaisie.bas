@@ -228,6 +228,8 @@ Private Sub AfficherPopup( _
     ws.Visible = xlSheetVisible
     ws.Activate
 
+    ActiverEspacePopup
+
     ' Les champs repartent vides a chaque ouverture : une
     ' valeur restee de la touche precedente passerait
     ' inapercue.
