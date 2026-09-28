@@ -37,6 +37,11 @@ Private Const LIGNE_ENTETE As Long = 6
 Private Const PREMIER_POSTE As Long = 7
 Private Const DERNIER_POSTE As Long = 28
 Private Const LIGNE_TEMPS_VIDEO As Long = 29
+
+' La ligne 29 porte des secondes brutes, que le code relit
+' pour savoir qui etait sur le terrain : elle reste
+' masquee. La 30 en donne la lecture en minutes.
+Private Const LIGNE_TEMPS_LISIBLE As Long = 30
 Private Const COL_POSTE As Long = 5
 Private Const COL_NOM As Long = 6
 Private Const PREMIERE_COL_MOUVEMENT As Long = 9
@@ -506,6 +511,9 @@ Public Sub OuvrirPopupRemplacement(ByVal TempsVideo As Double)
 
     Application.EnableEvents = False
 
+    ' Format texte impose : sans lui, Excel lit "64:48"
+    ' comme 64 heures 48 et affiche 16:48.
+    ws.Range("REMP_TEMPS").NumberFormat = "@"
     ws.Range("REMP_TEMPS").Value = FormaterTemps(TempsVideo)
     ws.Range("REMP_MINUTE").ClearContents
     ws.Range("REMP_SORTANTS").ClearContents
@@ -870,6 +878,8 @@ Private Sub EcrireMouvements( _
     ws.Cells(LIGNE_TEMPS_VIDEO, Colonne).Value = _
         RempTempsVideo
 
+    EcrireTempsLisible ws, Colonne, RempTempsVideo
+
     For Ligne = PREMIER_POSTE To DERNIER_POSTE
 
         Poste = Trim(CStr( _
@@ -1169,3 +1179,31 @@ Private Function FeuillePopup() As Worksheet
     Set FeuillePopup = ws
 
 End Function
+
+
+' =========================================================
+' Le temps du mouvement, en minutes et secondes, sous la
+' colonne qui le porte.
+'
+' La valeur est une fraction de jour : le format [m]:ss
+' cumule alors les minutes au lieu de les reporter en
+' heures, et la 64e minute ne devient pas la 4e.
+' =========================================================
+
+Private Sub EcrireTempsLisible( _
+    ByVal ws As Worksheet, _
+    ByVal Colonne As Long, _
+    ByVal Secondes As Double)
+
+    With ws.Cells(LIGNE_TEMPS_LISIBLE, Colonne)
+
+        .Value = Secondes / 86400
+        .NumberFormat = "[m]:ss"
+        .HorizontalAlignment = xlCenter
+        .Font.Bold = False
+
+    End With
+
+    ws.Rows(LIGNE_TEMPS_LISIBLE).Hidden = False
+
+End Sub
