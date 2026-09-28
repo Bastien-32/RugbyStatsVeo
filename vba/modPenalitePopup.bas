@@ -48,7 +48,7 @@ Private Const PREMIERE_LIGNE As Long = 7
 ' forme dans la feuille. K4 en est l'ancre.
 Private Const LIGNE_TITRE_JOUEURS As Long = 4
 Private Const COL_TITRE_JOUEURS As Long = 11
-Private Const LIGNE_BOUTONS As Long = 29
+Private Const LIGNE_BOUTONS As Long = 32
 
 Private Const GRIS As Long = 15132390     ' RGB(230,230,230)
 Private Const BLEU As Long = 12611584     ' RGB(0,112,192)
@@ -113,7 +113,7 @@ Private Function MotifsCoupFranc() As Variant
         "13:2:Melee - Pouss" & ChrW(233) & "e anticip" & ChrW(233) & "e" & vbTab & _
         "15:2:Melee - Introduction irreguliere" & vbTab & _
         "17:2:Melee - Talonnage irregulier" & vbTab & _
-        "21:2:Jeu-rapide 10m de plus"
+        "23:2:Jeu-rapide 10m de plus"
 
     T = T & vbTab & _
         "9:5:Touche - Mise en place trop longue" & vbTab & _
@@ -121,12 +121,14 @@ Private Function MotifsCoupFranc() As Variant
         "13:5:Touche - Lancer non conforme" & vbTab & _
         "15:5:Touche - Saut ou soutien premature" & vbTab & _
         "17:5:Touche - Sauteur mal redescendu" & vbTab & _
-        "21:5:Autre"
+        "19:5:Touche - Soutient devant sauteur retomb" & ChrW(233) & "e" & vbTab & _
+        "23:5:Autre"
 
     T = T & vbTab & _
         "9:8:Ruck - Fausse sortie" & vbTab & _
         "11:8:Perte de temps" & vbTab & _
-        "15:8:Passage " & ChrW(224) & " vide"
+        "15:8:Passage " & ChrW(224) & " vide" & vbTab & _
+        "17:8:Ecran"
 
     MotifsCoupFranc = Split(T, vbTab)
 
@@ -137,42 +139,42 @@ Private Function MotifsPenalite() As Variant
 
     Dim T As String
 
-    ' Meme decoupage que MotifsCoupFranc, pour la meme
-    ' raison.
+    ' La liste est assemblee famille par famille : VBA
+    ' n'accepte que vingt-quatre continuations de ligne
+    ' dans une meme instruction.
 
     T = "9:2:En-avant volontaire" & vbTab & _
-        "9:5:Parle arbitre" & vbTab & _
-        "9:8:Brutalit" & ChrW(233) & vbTab & _
-        "11:5:Ruck - Soutient va au-del" & ChrW(224) & vbTab & _
-        "11:8:Plaquage " & ChrW(224) & " 2" & vbTab & _
         "13:2:Maul - Entrer sur le c" & ChrW(244) & "t" & ChrW(233) & vbTab & _
-        "13:5:Ruck - Soutient couch" & ChrW(233) & " sur porteur" & vbTab & _
-        "13:8:Plaquage haut"
-
-    T = T & vbTab & _
         "15:2:Maul - Ecroulement" & vbTab & _
-        "15:5:Ruck - Retard soutient" & vbTab & _
-        "15:8:Plaquage sans ballon" & vbTab & _
         "17:2:Melee - Poussee avant introduction" & vbTab & _
-        "17:5:Ruck - Garde le ballon au sol" & vbTab & _
-        "17:8:Plaquage " & ChrW(224) & " retardement" & vbTab & _
-        "19:5:Ruck - Saisie relayeur" & vbTab & _
-        "19:8:Plaquage en l'air"
-
-    T = T & vbTab & _
         "21:2:Touche - Saisie bras sauteur" & vbTab & _
-        "21:5:Ruck - Talonnage " & ChrW(224) & " la main" & vbTab & _
-        "23:2:Touche - Plaquage sauteur avant retomb" & _
-        ChrW(233) & "e" & vbTab & _
-        "23:5:Ruck - Plaqueur qui ne sort pas" & vbTab & _
-        "23:8:Hors-jeu"
+        "23:2:Touche - Plaquage sauteur avant retomb" & ChrW(233) & "e" & vbTab & _
+        "25:2:Touche - Pouss" & ChrW(233) & "e avant retomb" & ChrW(233) & "e sauteur"
 
     T = T & vbTab & _
-        "25:2:Touche - Pouss" & ChrW(233) & _
-        "e avant retomb" & ChrW(233) & "e sauteur" & vbTab & _
-        "25:5:Ruck - 4 appuis" & vbTab & _
-        "27:5:Faute sur le coup de pied - 10m" & vbTab & _
-        "27:8:Autre"
+        "9:5:Parle arbitre" & vbTab & _
+        "11:5:Ruck - Va au-del" & ChrW(224) & vbTab & _
+        "13:5:Ruck - Soutient couch" & ChrW(233) & " sur porteur" & vbTab & _
+        "15:5:Ruck - Retard soutient" & vbTab & _
+        "17:5:Ruck - Garde le ballon au sol" & vbTab & _
+        "19:5:Ruck - D" & ChrW(233) & "blayage sur le cot" & ChrW(233) & vbTab & _
+        "21:5:Ruck - Saisie relayeur" & vbTab & _
+        "23:5:Ruck - Talonnage " & ChrW(224) & " la main" & vbTab & _
+        "25:5:Ruck - Plaqueur qui ne sort pas" & vbTab & _
+        "27:5:Ruck - 4 appuis" & vbTab & _
+        "29:5:Ruck - Gratteur ne rel" & ChrW(226) & "che pas"
+
+    T = T & vbTab & _
+        "9:8:Brutalit" & ChrW(233) & vbTab & _
+        "11:8:Plaquage - " & ChrW(224) & " 2" & vbTab & _
+        "13:8:Plaquage - haut" & vbTab & _
+        "15:8:Plaquage - sans ballon" & vbTab & _
+        "17:8:Plaquage - " & ChrW(224) & " retardement" & vbTab & _
+        "19:8:Plaquage - en l'air" & vbTab & _
+        "23:8:Passage " & ChrW(224) & " vide" & vbTab & _
+        "25:8:Hors-jeu" & vbTab & _
+        "27:8:10m de plus" & vbTab & _
+        "29:8:Autre"
 
     MotifsPenalite = Split(T, vbTab)
 
@@ -687,8 +689,19 @@ Private Sub RafraichirLibelles( _
 
     ' Une penalite contre l'adversaire ne designe pas un
     ' de nos joueurs : la composition disparait alors.
-    ws.Cells(LIGNE_TITRE_JOUEURS, COL_TITRE_JOUEURS) _
+    With ws.Cells(LIGNE_TITRE_JOUEURS, COL_TITRE_JOUEURS)
+
         .Value = IIf(AvecJoueur, "JOUEUR FAUTIF", "")
+
+        ' Le fond marine s'en va aussi : vide, le bandeau
+        ' resterait visible comme un titre sans texte.
+        If AvecJoueur Then
+            .MergeArea.Interior.Color = MARINE
+        Else
+            .MergeArea.Interior.Color = RGB(255, 255, 255)
+        End If
+
+    End With
 
     Entrees = JoueursDisposes
 
@@ -831,6 +844,9 @@ Private Sub OuvrirPopupFaute( _
     RafraichirLibelles ws, TempsVideo, PenaliteAvecJoueur
 
     With ws.Range("PEN_CONTEXTE")
+        ' Format texte impose : sans lui, Excel lit
+        ' "64:48" comme 64 heures 48 et affiche 16:48.
+        .Cells(1, 1).NumberFormat = "@"
         .Cells(1, 1).Value = FormaterTemps(TempsVideo)
         .Cells(2, 1).Value = CurrentHalf
         ' Equipe est la possession qui suit la penalite :

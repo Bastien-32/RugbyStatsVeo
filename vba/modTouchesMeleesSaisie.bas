@@ -234,6 +234,9 @@ Private Sub AfficherPopup( _
     ws.Range(NomChamps).ClearContents
 
     With ws.Range(NomContexte)
+        ' Format texte impose : sans lui, Excel lit
+        ' "64:48" comme 64 heures 48 et affiche 16:48.
+        .Cells(1, 1).NumberFormat = "@"
         .Cells(1, 1).Value = FormaterTemps(PopupTemps)
         .Cells(2, 1).Value = CurrentHalf
         .Cells(3, 1).Value = EquipeEnToutesLettres(PopupLancePour)
@@ -449,9 +452,13 @@ End Function
 
 
 ' Le temps s'ecrit comme le journal le fait : une fraction
-' de jour, affichee en mm:ss. Une chaine "08:02" serait
+' de jour, affichee en [m]:ss. Une chaine "08:02" serait
 ' lue par Excel comme huit heures deux, et les deux
 ' tableaux ne seraient plus comparables.
+'
+' Les crochets cumulent les minutes au lieu de les
+' reporter en heures : sans eux, une touche a la 65e
+' minute s'affiche a la 5e.
 Private Sub EcrireTemps( _
     ByVal Ligne As ListRow, _
     ByVal NomColonne As String, _
@@ -466,7 +473,7 @@ Private Sub EcrireTemps( _
         1, lo.ListColumns(NomColonne).Index)
 
     Cellule.Value = Secondes / 86400
-    Cellule.NumberFormat = "mm:ss"
+    Cellule.NumberFormat = "[m]:ss"
 
 End Sub
 
