@@ -143,6 +143,7 @@ Private Sub ConstruirePopupTouche()
     EcrireBoutons ws, 16, "POPUP_TO_VALIDER", _
         "POPUP_TO_ANNULER"
 
+    NommerPlage ws, "D4", "POPUP_TO_PLAY_PAUSE"
     NommerPlage ws, "C4:C7", "POPUP_TO_CONTEXTE"
     NommerPlage ws, "C9:C14", "POPUP_TO_CHAMPS"
 
@@ -182,6 +183,7 @@ Private Sub ConstruirePopupMelee()
     EcrireBoutons ws, 14, "POPUP_ME_VALIDER", _
         "POPUP_ME_ANNULER"
 
+    NommerPlage ws, "D4", "POPUP_ME_PLAY_PAUSE"
     NommerPlage ws, "C4:C7", "POPUP_ME_CONTEXTE"
     NommerPlage ws, "C9:C12", "POPUP_ME_CHAMPS"
 
@@ -231,6 +233,20 @@ Private Sub EcrireContexte( _
         End With
 
     Next i
+
+    ' Lecture et pause sans quitter la popup : la video
+    ' reste pilotable pendant la saisie. Chaque popup
+    ' nomme ensuite la cellule a sa facon.
+    With ws.Cells(4, 4)
+
+        .Value = "PLAY / PAUSE"
+        .Interior.Color = VERT
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+
+    End With
 
 End Sub
 
@@ -338,6 +354,7 @@ Private Sub MettreEnFormePopup( _
     ws.Columns("A").ColumnWidth = 2
     ws.Columns("B").ColumnWidth = 14
     ws.Columns("C").ColumnWidth = 22
+    ws.Columns("D").ColumnWidth = 16
 
     ws.Rows(LigneBoutons).RowHeight = 24
 

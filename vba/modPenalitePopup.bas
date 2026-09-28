@@ -361,6 +361,24 @@ Private Sub EcrireContexte(ByVal ws As Worksheet)
             ws.Cells(6, COL_CONTEXTE)).Address, _
         "PEN_CONTEXTE"
 
+    ' Lecture et pause sans quitter la popup : la video
+    ' reste pilotable pendant qu'on cherche le motif.
+    With ws.Cells(4, COL_MOTIF_2).Resize(1, LARGEUR_MOTIF)
+
+        .Merge
+        .Value = "PLAY / PAUSE"
+        .Interior.Color = VERT
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+
+    End With
+
+    NommerPlage ws, _
+        ws.Cells(4, COL_MOTIF_2).Address, _
+        "PEN_PLAY_PAUSE"
+
 End Sub
 
 
@@ -858,6 +876,8 @@ Private Sub OuvrirPopupFaute( _
 
     ' La touche Entree vaut validation, comme le fait deja
     ' la popup d'ajout de joueur pour son bouton.
+    ActiverEspacePopup
+
     Application.OnKey "~", "ValiderPopupPenalite"
     Application.OnKey "{ENTER}", "ValiderPopupPenalite"
 
@@ -987,6 +1007,14 @@ Public Sub ClicPopupPenalite(ByVal Target As Range)
     End If
 
     Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_PEN)
+
+    If Not Intersect(Target, ws.Range("PEN_PLAY_PAUSE")) _
+        Is Nothing Then
+
+        BasculerLectureDepuisPopup
+        Exit Sub
+
+    End If
 
     If Not Intersect(Target, ws.Range("PEN_VALIDER")) _
         Is Nothing Then
