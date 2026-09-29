@@ -801,6 +801,7 @@ Public Sub RecolorerTouchesMelees()
 
     EtapeEnCours = "tableau des touches"
     Set lo = ws.ListObjects(TAB_TOUCHES)
+    AssurerUneLigne lo
     lo.DataBodyRange.FormatConditions.Delete
     PoserMFCIssue lo, "Lance pour", "Issue"
     PoserMFCBallon lo, "Ballon"
@@ -808,6 +809,7 @@ Public Sub RecolorerTouchesMelees()
 
     EtapeEnCours = "tableau des melees"
     Set lo = ws.ListObjects(TAB_MELEES)
+    AssurerUneLigne lo
     lo.DataBodyRange.FormatConditions.Delete
     PoserMFCIssue lo, "Introduction pour", "Issue"
     PoserMFCLigne lo, "Introduction pour", _
@@ -860,6 +862,24 @@ End Sub
 '   - le fond colore quand le lancer ou l'introduction
 '     nous revient.
 ' ---------------------------------------------------------
+
+' ---------------------------------------------------------
+' Un tableau sans ligne de donnees n'a pas de
+' DataBodyRange : il n'y a alors aucune cellule a mettre
+' en forme, et Excel repond par l'erreur 91.
+'
+' La ligne vide ajoutee ici est celle que les tableaux
+' portent de toute facon a leur construction.
+' ---------------------------------------------------------
+
+Private Sub AssurerUneLigne(ByVal lo As ListObject)
+
+    If lo.ListRows.Count = 0 Then
+        lo.ListRows.Add
+    End If
+
+End Sub
+
 
 Private Sub PoserMFCLigne( _
     ByVal lo As ListObject, _
