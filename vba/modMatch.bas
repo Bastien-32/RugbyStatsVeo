@@ -190,7 +190,7 @@ Public Sub CreerFichierMatch()
 
         ' Sur Mac, ne pas tester le dossier avec Dir :
         ' Excel peut le d_clarer introuvable malgr_ son existence
-        ' ö cause des autorisations de la sandbox.
+        ' A cause des autorisations de la sandbox.
         ' L'acc_s au fichier sera trait_ plus bas avec
         ' GrantAccessToMultipleFiles.
     
@@ -537,7 +537,10 @@ Private Function ConstruireMatchID( _
         Case "DOMICILE"
             LieuCode = "DOM"
     
-        Case "EXTƒRIEUR", "EXTERIEUR"
+        ' Le E accent aigu passe par ChrW : ecrit tel
+        ' quel, il ne survivrait pas a un import, et le
+        ' Case ne reconnaitrait plus le lieu.
+        Case "EXT" & ChrW(201) & "RIEUR", "EXTERIEUR"
             LieuCode = "EXT"
     
         Case "TERRAIN NEUTRE"

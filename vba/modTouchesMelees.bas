@@ -55,6 +55,10 @@ Private EtapeEnCours As String
 ' Mises en forme conditionnelles refusees par Excel.
 Private MFCEchouees As Long
 
+' Le premier refus, cite tel quel dans le message : un
+' compteur seul ne dit pas ce qu'Excel a rejete.
+Private DetailRefus As String
+
 
 Public Sub ConstruireFeuilleTouchesMelees()
 
@@ -85,6 +89,9 @@ Public Sub ConstruireFeuilleTouchesMelees()
 
     EtapeEnCours = "mise en forme"
     MettreEnFormeFeuille ws
+
+    EtapeEnCours = "bouton d'export"
+    ConstruireRecapitulatifs
 
     Application.ScreenUpdating = EtatAffichage
 
@@ -360,6 +367,7 @@ Private Sub ConstruireTableauTouches(ByVal ws As Worksheet)
 
     PoserMFCIssue lo, "Lance pour", "Issue"
     PoserMFCBallon lo, "Ballon"
+    PoserMFCLigne lo, "Lance pour", BLEU_CLAIR, BLEU_ENTETE
 
 End Sub
 
@@ -399,6 +407,8 @@ Private Sub ConstruireTableauMelees(ByVal ws As Worksheet)
     PoserValidation ws, lo, "Zone largeur", 7
 
     PoserMFCIssue lo, "Introduction pour", "Issue"
+    PoserMFCLigne lo, "Introduction pour", _
+        ORANGE_CLAIR, ORANGE_ENTETE
 
     ' Les trois colonnes de jeu recevront leurs puces a
     ' l'etape suivante : un clic y ecrira la coche, et
@@ -547,6 +557,394 @@ Private Sub PoserMFCBallon( _
 End Sub
 
 
+' =========================================================
+' BOUTON D'EXPORT
+'
+' En colonne AG, juste apres les listes : les tableaux
+' grandissent vers le bas, le bouton ne serait jamais au
+' meme endroit s'il les suivait.
+'
+' Le clic est capte par le module de la feuille, comme
+' partout ailleurs dans ce classeur.
+' =========================================================
+
+Public Sub AjouterBoutonExport()
+
+    On Error GoTo GestionErreur
+
+    ' Passe par les recapitulatifs : le bouton se place
+    ' sous celui des melees, qui doit donc exister.
+    ConstruireRecapitulatifs
+
+    MsgBox _
+        "Le bouton d'export est en place sous le " & _
+        "recapitulatif des melees.", _
+        vbInformation, _
+        "Touches et melees"
+
+    Exit Sub
+
+GestionErreur:
+
+    MsgBox _
+        "La pose du bouton a " & ChrW(233) & "chou" & _
+        ChrW(233) & "." & vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
+Private Sub PoserBoutonExport(ByVal ws As Worksheet)
+
+    Dim Ancre As Range
+    Dim Cible As Range
+
+    ' Deux cases sous le recapitulatif des melees, qui en
+    ' occupe trois lignes.
+    On Error Resume Next
+    Set Ancre = ThisWorkbook.Names(ANCRE_MELEES) _
+        .RefersToRange
+    On Error GoTo 0
+
+    If Ancre Is Nothing Then Exit Sub
+
+    ' L'emplacement precedent est libere avant le nouveau.
+    On Error Resume Next
+    ThisWorkbook.Names("TM_BTN_EXPORT") _
+        .RefersToRange.MergeArea.Clear
+    On Error GoTo 0
+
+    Set Cible = Ancre.Offset(4, 0).Resize(2, 2)
+
+    With Cible
+
+        .Merge
+        .Value = "EXPORTER" & vbLf & "LA FEUILLE"
+        .Interior.Color = BLEU_ENTETE
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+
+        .Borders.LineStyle = xlContinuous
+        .Borders.Color = BLEU_ENTETE
+
+    End With
+
+    On Error Resume Next
+    ThisWorkbook.Names("TM_BTN_EXPORT").Delete
+    On Error GoTo 0
+
+    ThisWorkbook.Names.Add _
+        Name:="TM_BTN_EXPORT", _
+        RefersTo:=Cible.Cells(1, 1)
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Appele par le module de la feuille a chaque selection.
+' ---------------------------------------------------------
+
+Public Sub ClicFeuilleTouchesMelees(ByVal Target As Range)
+
+    Dim Bouton As Range
+
+    On Error Resume Next
+    Set Bouton = ThisWorkbook.Names("TM_BTN_EXPORT") _
+        .RefersToRange
+    On Error GoTo 0
+
+    If Bouton Is Nothing Then Exit Sub
+
+    If Intersect(Target, Bouton.MergeArea) Is Nothing Then
+        Exit Sub
+    End If
+
+    ' La selection quitte le bouton, sinon un second clic
+    ' au meme endroit ne declencherait rien.
+    Target.Worksheet.Range("AG5").Select
+
+    ExporterTouchesMelees
+
+End Sub
+
+
+' =========================================================
+' EXPORT DE LA FEUILLE SEULE
+'
+' Copie la feuille dans un classeur neuf, enregistre au
+' format .xlsx a cote du fichier de match.
+'
+' Le .xlsx ne porte pas de macro : le module de code de la
+' feuille, copie avec elle, est laisse de cote a
+' l'enregistrement. Le destinataire recoit les deux
+' tableaux, leurs couleurs et leurs recapitulatifs, sans
+' rien du reste du classeur.
+'
+' Les dix formules des recapitulatifs ne citent que les
+' deux tableaux de la feuille : elles restent valides une
+' fois la feuille detachee.
+' =========================================================
+
+Public Sub ExporterTouchesMelees()
+
+    Dim wsSource As Worksheet
+    Dim wbCible As Workbook
+    Dim Chemin As Variant
+    Dim Nom As String
+    Dim EtatAlertes As Boolean
+
+    On Error GoTo GestionErreur
+
+    Set wsSource = FeuilleTouchesMelees
+
+    Nom = ThisWorkbook.Name
+
+    If InStrRev(Nom, ".") > 0 Then
+        Nom = Left(Nom, InStrRev(Nom, ".") - 1)
+    End If
+
+    ' Le nom du match d'abord : les exports d'une meme
+    ' saison se rangent ainsi les uns a la suite des
+    ' autres.
+    Nom = Nom & " - Touches et melees.xlsx"
+
+    ' L'emplacement passe par la boite de dialogue, et non
+    ' par un chemin ecrit dans le code : Excel pour Mac
+    ' vit dans un bac a sable et refuse d'ecrire la ou
+    ' l'utilisateur ne lui a pas ouvert l'acces. Choisir
+    ' le dossier soi-meme accorde cet acces.
+    '
+    ' Sans FileFilter : Excel pour Mac n'en veut pas.
+    On Error Resume Next
+    Chemin = Application.GetSaveAsFilename( _
+        InitialFileName:=Nom, _
+        Title:="Enregistrer la feuille des touches")
+    On Error GoTo GestionErreur
+
+    ' Annule par l'utilisateur.
+    If VarType(Chemin) = vbBoolean Then
+        Exit Sub
+    End If
+
+    ' La boite de dialogue n'a pas repondu : le dossier
+    ' par defaut d'Excel est, lui, toujours accessible.
+    If Trim(CStr(Chemin)) = "" Then
+
+        Chemin = Application.DefaultFilePath & _
+            Application.PathSeparator & Nom
+
+    End If
+
+    wsSource.Copy
+
+    Set wbCible = ActiveWorkbook
+
+    EtatAlertes = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+
+    wbCible.SaveAs _
+        Filename:=CStr(Chemin), _
+        FileFormat:=xlOpenXMLWorkbook
+
+    Application.DisplayAlerts = EtatAlertes
+
+    MsgBox _
+        "La feuille est export" & ChrW(233) & "e dans :" & _
+        vbCrLf & vbCrLf & wbCible.FullName & vbCrLf & _
+        vbCrLf & "Le classeur reste ouvert pour v" & _
+        ChrW(233) & "rification.", _
+        vbInformation, _
+        "Touches et melees"
+
+    Exit Sub
+
+GestionErreur:
+
+    Application.DisplayAlerts = EtatAlertes
+
+    MsgBox _
+        "L'export a " & ChrW(233) & "chou" & ChrW(233) & _
+        "." & vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
+' =========================================================
+' RECOLORATION DES TABLEAUX EXISTANTS
+'
+' Les tableaux deja construits gardent leurs bandes une
+' ligne sur deux : cette macro repose toutes leurs mises
+' en forme conditionnelles.
+'
+' A lancer aussi sur un fichier de match deja saisi.
+' =========================================================
+
+Public Sub RecolorerTouchesMelees()
+
+    Dim ws As Worksheet
+    Dim lo As ListObject
+
+    MFCEchouees = 0
+    DetailRefus = ""
+
+    On Error GoTo GestionErreur
+
+    Set ws = FeuilleTouchesMelees
+
+    EtapeEnCours = "tableau des touches"
+    Set lo = ws.ListObjects(TAB_TOUCHES)
+    lo.DataBodyRange.FormatConditions.Delete
+    PoserMFCIssue lo, "Lance pour", "Issue"
+    PoserMFCBallon lo, "Ballon"
+    PoserMFCLigne lo, "Lance pour", BLEU_CLAIR, BLEU_ENTETE
+
+    EtapeEnCours = "tableau des melees"
+    Set lo = ws.ListObjects(TAB_MELEES)
+    lo.DataBodyRange.FormatConditions.Delete
+    PoserMFCIssue lo, "Introduction pour", "Issue"
+    PoserMFCLigne lo, "Introduction pour", _
+        ORANGE_CLAIR, ORANGE_ENTETE
+
+    If MFCEchouees = 0 Then
+
+        MsgBox _
+            "Les deux tableaux sont recolores.", _
+            vbInformation, _
+            "Touches et melees"
+
+    Else
+
+        MsgBox _
+            MFCEchouees & " mise(s) en forme refusee(s) " & _
+            "par Excel." & vbCrLf & vbCrLf & DetailRefus, _
+            vbExclamation, _
+            "Touches et melees"
+
+    End If
+
+    Exit Sub
+
+GestionErreur:
+
+    MsgBox _
+        "La recoloration a echoue pendant : " & _
+        EtapeEnCours & "." & vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Coloration des lignes
+'
+' Les bandes une ligne sur deux ne disaient rien : la
+' couleur sert desormais a distinguer nos touches et nos
+' melees de celles de l'adversaire.
+'
+' Deux regles, posees en derniere priorite pour que les
+' mises en forme de l'issue et du ballon gardent la main
+' sur les cellules qu'elles colorent :
+'
+'   - un trait sous chaque ligne remplie, sans quoi deux
+'     lignes de meme couleur se confondraient ;
+'   - le fond colore quand le lancer ou l'introduction
+'     nous revient.
+' ---------------------------------------------------------
+
+Private Sub PoserMFCLigne( _
+    ByVal lo As ListObject, _
+    ByVal NomColonne As String, _
+    ByVal CouleurFond As Long, _
+    ByVal CouleurBordure As Long)
+
+    Dim rng As Range
+    Dim Lettre As String
+    Dim Ligne As Long
+
+    EtapeEnCours = "MFC ligne"
+
+    Set rng = lo.DataBodyRange
+
+    Lettre = LettreColonne( _
+        lo.ListColumns(NomColonne).Range.Column)
+
+    Ligne = rng.Row
+
+    On Error Resume Next
+    lo.ShowTableStyleRowStripes = False
+    On Error GoTo 0
+
+    ' Une seule regle par ligne, et dans cet ordre : Excel
+    ' pour Mac marque toute regle posee par VBA en "arreter
+    ' si vrai", si bien qu'une premiere regle vraie partout
+    ' empecherait la seconde d'etre evaluee. Chacune porte
+    ' donc son trait.
+    AjouterMFCLigne rng, _
+        "=$" & Lettre & Ligne & "=""N""", _
+        CouleurFond, CouleurBordure
+
+    AjouterMFCLigne rng, _
+        "=$" & Lettre & Ligne & "<>""""", _
+        -1, CouleurBordure
+
+End Sub
+
+
+Private Sub AjouterMFCLigne( _
+    ByVal rng As Range, _
+    ByVal Formule As String, _
+    ByVal CouleurFond As Long, _
+    ByVal CouleurBordure As Long)
+
+    Dim fc As FormatCondition
+
+    ' Seul l'ajout est surveille : ajoutee en dernier, la
+    ' regle porte deja la priorite la plus faible, et
+    ' SetLastPriority n'a pas lieu d'etre.
+    On Error GoTo MFCRefusee
+
+    Set fc = rng.FormatConditions.Add( _
+        Type:=xlExpression, _
+        Formula1:=Formule)
+
+    ' Excel pour Mac refuse certaines proprietes sans que
+    ' la regle elle-meme soit perdue : chacune est posee
+    ' separement.
+    On Error Resume Next
+
+    If CouleurFond >= 0 Then
+        fc.Interior.Color = CouleurFond
+    End If
+
+    If CouleurBordure >= 0 Then
+        fc.Borders(xlBottom).LineStyle = xlContinuous
+        fc.Borders(xlBottom).Color = CouleurBordure
+    End If
+
+    Exit Sub
+
+MFCRefusee:
+
+    MFCEchouees = MFCEchouees + 1
+
+    If DetailRefus = "" Then
+        DetailRefus = "Erreur " & Err.Number & " : " & _
+            Err.Description & vbCrLf & "Formule : " & Formule
+    End If
+
+End Sub
+
+
 Private Sub AjouterMFC( _
     ByVal rng As Range, _
     ByVal Formule As String, _
@@ -636,6 +1034,8 @@ Public Sub ConstruireRecapitulatifs()
     EcrireRecap ws, ANCRE_MELEES, TAB_MELEES, _
         "Introduction pour", "Melees", False, _
         ORANGE_ENTETE, ORANGE_CLAIR
+
+    PoserBoutonExport ws
 
     Exit Sub
 
@@ -728,24 +1128,38 @@ Private Function Comptage( _
 End Function
 
 
+' Le recapitulatif se replace sous le tableau a chaque
+' ecriture : fige, il finirait recouvert par les lignes
+' qui s'ajoutent.
+'
+' L'emplacement precedent est efface avant le calcul du
+' nouveau, sinon le recapitulatif se dupliquerait a
+' chaque descente.
 Private Function AncreRecap( _
     ByVal ws As Worksheet, _
     ByVal NomAncre As String, _
     ByVal lo As ListObject) As Range
 
     Dim Ligne As Long
+    Dim Ancienne As Range
 
     On Error Resume Next
-    Set AncreRecap = ThisWorkbook.Names(NomAncre) _
+    Set Ancienne = ThisWorkbook.Names(NomAncre) _
         .RefersToRange
     On Error GoTo 0
 
-    If Not AncreRecap Is Nothing Then Exit Function
+    If Not Ancienne Is Nothing Then
+        Ancienne.Resize(3, 4).Clear
+    End If
 
     ' Deux lignes de respiration sous le tableau.
     Ligne = lo.Range.Row + lo.Range.Rows.Count + 1
 
     Set AncreRecap = ws.Cells(Ligne, lo.Range.Column)
+
+    On Error Resume Next
+    ThisWorkbook.Names(NomAncre).Delete
+    On Error GoTo 0
 
     ThisWorkbook.Names.Add _
         Name:=NomAncre, _
