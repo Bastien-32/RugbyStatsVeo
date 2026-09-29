@@ -316,6 +316,13 @@ Private Sub FermerPopup(ByVal NomFeuille As String)
 
     PopupOuverte = False
 
+    ' La ligne vient d'etre ecrite : les recapitulatifs
+    ' redescendent sous les tableaux, et le bouton
+    ' d'export avec eux.
+    On Error Resume Next
+    ConstruireRecapitulatifs
+    On Error GoTo 0
+
     ReprendreVideoApresPopup
 
     Set ws = ThisWorkbook.Sheets(NomFeuille)

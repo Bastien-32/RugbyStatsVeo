@@ -16,4 +16,9 @@ Private Sub Worksheet_BeforeDoubleClick( _
 
 End Sub
 
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+
+    ClicFeuilleTouchesMelees Target
+
+End Sub
 
