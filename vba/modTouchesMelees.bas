@@ -665,8 +665,10 @@ Public Sub ClicFeuilleTouchesMelees(ByVal Target As Range)
     End If
 
     ' La selection quitte le bouton, sinon un second clic
-    ' au meme endroit ne declencherait rien.
-    Target.Worksheet.Range("AG5").Select
+    ' au meme endroit ne declencherait rien. K2 separe les
+    ' deux tableaux : on revient en haut de la feuille
+    ' plutot qu'a leur pied.
+    Target.Worksheet.Range("K2").Select
 
     ExporterTouchesMelees
 
@@ -676,23 +678,26 @@ End Sub
 ' =========================================================
 ' EXPORT DE LA FEUILLE SEULE
 '
-' Copie la feuille dans un classeur neuf, enregistre au
-' format .xlsx a cote du fichier de match.
+' Le contenu est recopie dans un classeur neuf, puis
+' enregistre au format .xlsx.
 '
-' Le .xlsx ne porte pas de macro : le module de code de la
-' feuille, copie avec elle, est laisse de cote a
-' l'enregistrement. Le destinataire recoit les deux
-' tableaux, leurs couleurs et leurs recapitulatifs, sans
-' rien du reste du classeur.
+' Copier la feuille elle-meme emporterait son module de
+' code, qui appelle des procedures absentes du nouveau
+' classeur : la moindre selection y declencherait une
+' erreur de compilation. Seuls les valeurs et les formats
+' voyagent donc.
 '
-' Les dix formules des recapitulatifs ne citent que les
-' deux tableaux de la feuille : elles restent valides une
-' fois la feuille detachee.
+' Tout est fige : le destinataire recoit des nombres, non
+' des formules qui chercheraient des tableaux restes dans
+' le fichier de match. Les couleurs conditionnelles, elles,
+' continuent de fonctionner, car elles ne lisent que des
+' cellules de la feuille.
 ' =========================================================
 
 Public Sub ExporterTouchesMelees()
 
     Dim wsSource As Worksheet
+    Dim wsCible As Worksheet
     Dim wbCible As Workbook
     Dim Chemin As Variant
     Dim Nom As String
@@ -716,8 +721,7 @@ Public Sub ExporterTouchesMelees()
     ' L'emplacement passe par la boite de dialogue, et non
     ' par un chemin ecrit dans le code : Excel pour Mac
     ' vit dans un bac a sable et refuse d'ecrire la ou
-    ' l'utilisateur ne lui a pas ouvert l'acces. Choisir
-    ' le dossier soi-meme accorde cet acces.
+    ' l'utilisateur ne lui a pas ouvert l'acces.
     '
     ' Sans FileFilter : Excel pour Mac n'en veut pas.
     On Error Resume Next
@@ -740,9 +744,24 @@ Public Sub ExporterTouchesMelees()
 
     End If
 
-    wsSource.Copy
+    Set wbCible = Workbooks.Add(xlWBATWorksheet)
+    Set wsCible = wbCible.Worksheets(1)
 
-    Set wbCible = ActiveWorkbook
+    wsCible.Name = FEUILLE_TM
+
+    wsSource.UsedRange.Copy
+
+    wsCible.Range("A1").PasteSpecial xlPasteColumnWidths
+    wsCible.Range("A1").PasteSpecial xlPasteAll
+
+    Application.CutCopyMode = False
+
+    RendreAutonome wsCible
+
+    ' Les deux tableaux sont refaits a l'identique : sans
+    ' eux, le destinataire perdrait le filtrage.
+    RecreerTableau wsSource, wsCible, TAB_TOUCHES
+    RecreerTableau wsSource, wsCible, TAB_MELEES
 
     EtatAlertes = Application.DisplayAlerts
     Application.DisplayAlerts = False
@@ -765,6 +784,7 @@ Public Sub ExporterTouchesMelees()
 
 GestionErreur:
 
+    Application.CutCopyMode = False
     Application.DisplayAlerts = EtatAlertes
 
     MsgBox _
@@ -773,6 +793,101 @@ GestionErreur:
         "Erreur " & Err.Number & " : " & Err.Description, _
         vbExclamation, _
         "Touches et melees"
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Ce qui n'a pas de sens hors du fichier de match :
+' les formules, qui pointeraient vers des tableaux restes
+' la-bas ; le bouton d'export, sans macro pour l'entendre ;
+' les listes deroulantes et leurs colonnes de reference.
+' ---------------------------------------------------------
+
+Private Sub RendreAutonome(ByVal ws As Worksheet)
+
+    Dim Zone As Range
+
+    Set Zone = ws.UsedRange
+
+    Zone.Value = Zone.Value
+
+    On Error Resume Next
+    Zone.Validation.Delete
+    On Error GoTo 0
+
+    ' Le bouton se trouve deux lignes sous le
+    ' recapitulatif des melees, comme dans la source.
+    On Error Resume Next
+    ws.Range("V:AZ").Clear
+    ws.Range("V:AZ").ColumnWidth = 8.43
+    On Error GoTo 0
+
+    EffacerBoutonExport ws
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Le tableau structure de la source, refait sur la meme
+' plage dans la copie : meme nom, meme style, et toujours
+' sans bandes, que les lignes colorees remplacent.
+' ---------------------------------------------------------
+
+Private Sub RecreerTableau( _
+    ByVal wsSource As Worksheet, _
+    ByVal wsCible As Worksheet, _
+    ByVal NomTableau As String)
+
+    Dim loSource As ListObject
+    Dim loCible As ListObject
+    Dim Adresse As String
+    Dim Style As String
+
+    On Error GoTo Sortie
+
+    Set loSource = wsSource.ListObjects(NomTableau)
+
+    Adresse = loSource.Range.Address
+    Style = loSource.TableStyle
+
+    Set loCible = wsCible.ListObjects.Add( _
+        SourceType:=xlSrcRange, _
+        Source:=wsCible.Range(Adresse), _
+        XlListObjectHasHeaders:=xlYes)
+
+    loCible.Name = NomTableau
+    loCible.TableStyle = Style
+    loCible.ShowTableStyleRowStripes = False
+
+Sortie:
+
+End Sub
+
+
+Private Sub EffacerBoutonExport(ByVal ws As Worksheet)
+
+    Dim Cellule As Range
+    Dim Zone As Range
+
+    For Each Cellule In ws.UsedRange
+
+        If InStr(1, CStr(Cellule.Value), "EXPORTER", _
+            vbTextCompare) > 0 Then
+
+            ' La zone est retenue avant la defusion :
+            ' apres, MergeArea ne rendrait plus que la
+            ' cellule d'ancrage, et les autres garderaient
+            ' leur fond bleu.
+            Set Zone = Cellule.MergeArea
+            Zone.UnMerge
+            Zone.Clear
+
+            Exit For
+
+        End If
+
+    Next Cellule
 
 End Sub
 
