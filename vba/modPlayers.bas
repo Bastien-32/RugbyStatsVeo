@@ -51,6 +51,10 @@ Public Sub AnnulerPopupAjouterJoueur()
     Sheets("Popup").Range("POPUP_NOM").Value = ""
     Sheets("Popup").Range("POPUP_PRENOM").Value = ""
     Sheets("Listes").Activate
+    
+    ' Apres Activate : une feuille active ne se masque pas.
+    Sheets("Popup").Visible = xlSheetHidden
+
 
 End Sub
 
@@ -82,6 +86,10 @@ Public Sub ValiderPopupAjouterJoueur()
     Sheets("Popup").Range("POPUP_PRENOM").Value = ""
 
     Sheets("Listes").Activate
+    
+    ' Apres Activate : une feuille active ne se masque pas.
+    Sheets("Popup").Visible = xlSheetHidden
+
 
 End Sub
 
