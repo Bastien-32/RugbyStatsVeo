@@ -135,47 +135,6 @@ End Sub
 ' ---------------------------------------------------------
 ' Remise a zero
 '
-' Utile pendant la mise au point : supprime la feuille
-' pour repartir d'une construction propre.
-' ---------------------------------------------------------
-
-Public Sub SupprimerFeuilleTouchesMelees()
-
-    Dim ws As Worksheet
-    Dim EtatAlertes As Boolean
-
-    On Error Resume Next
-    Set ws = ThisWorkbook.Sheets(FEUILLE_TM)
-    On Error GoTo 0
-
-    If ws Is Nothing Then
-
-        MsgBox _
-            "Aucune feuille """ & FEUILLE_TM & """.", _
-            vbInformation, _
-            "Touches et melees"
-
-        Exit Sub
-
-    End If
-
-    If MsgBox( _
-        "Supprimer la feuille """ & FEUILLE_TM & _
-        """ et tout son contenu ?", _
-        vbYesNo + vbExclamation, _
-        "Touches et melees") <> vbYes Then Exit Sub
-
-    EtatAlertes = Application.DisplayAlerts
-    Application.DisplayAlerts = False
-
-    SupprimerNomsListes
-    ws.Delete
-
-    Application.DisplayAlerts = EtatAlertes
-
-End Sub
-
-
 ' ---------------------------------------------------------
 ' La feuille elle-meme
 ' ---------------------------------------------------------
@@ -669,45 +628,6 @@ Private Sub PoserMFCBallon( _
 End Sub
 
 
-' =========================================================
-' BOUTON D'EXPORT
-'
-' En colonne AG, juste apres les listes : les tableaux
-' grandissent vers le bas, le bouton ne serait jamais au
-' meme endroit s'il les suivait.
-'
-' Le clic est capte par le module de la feuille, comme
-' partout ailleurs dans ce classeur.
-' =========================================================
-
-Public Sub AjouterBoutonExport()
-
-    On Error GoTo GestionErreur
-
-    ' Passe par les recapitulatifs : le bouton se place
-    ' sous celui des melees, qui doit donc exister.
-    ConstruireRecapitulatifs
-
-    MsgBox _
-        "Le bouton d'export est en place sous le " & _
-        "recapitulatif des melees.", _
-        vbInformation, _
-        "Touches et melees"
-
-    Exit Sub
-
-GestionErreur:
-
-    MsgBox _
-        "La pose du bouton a " & ChrW(233) & "chou" & _
-        ChrW(233) & "." & vbCrLf & vbCrLf & _
-        "Erreur " & Err.Number & " : " & Err.Description, _
-        vbExclamation, _
-        "Touches et melees"
-
-End Sub
-
-
 Private Sub PoserBoutonExport(ByVal ws As Worksheet)
 
     Dim Ancre As Range
@@ -1162,97 +1082,6 @@ Private Sub EffacerBoutonExport(ByVal ws As Worksheet)
         End If
 
     Next Cellule
-
-End Sub
-
-
-' =========================================================
-' REORGANISATION EN COLONNE
-'
-' Les deux tableaux etaient cote a cote. Le bloc des
-' melees passe sous le recapitulatif des touches, dans les
-' memes colonnes.
-'
-' A lancer une seule fois par classeur : elle ne fait rien
-' si le deplacement a deja eu lieu.
-'
-' Le bloc est deplace d'un seul couper-coller, si bien
-' qu'Excel emporte avec lui le tableau structure, son
-' style, ses listes deroulantes et ses mises en forme
-' conditionnelles.
-' =========================================================
-
-Public Sub ReorganiserFeuilleTouchesMelees()
-
-    Dim ws As Worksheet
-    Dim lo As ListObject
-    Dim Source As Range
-    Dim Ligne As Long
-    Dim DerniereLigne As Long
-
-    On Error GoTo GestionErreur
-
-    Set ws = FeuilleTouchesMelees
-    Set lo = ws.ListObjects(TAB_MELEES)
-
-    If lo.Range.Column = 1 Then
-
-        MsgBox _
-            "Les deux tableaux sont d" & ChrW(233) & _
-            "j" & ChrW(224) & " l'un sous l'autre.", _
-            vbInformation, _
-            "Touches et melees"
-
-        Exit Sub
-
-    End If
-
-    Ligne = LigneTitreMelees(ws)
-
-    DerniereLigne = ws.UsedRange.Row + _
-        ws.UsedRange.Rows.Count - 1
-
-    ' Tout ce qui vit a droite : le titre, le tableau, le
-    ' recapitulatif et le bouton d'export.
-    Set Source = ws.Range( _
-        ws.Cells(1, lo.Range.Column), _
-        ws.Cells(DerniereLigne, lo.Range.Column + 9))
-
-    Source.Cut Destination:=ws.Cells(Ligne, 1)
-
-    Application.CutCopyMode = False
-
-    ' La colonne qui separait les deux tableaux n'a plus
-    ' d'objet.
-    ws.Columns("K").ColumnWidth = 12
-
-    ws.Cells(Ligne, 1).Font.Bold = True
-    ws.Cells(Ligne, 1).Font.Size = 14
-
-    ' Recapitulatifs et bouton reprennent leur place sous
-    ' leurs tableaux respectifs.
-    ConstruireRecapitulatifs
-
-    MsgBox _
-        "Le bloc des m" & ChrW(234) & "l" & ChrW(233) & _
-        "es est pass" & ChrW(233) & " sous celui des " & _
-        "touches.", _
-        vbInformation, _
-        "Touches et melees"
-
-    Exit Sub
-
-GestionErreur:
-
-    Application.CutCopyMode = False
-
-    MsgBox _
-        "La r" & ChrW(233) & "organisation a " & _
-        ChrW(233) & "chou" & ChrW(233) & "." & _
-        vbCrLf & vbCrLf & _
-        "Erreur " & Err.Number & " : " & Err.Description, _
-        vbExclamation, _
-        "Touches et melees"
 
 End Sub
 

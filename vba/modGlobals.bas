@@ -19,12 +19,6 @@ Public PendingPlayerCount As Long
 Public PendingAllowMultiplePlayers As Boolean
 Public PendingForcedTeam As String
 
-Public PendingPenaltyActive As Boolean
-Public PendingPenaltyBaseAction As String
-Public PendingPenaltyTime As Double
-Public PendingPenaltyForcedTeam As String
-Public PendingPenaltyNeedsPlayer As Boolean
-
 Public PendingMotifPenalite As String
 Public PendingGroupeFautifRequired As Boolean
 

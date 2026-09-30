@@ -269,32 +269,7 @@ GestionErreur:
         vbExclamation, _
         "Penalites"
 
-End Sub
-
-
-Public Sub SupprimerPopupPenalite()
-
-    Dim ws As Worksheet
-    Dim EtatAlertes As Boolean
-
-    On Error Resume Next
-    Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_PEN)
-    On Error GoTo 0
-
-    If ws Is Nothing Then Exit Sub
-
-    EtatAlertes = Application.DisplayAlerts
-    Application.DisplayAlerts = False
-
-    ws.Visible = xlSheetVisible
-    ws.Delete
-
-    Application.DisplayAlerts = EtatAlertes
-
-End Sub
-
-
-Private Sub EcrireTitre(ByVal ws As Worksheet)
+End SubPrivate Sub EcrireTitre(ByVal ws As Worksheet)
 
     With ws.Cells(2, COL_MOTIF_1)
         .Value = "PENALITE"
@@ -843,8 +818,7 @@ Private Sub OuvrirPopupFaute( _
     PenaliteAvecJoueur = (Equipe = "Adv")
 
     ' Une action restee en attente doit etre close avant
-    ' que la penalite prenne la main, comme le faisait
-    ' InitialiserPenalite.
+    ' que la penalite prenne la main.
     FermerActionEnAttente
     SuspendreVideoPourPopup TempsVideo
 

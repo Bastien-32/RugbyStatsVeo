@@ -53,9 +53,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
     Dim Joueur As String
     Dim NumeroJoueur As String
     Dim TempsVideo As Double
-    Dim MotifPenalite As String
     Dim GroupeFautif As String
-    Dim TempsPenaliteFinalisee As Double
     Dim ActionJoueurFinalisee As String
     Dim AjouterArretApresJoueur As Boolean
     Dim ActionFermee As Boolean
@@ -103,90 +101,6 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         Set Target = Target.Cells(1, 1)
 
     End If
-    
-    ' =====================================================
-    ' PENALITE EN ATTENTE D'UN MOTIF
-    ' =====================================================
-    
-    If PendingPenaltyActive Then
-    
-        If IsPenaltyReasonButton(Target) Then
-    
-            MotifPenalite = GetPenaltyReason(Target)
-    
-            ActiverBoutonPenaliteEnAttente
-    
-            If PendingPenaltyNeedsPlayer Then
-    
-                TransformerPenaliteEnAttenteJoueur _
-                    MotifPenalite
-    
-                Exit Sub
-    
-            Else
-    
-                ActionTexte = PendingPenaltyBaseAction
-                TempsPenaliteFinalisee = PendingPenaltyTime
-    
-                SetCurrentTeam PendingPenaltyForcedTeam
-    
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsPenaliteFinalisee, _
-                    MotifPenalite, _
-                    ""
-    
-                FermerPenaliteEnAttente
-    
-                AjouterArretJeuAutomatique _
-                    TempsPenaliteFinalisee
-    
-                ReleaseButton
-                Exit Sub
-    
-            End If
-    
-            ElseIf PendingPenaltyNeedsPlayer And _
-                EstBoutonJoueur(Target) Then
-    
-            ' Joueur choisi sans motif :
-            ' le motif devient "?".
-            TransformerPenaliteEnAttenteJoueur "?"
-    
-            ' Ne pas quitter la procedure :
-            ' le clic joueur sera traite plus bas.
-    
-        ElseIf EstBoutonRepriseJeu(Target) Then
-    
-            ' La reprise finalise la penalite avec les
-            ' informations manquantes remplacees par "?".
-            FinaliserPenaliteOubliee
-    
-            ' Ne pas quitter :
-            ' la reprise cliquee doit ensuite etre enregistree.
-    
-        ElseIf Not Intersect( _
-            Target, _
-            Range("BTN_ARRET_DU_JEU") _
-        ) Is Nothing Then
-    
-            FinaliserPenaliteOubliee
-    
-            ReleaseButton
-            Exit Sub
-    
-        Else
-    
-            AfficherAlertePenaliteEnAttente
-    
-            ReleaseButton
-            Exit Sub
-    
-        End If
-    
-    End If
-    
     
     ' =====================================================
     ' PENALITE EN ATTENTE D'UN JOUEUR

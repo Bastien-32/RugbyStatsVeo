@@ -369,12 +369,6 @@ Public Sub ReinitialiserSelectionSaisieVideo()
     PendingForcedTeam = ""
     PendingActionChangesPossession = False
 
-    PendingPenaltyActive = False
-    PendingPenaltyBaseAction = ""
-    PendingPenaltyTime = 0
-    PendingPenaltyForcedTeam = ""
-    PendingPenaltyNeedsPlayer = False
-
     PendingMotifPenalite = ""
     PendingGroupeFautifRequired = False
 
