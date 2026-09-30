@@ -311,12 +311,19 @@ End Sub
 Public Sub ReleaseButton()
 
     Dim EtatEvenements As Boolean
+    Dim EtatAffichage As Boolean
 
     EtatEvenements = Application.EnableEvents
+    EtatAffichage = Application.ScreenUpdating
 
     On Error GoTo SortiePropre
 
     Application.EnableEvents = False
+
+    ' L'affichage est fige le temps du deplacement : sans
+    ' cela Excel montre la selection passer par la case de
+    ' parking avant que le bouton ne reprenne sa couleur.
+    Application.ScreenUpdating = False
 
     If ActiveWorkbook Is ThisWorkbook Then
         If ActiveSheet Is shSaisieVideo Then
@@ -326,6 +333,7 @@ Public Sub ReleaseButton()
 
 SortiePropre:
 
+    Application.ScreenUpdating = EtatAffichage
     Application.EnableEvents = EtatEvenements
 
 End Sub

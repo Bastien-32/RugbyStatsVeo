@@ -50,6 +50,13 @@ Public Sub MettreAJourAffichageChronoVideo()
 
         End With
 
+        ' La palette suit le temps : les quinze boutons
+        ' montrent qui est sur le terrain a cet instant.
+        ' Rien n'est reecrit tant que rien ne change.
+        On Error Resume Next
+        EcrirePalettePresents TempsSecondes
+        On Error GoTo 0
+
     End If
 
     ProchaineMiseAJour = Now + TimeSerial(0, 0, 1)

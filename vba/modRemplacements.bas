@@ -1233,3 +1233,152 @@ Private Sub EcrireTempsLisible( _
     ws.Rows(LIGNE_TEMPS_LISIBLE).Hidden = False
 
 End Sub
+
+' =========================================================
+' PALETTE DES QUINZE PRESENTS
+'
+' Les boutons ne portent plus les postes 1 a 22 mais les
+' quinze emplacements du terrain. Apres le remplacement du
+' 10 par le 22, l'emplacement du 10 affiche 22 et le nom
+' du remplacant.
+'
+' Appelee a chaque battement du chrono : elle ne reecrit
+' que ce qui a change, sinon la palette clignoterait une
+' fois par seconde.
+' =========================================================
+
+Public Sub RafraichirPalettePresents()
+
+    Dim Temps As Double
+
+    Temps = GetTimeVideo()
+
+    If Temps < 0 Then Temps = 0
+
+    EcrirePalettePresents Temps
+
+End Sub
+
+
+Public Sub EcrirePalettePresents(ByVal TempsVideo As Double)
+
+    Dim ws As Worksheet
+    Dim i As Long
+    Dim Poste As String
+    Dim Nom As String
+    Dim Texte As String
+    Dim Cellule As Range
+    Dim EtatEvenements As Boolean
+
+    Set ws = shSaisieVideo
+
+    EtatEvenements = Application.EnableEvents
+
+    On Error GoTo Sortie
+
+    Application.EnableEvents = False
+
+    For i = 1 To NB_TITULAIRES
+
+        Set Cellule = Nothing
+
+        On Error Resume Next
+        Set Cellule = ws.Range("BTN_JO_" & i)
+        On Error GoTo Sortie
+
+        If Not Cellule Is Nothing Then
+
+            Poste = OccupantEmplacement(i, TempsVideo)
+            Nom = NomDeFamille(GetPlayerName(Poste))
+
+            If Nom = "" Then
+                Texte = Poste
+            Else
+                Texte = Poste & vbLf & Nom
+            End If
+
+            ' Rien n'est ecrit si rien n'a change : le
+            ' rafraichissement passe chaque seconde.
+            If CStr(Cellule.Value) <> Texte Then
+
+                Cellule.Value = Texte
+                HabillerBoutonJoueur Cellule, Poste, Nom
+
+            End If
+
+        End If
+
+    Next i
+
+Sortie:
+
+    Application.EnableEvents = EtatEvenements
+
+End Sub
+
+
+' Le numero en gros, le nom en petit dessous.
+Private Sub HabillerBoutonJoueur( _
+    ByVal Cellule As Range, _
+    ByVal Poste As String, _
+    ByVal Nom As String)
+
+    On Error Resume Next
+
+    With Cellule
+
+        .WrapText = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+
+        If Nom = "" Then
+
+            ' Sans nom, la cellule ne porte qu'un nombre :
+            ' Characters n'aurait pas de prise dessus.
+            .Font.Size = 18
+            .Font.Bold = True
+
+        Else
+
+            .Characters(1, Len(Poste)).Font.Size = 18
+            .Characters(1, Len(Poste)).Font.Bold = True
+
+            .Characters(Len(Poste) + 2, Len(Nom)).Font.Size = 9
+            .Characters(Len(Poste) + 2, Len(Nom)).Font.Bold = False
+
+        End If
+
+    End With
+
+End Sub
+
+
+' Les mots en majuscules du debut : "ABADIE Quentin"
+' donne "ABADIE", "LOUREIRO LABAZUY Antonio" donne les
+' deux premiers.
+Private Function NomDeFamille( _
+    ByVal NomComplet As String) As String
+
+    Dim Mots() As String
+    Dim Mot As Variant
+    Dim Resultat As String
+
+    If Trim(NomComplet) = "" Then Exit Function
+
+    Mots = Split(Trim(NomComplet), " ")
+
+    For Each Mot In Mots
+
+        If CStr(Mot) <> UCase(CStr(Mot)) Then Exit For
+
+        If Resultat = "" Then
+            Resultat = CStr(Mot)
+        Else
+            Resultat = Resultat & " " & CStr(Mot)
+        End If
+
+    Next Mot
+
+    NomDeFamille = Resultat
+
+End Function

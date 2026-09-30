@@ -455,9 +455,43 @@ Private Function LigneLibre( _
 
     Next Ligne
 
+    ' Le tableau va s'etendre sur la ligne suivante. Les
+    ' deux tableaux etant l'un au-dessus de l'autre, cette
+    ' ligne appartient a ce qui suit : on l'insere d'abord,
+    ' pour que tout le bas descende d'un cran au lieu
+    ' d'etre recouvert.
+    '
+    ' L'insertion ne porte que sur les colonnes du tableau,
+    ' jamais sur la ligne entiere : les listes deroulantes
+    ' vivent a droite, et leurs adresses ne doivent pas
+    ' bouger.
+    InsererLigneSousTableau lo
+
     Set LigneLibre = lo.ListRows.Add
 
 End Function
+
+
+Private Sub InsererLigneSousTableau(ByVal lo As ListObject)
+
+    Dim ws As Worksheet
+    Dim Ligne As Long
+    Dim Premiere As Long
+    Dim Derniere As Long
+
+    Set ws = lo.Parent
+
+    Ligne = lo.Range.Row + lo.Range.Rows.Count
+
+    Premiere = lo.Range.Column
+    Derniere = Premiere + lo.ListColumns.Count - 1
+
+    ws.Range( _
+        ws.Cells(Ligne, Premiere), _
+        ws.Cells(Ligne, Derniere) _
+    ).Insert Shift:=xlDown
+
+End Sub
 
 
 ' Le temps s'ecrit comme le journal le fait : une fraction
