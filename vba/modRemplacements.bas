@@ -78,50 +78,6 @@ Private RempOuverte As Boolean
 
 
 ' ---------------------------------------------------------
-' Le bouton de la palette
-' ---------------------------------------------------------
-
-Public Sub CreerBoutonRemplacement()
-
-    Dim ws As Worksheet
-
-    On Error GoTo GestionErreur
-
-    Set ws = shSaisieVideo
-
-    ws.Range("AF8").Value = "Remplacement"
-
-    ApplyFormat _
-        ws.Range("AF8"), _
-        shParametres.Range("STYLE_BTN_POSSESSION")
-
-    On Error Resume Next
-    ThisWorkbook.Names("BTN_REMPLACEMENT").Delete
-    On Error GoTo GestionErreur
-
-    ThisWorkbook.Names.Add _
-        Name:="BTN_REMPLACEMENT", _
-        RefersTo:=ws.Range("AF8")
-
-    MsgBox _
-        "Le bouton Remplacement est en place en AF8.", _
-        vbInformation, _
-        "Remplacements"
-
-    Exit Sub
-
-GestionErreur:
-
-    MsgBox _
-        "La creation du bouton a echoue." & vbCrLf & vbCrLf & _
-        "Erreur " & Err.Number & " : " & Err.Description, _
-        vbExclamation, _
-        "Remplacements"
-
-End Sub
-
-
-' ---------------------------------------------------------
 ' Construction de la popup
 ' ---------------------------------------------------------
 
@@ -268,32 +224,7 @@ GestionErreur:
         vbExclamation, _
         "Remplacements"
 
-End Sub
-
-
-Public Sub SupprimerPopupRemplacement()
-
-    Dim ws As Worksheet
-    Dim EtatAlertes As Boolean
-
-    On Error Resume Next
-    Set ws = ThisWorkbook.Sheets(FEUILLE_POPUP_REMP)
-    On Error GoTo 0
-
-    If ws Is Nothing Then Exit Sub
-
-    EtatAlertes = Application.DisplayAlerts
-    Application.DisplayAlerts = False
-
-    ws.Visible = xlSheetVisible
-    ws.Delete
-
-    Application.DisplayAlerts = EtatAlertes
-
-End Sub
-
-
-Private Sub MettreEnFormeCase(ByVal Zone As Range)
+End SubPrivate Sub MettreEnFormeCase(ByVal Zone As Range)
 
     With Zone
         .Interior.Color = RGB(255, 255, 255)

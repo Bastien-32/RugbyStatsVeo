@@ -92,26 +92,6 @@ GestionErreur:
 End Sub
 
 
-Public Sub SupprimerPopupsTouchesMelees()
-
-    Dim EtatAlertes As Boolean
-
-    If MsgBox( _
-        "Supprimer les deux feuilles popup ?", _
-        vbYesNo + vbExclamation, _
-        "Touches et melees") <> vbYes Then Exit Sub
-
-    EtatAlertes = Application.DisplayAlerts
-    Application.DisplayAlerts = False
-
-    SupprimerFeuille FEUILLE_POPUP_TO
-    SupprimerFeuille FEUILLE_POPUP_ME
-
-    Application.DisplayAlerts = EtatAlertes
-
-End Sub
-
-
 ' ---------------------------------------------------------
 ' Popup touche
 ' ---------------------------------------------------------
