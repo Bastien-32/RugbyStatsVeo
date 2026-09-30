@@ -93,7 +93,14 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         End If
 
-        Exit Sub
+        ' Les boutons sont des cellules fusionnees : un
+        ' clic livre toute la plage, on ne garde que son
+        ' ancre. Une selection faite a la souris sur
+        ' plusieurs cellules, elle, n'est pas une fusion
+        ' et reste ignoree.
+        If Not Target.MergeCells Then Exit Sub
+
+        Set Target = Target.Cells(1, 1)
 
     End If
     
@@ -266,11 +273,13 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     If Not Intersect(Target, Range("BTN_NOUS")) Is Nothing Then
         SetCurrentTeam "Nous"
+        ReleaseButton
         Exit Sub
     End If
 
     If Not Intersect(Target, Range("BTN_ADV")) Is Nothing Then
         SetCurrentTeam "Adv"
+        ReleaseButton
         Exit Sub
     End If
 
@@ -278,6 +287,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ResetHalfButtons
         SetActiveButton Range("BTN_MT1")
         CurrentHalf = "MT1"
+        ReleaseButton
         Exit Sub
     End If
 
@@ -285,6 +295,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ResetHalfButtons
         SetActiveButton Range("BTN_MT2")
         CurrentHalf = "MT2"
+        ReleaseButton
         Exit Sub
     End If
 

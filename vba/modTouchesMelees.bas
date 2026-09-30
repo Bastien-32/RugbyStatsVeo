@@ -358,6 +358,8 @@ Private Sub ConstruireTableauTouches(ByVal ws As Worksheet)
     lo.Name = TAB_TOUCHES
     lo.TableStyle = "TableStyleMedium2"
 
+    PoserListeSauteur lo
+
     PoserValidation ws, lo, "Lance pour", 0
     PoserValidation ws, lo, "Issue", 1
     PoserValidation ws, lo, "Zone saut", 3
@@ -382,12 +384,17 @@ End Sub
 Private Sub ConstruireTableauMelees(ByVal ws As Worksheet)
 
     Dim lo As ListObject
+    Dim Ligne As Long
 
     If TableauExiste(ws, TAB_MELEES) Then Exit Sub
 
-    ws.Range("L1").Value = "MELEES"
+    Ligne = LigneTitreMelees(ws)
 
-    ws.Range("L2:U2").Value = Array( _
+    ws.Cells(Ligne, 1).Value = "MELEES"
+
+    ws.Range( _
+        ws.Cells(Ligne + 1, 1), _
+        ws.Cells(Ligne + 1, 10)).Value = Array( _
         "Temps video", "Mi-temps", "Introduction pour", _
         "Issue", _
         "Zone longueur", "Zone largeur", _
@@ -395,7 +402,9 @@ Private Sub ConstruireTableauMelees(ByVal ws As Worksheet)
 
     Set lo = ws.ListObjects.Add( _
         SourceType:=xlSrcRange, _
-        Source:=ws.Range("L2:U3"), _
+        Source:=ws.Range( _
+            ws.Cells(Ligne + 1, 1), _
+            ws.Cells(Ligne + 2, 10)), _
         XlListObjectHasHeaders:=xlYes)
 
     lo.Name = TAB_MELEES
@@ -424,6 +433,27 @@ End Sub
 
 
 ' ---------------------------------------------------------
+' Ou commence le bloc des melees
+'
+' Sous le tableau des touches : une ligne de respiration,
+' les trois lignes du recapitulatif, puis les deux lignes
+' vides qui separent les deux blocs.
+' ---------------------------------------------------------
+
+Private Function LigneTitreMelees( _
+    ByVal ws As Worksheet) As Long
+
+    Dim lo As ListObject
+
+    Set lo = ws.ListObjects(TAB_TOUCHES)
+
+    LigneTitreMelees = lo.Range.Row + _
+        lo.Range.Rows.Count + 6
+
+End Function
+
+
+' ---------------------------------------------------------
 ' Listes deroulantes
 '
 ' La source est donnee par adresse, pas par plage nommee :
@@ -436,6 +466,88 @@ End Sub
 ' Une case vide reste permise : IgnoreBlank vaut True par
 ' defaut, et la popup n'est donc pas bloquante.
 ' ---------------------------------------------------------
+
+' =========================================================
+' LISTE DES SAUTEURS
+'
+' La popup remplit deja cette colonne, mais rien ne
+' permettait de corriger une erreur dans le tableau : la
+' meme liste que le journal y est donc posee.
+'
+' La source vit sur Parametres, colonne AA, tenue a jour
+' par ActualiserJoueursJournal a chaque changement de
+' composition. La validation pointe la plage, pas son
+' contenu : elle suit donc les remplacements sans qu'on
+' ait a la refaire.
+' =========================================================
+
+Public Sub ActualiserListeSauteur()
+
+    On Error GoTo GestionErreur
+
+    PoserListeSauteur _
+        FeuilleTouchesMelees.ListObjects(TAB_TOUCHES)
+
+    MsgBox _
+        "La colonne Sauteur a retrouv" & ChrW(233) & _
+        " sa liste.", _
+        vbInformation, _
+        "Touches et melees"
+
+    Exit Sub
+
+GestionErreur:
+
+    MsgBox _
+        "La pose de la liste a " & ChrW(233) & "chou" & _
+        ChrW(233) & "." & vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
+Private Sub PoserListeSauteur(ByVal lo As ListObject)
+
+    Dim rng As Range
+    Dim Derniere As Long
+    Dim Source As String
+
+    EtapeEnCours = "liste des sauteurs"
+
+    Set rng = lo.ListColumns("Sauteur").DataBodyRange
+
+    If rng Is Nothing Then Exit Sub
+
+    ' La colonne AA porte les joueurs, puis Collectif et
+    ' l'inconnu : on s'arrete a sa derniere valeur, sinon
+    ' la liste deroulante se termine par des vides.
+    Derniere = shParametres.Cells( _
+        shParametres.Rows.Count, "AA").End(xlUp).Row
+
+    If Derniere < 1 Then Exit Sub
+
+    ' Le nom de la feuille porte un accent : il est lu,
+    ' jamais ecrit, pour que ce module reste importable.
+    Source = "='" & shParametres.Name & "'!" & _
+        shParametres.Range("AA1:AA" & Derniere) _
+            .Address(True, True)
+
+    With rng.Validation
+
+        .Delete
+
+        .Add _
+            Type:=xlValidateList, _
+            AlertStyle:=xlValidAlertStop, _
+            Operator:=xlBetween, _
+            Formula1:=Source
+
+    End With
+
+End Sub
+
 
 Private Sub PoserValidation( _
     ByVal ws As Worksheet, _
@@ -763,6 +875,9 @@ Public Sub ExporterTouchesMelees()
     RecreerTableau wsSource, wsCible, TAB_TOUCHES
     RecreerTableau wsSource, wsCible, TAB_MELEES
 
+    ReposerValidations wsCible
+    RanimerRecapitulatifs wsCible
+
     EtatAlertes = Application.DisplayAlerts
     Application.DisplayAlerts = False
 
@@ -810,20 +925,179 @@ Private Sub RendreAutonome(ByVal ws As Worksheet)
 
     Set Zone = ws.UsedRange
 
+    ' Seules les formules sont figees : elles pointeraient
+    ' des tableaux restes dans le fichier de match. Les
+    ' listes deroulantes, elles, sont conservees pour que
+    ' le destinataire puisse corriger une saisie.
     Zone.Value = Zone.Value
 
-    On Error Resume Next
-    Zone.Validation.Delete
-    On Error GoTo 0
-
-    ' Le bouton se trouve deux lignes sous le
-    ' recapitulatif des melees, comme dans la source.
-    On Error Resume Next
-    ws.Range("V:AZ").Clear
-    ws.Range("V:AZ").ColumnWidth = 8.43
-    On Error GoTo 0
-
     EffacerBoutonExport ws
+
+    ' Plus de quadrillage : hors des tableaux, la feuille
+    ' est unie. Peindre les cellules en blanc donnerait le
+    ' meme rendu, mais alourdirait le fichier et risquerait
+    ' d'effacer les couleurs au passage.
+    On Error Resume Next
+    ws.Parent.Windows(1).DisplayGridlines = False
+    On Error GoTo 0
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Les comptages de la copie
+'
+' Le figeage a transforme les recapitulatifs en nombres :
+' ils ne bougeraient plus si le destinataire corrigeait
+' une issue. Les formules sont donc reecrites sur les
+' tableaux refaits, aux memes emplacements que dans la
+' source.
+' ---------------------------------------------------------
+
+Private Sub RanimerRecapitulatifs(ByVal ws As Worksheet)
+
+    On Error Resume Next
+
+    EcrireComptages ws, ANCRE_TOUCHES, TAB_TOUCHES, _
+        "Lance pour", True
+
+    EcrireComptages ws, ANCRE_MELEES, TAB_MELEES, _
+        "Introduction pour", False
+
+    On Error GoTo 0
+
+End Sub
+
+
+Private Sub EcrireComptages( _
+    ByVal ws As Worksheet, _
+    ByVal NomAncre As String, _
+    ByVal NomTableau As String, _
+    ByVal ColonneEquipe As String, _
+    ByVal AvecPasDroites As Boolean)
+
+    Dim Source As Range
+    Dim Ancre As Range
+
+    ' L'ancre est celle du fichier de match : la copie a
+    ' les memes coordonnees.
+    Set Source = ThisWorkbook.Names(NomAncre).RefersToRange
+
+    Set Ancre = ws.Cells(Source.Row, Source.Column)
+
+    Ancre.Offset(1, 1).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "N", "G")
+    Ancre.Offset(1, 2).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "N", "P")
+
+    Ancre.Offset(2, 1).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "E", "P")
+    Ancre.Offset(2, 2).Formula = _
+        Comptage(NomTableau, ColonneEquipe, "E", "G")
+
+    If AvecPasDroites Then
+
+        Ancre.Offset(1, 3).Formula = _
+            Comptage(NomTableau, ColonneEquipe, "N", "ND")
+        Ancre.Offset(2, 3).Formula = _
+            Comptage(NomTableau, ColonneEquipe, "E", "ND")
+
+    End If
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Les listes deroulantes de la copie
+'
+' Elles sont reposees plutot que reprises du collage : une
+' validation copiee d'un classeur a l'autre garde souvent
+' une reference vers le classeur d'origine, et le fichier
+' envoye ne doit dependre de rien.
+'
+' Les colonnes de choix ont voyage avec la feuille, aux
+' memes adresses : les sources restent donc locales. Seuls
+' les sauteurs vivaient sur Parametres, feuille qui n'est
+' pas de l'export : leur liste est recopiee a cote des
+' autres.
+' ---------------------------------------------------------
+
+Private Sub ReposerValidations(ByVal ws As Worksheet)
+
+    Dim lo As ListObject
+
+    On Error Resume Next
+
+    Set lo = ws.ListObjects(TAB_TOUCHES)
+
+    PoserValidation ws, lo, "Lance pour", 0
+    PoserValidation ws, lo, "Issue", 1
+    PoserValidation ws, lo, "Zone saut", 3
+    PoserValidation ws, lo, "Ballon", 4
+    PoserValidation ws, lo, "Zone terrain", 5
+    PoserValidation ws, lo, "Alignement", 6
+
+    CopierListeSauteur ws, lo
+
+    Set lo = ws.ListObjects(TAB_MELEES)
+
+    PoserValidation ws, lo, "Introduction pour", 0
+    PoserValidation ws, lo, "Issue", 2
+    PoserValidation ws, lo, "Zone longueur", 5
+    PoserValidation ws, lo, "Zone largeur", 7
+
+    ' Les colonnes de choix restent hors de vue.
+    ws.Range( _
+        ws.Columns(COL_LISTES), _
+        ws.Columns(COL_LISTES + NB_LISTES)).Hidden = True
+
+    On Error GoTo 0
+
+End Sub
+
+
+Private Sub CopierListeSauteur( _
+    ByVal ws As Worksheet, _
+    ByVal lo As ListObject)
+
+    Dim Derniere As Long
+    Dim Colonne As Long
+    Dim rng As Range
+
+    ' Juste apres les autres listes.
+    Colonne = COL_LISTES + NB_LISTES
+
+    Derniere = shParametres.Cells( _
+        shParametres.Rows.Count, "AA").End(xlUp).Row
+
+    If Derniere < 1 Then Exit Sub
+
+    ws.Cells(1, Colonne).Value = "LST_SAUTEURS"
+
+    ws.Range( _
+        ws.Cells(2, Colonne), _
+        ws.Cells(Derniere + 1, Colonne) _
+    ).Value = shParametres.Range( _
+        "AA1:AA" & Derniere).Value
+
+    Set rng = lo.ListColumns("Sauteur").DataBodyRange
+
+    If rng Is Nothing Then Exit Sub
+
+    With rng.Validation
+
+        .Delete
+
+        .Add _
+            Type:=xlValidateList, _
+            AlertStyle:=xlValidAlertStop, _
+            Operator:=xlBetween, _
+            Formula1:="=" & ws.Range( _
+                ws.Cells(2, Colonne), _
+                ws.Cells(Derniere + 1, Colonne) _
+            ).Address(True, True)
+
+    End With
 
 End Sub
 
@@ -888,6 +1162,97 @@ Private Sub EffacerBoutonExport(ByVal ws As Worksheet)
         End If
 
     Next Cellule
+
+End Sub
+
+
+' =========================================================
+' REORGANISATION EN COLONNE
+'
+' Les deux tableaux etaient cote a cote. Le bloc des
+' melees passe sous le recapitulatif des touches, dans les
+' memes colonnes.
+'
+' A lancer une seule fois par classeur : elle ne fait rien
+' si le deplacement a deja eu lieu.
+'
+' Le bloc est deplace d'un seul couper-coller, si bien
+' qu'Excel emporte avec lui le tableau structure, son
+' style, ses listes deroulantes et ses mises en forme
+' conditionnelles.
+' =========================================================
+
+Public Sub ReorganiserFeuilleTouchesMelees()
+
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim Source As Range
+    Dim Ligne As Long
+    Dim DerniereLigne As Long
+
+    On Error GoTo GestionErreur
+
+    Set ws = FeuilleTouchesMelees
+    Set lo = ws.ListObjects(TAB_MELEES)
+
+    If lo.Range.Column = 1 Then
+
+        MsgBox _
+            "Les deux tableaux sont d" & ChrW(233) & _
+            "j" & ChrW(224) & " l'un sous l'autre.", _
+            vbInformation, _
+            "Touches et melees"
+
+        Exit Sub
+
+    End If
+
+    Ligne = LigneTitreMelees(ws)
+
+    DerniereLigne = ws.UsedRange.Row + _
+        ws.UsedRange.Rows.Count - 1
+
+    ' Tout ce qui vit a droite : le titre, le tableau, le
+    ' recapitulatif et le bouton d'export.
+    Set Source = ws.Range( _
+        ws.Cells(1, lo.Range.Column), _
+        ws.Cells(DerniereLigne, lo.Range.Column + 9))
+
+    Source.Cut Destination:=ws.Cells(Ligne, 1)
+
+    Application.CutCopyMode = False
+
+    ' La colonne qui separait les deux tableaux n'a plus
+    ' d'objet.
+    ws.Columns("K").ColumnWidth = 12
+
+    ws.Cells(Ligne, 1).Font.Bold = True
+    ws.Cells(Ligne, 1).Font.Size = 14
+
+    ' Recapitulatifs et bouton reprennent leur place sous
+    ' leurs tableaux respectifs.
+    ConstruireRecapitulatifs
+
+    MsgBox _
+        "Le bloc des m" & ChrW(234) & "l" & ChrW(233) & _
+        "es est pass" & ChrW(233) & " sous celui des " & _
+        "touches.", _
+        vbInformation, _
+        "Touches et melees"
+
+    Exit Sub
+
+GestionErreur:
+
+    Application.CutCopyMode = False
+
+    MsgBox _
+        "La r" & ChrW(233) & "organisation a " & _
+        ChrW(233) & "chou" & ChrW(233) & "." & _
+        vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
 
 End Sub
 
@@ -1116,16 +1481,19 @@ End Sub
 
 Private Sub MettreEnFormeFeuille(ByVal ws As Worksheet)
 
+    Dim Titre As Range
+
     ws.Range("A1").Font.Bold = True
     ws.Range("A1").Font.Size = 14
-    ws.Range("L1").Font.Bold = True
-    ws.Range("L1").Font.Size = 14
+
+    ' Les deux tableaux partagent les memes colonnes : le
+    ' titre des melees se trouve ou le bloc commence.
+    Set Titre = ws.Cells(LigneTitreMelees(ws), 1)
+    Titre.Font.Bold = True
+    Titre.Font.Size = 14
 
     ws.Columns("A:J").ColumnWidth = 12
     ws.Columns("J").ColumnWidth = 30
-    ws.Columns("K").ColumnWidth = 3
-    ws.Columns("L:U").ColumnWidth = 12
-    ws.Columns("U").ColumnWidth = 30
 
     ' Les deux tableaux commencent ligne 3 : les volets
     ' gardent titres et en-tetes visibles au defilement.

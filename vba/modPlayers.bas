@@ -119,7 +119,12 @@ Public Sub AjouterJoueurDansTableau( _
         .Cells(1, lo.ListColumns("nom").Index).Value = UCase(Trim(Nom))
         .Cells(1, lo.ListColumns("prenom").Index).Value = Trim(Prenom)
         .Cells(1, lo.ListColumns("prenom NOM").Index).Formula = "=[@prenom] & "" "" & [@nom]"
-        .Cells(1, lo.ListColumns("NOM Prénom").Index).Formula = "=[@nom] & "" "" & [@prenom]"
+        ' Le nom de colonne porte un accent : ecrit tel
+        ' quel, il ne survivrait pas a un import, et la
+        ' colonne ne serait plus trouvee.
+        .Cells(1, lo.ListColumns( _
+            "NOM Pr" & ChrW(233) & "nom").Index).Formula = _
+            "=[@nom] & "" "" & [@prenom]"
     End With
 
 End Sub
@@ -209,98 +214,11 @@ End Sub
 
 Public Sub ActualiserPaletteJoueurs()
 
-    Dim wsSaisie As Worksheet
-    Dim wsCompo As Worksheet
-    Dim rngCompo As Range
-    Dim i As Long
-    Dim Poste As String
-    Dim Joueur As String
-    Dim nomBouton As String
-    Dim Mots() As String
-    Dim Mot As Variant
-    Dim nomFamille As String
-
-    Set wsSaisie = shSaisieVideo
-    Set wsCompo = Sheets("Compo")
-    Set rngCompo = wsCompo.Range("COMPO")
-
-    For i = 1 To rngCompo.Rows.Count
-
-        Poste = Trim(CStr(rngCompo.Cells(i, 1).Value))
-        Joueur = Trim(CStr(rngCompo.Cells(i, 2).Value))
-
-        If Poste <> "" Then
-
-            nomBouton = "BTN_JO_" & Poste
-
-            nomFamille = ""
-
-            If Joueur <> "" Then
-
-                Mots = Split(Joueur, " ")
-
-                For Each Mot In Mots
-
-                    If CStr(Mot) = UCase(CStr(Mot)) Then
-
-                        If nomFamille = "" Then
-                            nomFamille = CStr(Mot)
-                        Else
-                            nomFamille = nomFamille & " " & CStr(Mot)
-                        End If
-
-                    Else
-
-                        Exit For
-
-                    End If
-
-                Next Mot
-
-                Joueur = nomFamille
-
-                wsSaisie.Range(nomBouton).Value = Poste & vbLf & Joueur
-
-            Else
-
-                Joueur = ""
-                wsSaisie.Range(nomBouton).Value = Poste
-
-            End If
-
-            With wsSaisie.Range(nomBouton)
-
-                .WrapText = True
-                .HorizontalAlignment = xlCenter
-                .VerticalAlignment = xlCenter
-
-                If Joueur = "" Then
-
-                    ' Sans nom, le bouton ne porte que le
-                    ' numero, qu'Excel stocke en nombre :
-                    ' Characters n'a alors aucune prise
-                    ' dessus et leve l'erreur 91.
-                    .Font.Size = 18
-                    .Font.Bold = True
-
-                Else
-
-                    .Characters(1, Len(Poste)).Font.Size = 18
-                    .Characters(1, Len(Poste)).Font.Bold = True
-
-                    .Characters(Len(Poste) + 2, Len(Joueur)) _
-                        .Font.Size = 9
-                    .Characters(Len(Poste) + 2, Len(Joueur)) _
-                        .Font.Bold = False
-
-                End If
-
-
-            End With
-
-        End If
-
-    Next i
+    ' La palette ne porte plus les vingt-deux postes de la
+    ' composition, mais les quinze emplacements du terrain.
+    ' modRemplacements sait qui occupe chacun d'eux a
+    ' l'instant ou l'on regarde.
+    RafraichirPalettePresents
 
 End Sub
 
@@ -338,7 +256,7 @@ End Function
 ' NAVIGATION CLAVIER POPUP AJOUT JOUEUR
 '
 ' 1 = Nom
-' 2 = Prénom
+' 2 = Prenom
 ' 3 = Ajouter
 ' 4 = Annuler
 ' ============================================================
@@ -436,7 +354,7 @@ Private Sub AfficherEtatNavigationPopup()
 
         Case 3
 
-            ' Déplace la sélection hors des champs visibles.
+            ' Deplace la selection hors des champs visibles.
             ws.Range("F9").Select
 
             ' Focus visuel sur AJOUTER.
@@ -448,7 +366,7 @@ Private Sub AfficherEtatNavigationPopup()
 
         Case 4
 
-            ' Déplace la sélection hors des champs visibles.
+            ' Deplace la selection hors des champs visibles.
             ws.Range("F9").Select
 
             ' Focus visuel sur ANNULER.
