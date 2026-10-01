@@ -22,6 +22,10 @@ __pycache__/
 ~$*.xls
 ~$*.xlsx
 ~$*.xlsm
+
+# Reglages Claude Code propres a cette machine. settings.json, lui,
+# est partage : il porte les autorisations utiles au projet.
+.claude/settings.local.json
 # Fichiers de match : versionnés ici, la branche club servant aussi
 # de sauvegarde des statistiques du club. Sur main, ils sont exclus.
 
