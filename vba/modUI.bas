@@ -300,6 +300,9 @@ Public Sub ResetActionButtons()
     ApplyFormat ws.Range("BTN_CARTON_BLEU"), _
         shParametres.Range("STYLE_CARTON_BLEU")
 
+    ApplyFormat ws.Range("BTN_RETOUR_CARTON"), _
+        shParametres.Range("STYLE_BTN_REPRISE")
+
 SortiePropre:
 
     Application.CutCopyMode = False

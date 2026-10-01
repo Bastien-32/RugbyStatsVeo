@@ -1125,6 +1125,18 @@ Public Function EstPenaliteEnAttenteJoueur() As Boolean
 End Function
 
 
+' Un carton attend le joueur a qui il revient. Le bouton
+' d'un joueur deja sous carton reste alors cliquable : voir
+' shSaisieVideo.
+Public Function EstCartonEnAttenteJoueur() As Boolean
+
+    EstCartonEnAttenteJoueur = _
+        WaitingForPlayer _
+        And EstActionCarton(PendingAction)
+
+End Function
+
+
 Public Sub AfficherAlertePenaliteEnAttente()
 
     MsgBox _

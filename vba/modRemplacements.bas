@@ -76,6 +76,17 @@ Private Const ROUGE As Long = 192         ' RGB(192,0,0)
 Private RempTempsVideo As Double
 Private RempOuverte As Boolean
 
+' Carton porte par chaque emplacement lors du dernier
+' habillage. La palette se repeint quand il change, et pas
+' a chaque battement du chrono.
+Private CartonAffiche(1 To NB_TITULAIRES) As String
+
+' Faux tant que ce code n'a pas peint la palette lui-meme.
+' Une remise a zero du VBA vide la memoire ci-dessus mais
+' laisse les couleurs sur la feuille : sans ce drapeau, un
+' bouton reste jaune alors que le carton est rendu.
+Private CartonAfficheConnu As Boolean
+
 
 ' ---------------------------------------------------------
 ' Construction de la popup
@@ -224,7 +235,10 @@ GestionErreur:
         vbExclamation, _
         "Remplacements"
 
-End SubPrivate Sub MettreEnFormeCase(ByVal Zone As Range)
+End Sub
+
+
+Private Sub MettreEnFormeCase(ByVal Zone As Range)
 
     With Zone
         .Interior.Color = RGB(255, 255, 255)
@@ -1196,8 +1210,11 @@ Public Sub EcrirePalettePresents(ByVal TempsVideo As Double)
     Dim ws As Worksheet
     Dim i As Long
     Dim Poste As String
+    Dim NomComplet As String
     Dim Nom As String
     Dim Texte As String
+    Dim Carton As String
+    Dim Cartons As Collection
     Dim Cellule As Range
     Dim EtatEvenements As Boolean
 
@@ -1208,6 +1225,23 @@ Public Sub EcrirePalettePresents(ByVal TempsVideo As Double)
     On Error GoTo Sortie
 
     Application.EnableEvents = False
+
+    ' Les cartons en cours sont releves une fois pour les
+    ' quinze boutons : le journal n'est pas relu quinze fois.
+    Set Cartons = CartonsEnCours(TempsVideo)
+
+    ' Au premier passage, ce qui est peint sur la feuille
+    ' n'est pas connu de ce code : une valeur qu'aucun
+    ' carton ne porte force la remise en peinture.
+    If Not CartonAfficheConnu Then
+
+        For i = 1 To NB_TITULAIRES
+            CartonAffiche(i) = "?"
+        Next i
+
+        CartonAfficheConnu = True
+
+    End If
 
     For i = 1 To NB_TITULAIRES
 
@@ -1220,7 +1254,11 @@ Public Sub EcrirePalettePresents(ByVal TempsVideo As Double)
         If Not Cellule Is Nothing Then
 
             Poste = OccupantEmplacement(i, TempsVideo)
-            Nom = NomDeFamille(GetPlayerName(Poste))
+            NomComplet = GetPlayerName(Poste)
+            Nom = NomDeFamille(NomComplet)
+
+            Carton = CartonDeJoueurDansListe( _
+                Cartons, NomComplet)
 
             If Nom = "" Then
                 Texte = Poste
@@ -1230,10 +1268,18 @@ Public Sub EcrirePalettePresents(ByVal TempsVideo As Double)
 
             ' Rien n'est ecrit si rien n'a change : le
             ' rafraichissement passe chaque seconde.
-            If CStr(Cellule.Value) <> Texte Then
+            If CStr(Cellule.Value) <> Texte _
+                Or CartonAffiche(i) <> Carton Then
 
                 Cellule.Value = Texte
+
+                ' Le fond avant les tailles de caracteres :
+                ' le style recolle emporte la mise en forme
+                ' lettre a lettre.
+                PeindreBoutonJoueur Cellule, Carton
                 HabillerBoutonJoueur Cellule, Poste, Nom
+
+                CartonAffiche(i) = Carton
 
             End If
 
@@ -1244,6 +1290,42 @@ Public Sub EcrirePalettePresents(ByVal TempsVideo As Double)
 Sortie:
 
     Application.EnableEvents = EtatEvenements
+
+End Sub
+
+
+' =========================================================
+' Un joueur sous carton n'est pas sur le terrain : son
+' bouton prend les couleurs du carton et cesse de repondre,
+' voir shSaisieVideo.
+'
+' Le carton blanc prend un fond blanc, bordure et police
+' noires. Le bleu en pleine teinte essaye d'abord ne se
+' distinguait pas du carton bleu une fois sur la palette.
+' =========================================================
+
+Private Sub PeindreBoutonJoueur( _
+    ByVal Cellule As Range, _
+    ByVal Carton As String)
+
+    Dim Zone As Range
+
+    If Cellule.MergeCells Then
+        Set Zone = Cellule.MergeArea
+    Else
+        Set Zone = Cellule
+    End If
+
+    If Carton = "" Then
+
+        ApplyFormat Cellule, _
+            shParametres.Range("STYLE_BTN_JOUEUR_INACTIF")
+
+    Else
+
+        AppliquerCouleursCarton Zone, Carton
+
+    End If
 
 End Sub
 
