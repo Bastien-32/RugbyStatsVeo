@@ -232,9 +232,13 @@ End Sub
 
 Public Sub AfficherEtatAucunLecteur()
 
+    ' Le moteur ne repond parfois qu'apres une reouverture
+    ' du classeur : le rappeler ici evite de chercher
+    ' ailleurs.
     MettreEtatConnexion _
         "Aucun lecteur connect" & ChrW(233) & vbCrLf & _
-        "Veuillez lancer la vid" & ChrW(233) & "o dans VLC ou sur le site Veo.", _
+        "Veuillez lancer la vid" & ChrW(233) & "o dans VLC ou sur le site Veo. " & _
+        "Si cela persiste, enregistrez le fichier et rouvrez-le.", _
         RGB(220, 53, 69)
 
 End Sub
@@ -244,7 +248,8 @@ Public Sub AfficherEtatMoteurIndisponible()
 
     MettreEtatConnexion _
         "VeoVideoControl indisponible" & vbCrLf & _
-        "V" & ChrW(233) & "rifiez que le moteur est lanc" & ChrW(233) & ".", _
+        "V" & ChrW(233) & "rifiez que le moteur est lanc" & ChrW(233) & ". " & _
+        "Si cela persiste, enregistrez le fichier et rouvrez-le.", _
         RGB(220, 53, 69)
 
 End Sub
