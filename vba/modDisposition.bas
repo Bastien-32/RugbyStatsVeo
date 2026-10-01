@@ -214,7 +214,6 @@ Sortie:
 
 End Sub
 
-
 Private Sub PlacerEtatConnexion( _
     ByVal ws As Worksheet, _
     ByVal HauteurLigne As Double)
@@ -230,10 +229,12 @@ Private Sub PlacerEtatConnexion( _
     With Etat
 
         .LockAspectRatio = msoFalse
-        .Width = 230
-        .Height = 63
+        ' 3,42 x 1,2 pouces, releve sur la forme reglee a
+        ' la main : de quoi loger trois lignes de texte.
+        .Width = 246
+        .Height = 74
         .Left = Bouton.Left + Bouton.Width + 34
-        .Top = Bouton.Top + (Bouton.Height - .Height) / 2
+        .Top = Bouton.Top + (Bouton.Height - .Height) / 2 + 6
 
     End With
 
@@ -469,6 +470,13 @@ Private Sub EcrireComposant( _
         .VerticalAlignment = xlCenter
         .WrapText = True
     End With
+
+    ' Le chrono se lit d'un coup d'oeil pendant la saisie :
+    ' il merite plus gros que les boutons qui l'entourent.
+    If Nom = "CELL_CHRONO_VIDEO" Then
+        Cible.Cells(1, 1).Font.Size = 18
+        Cible.Cells(1, 1).Font.Bold = True
+    End If
 
     NommerComposant ws, Nom, Adresse
 
@@ -1073,12 +1081,12 @@ Private Function ComposantsPleinEcran() As Variant
         "BTN_PTS_PENALITE|BJ4||" & "penalit" & ChrW(233) & vbTab & _
         "BTN_PTS_DROP|BL4||" & "drop" & vbTab & _
         "BTN_REMPLACEMENT|BO7|BO7:BQ9|" & "Remplacement" & vbTab & _
-        "LBL_POSSESSION|C4|C4:I4|" & "Possession en faveur de : " & vbTab & _
-        "BTN_NOUS|K4|K4:Q4|" & "Nous "
+        "LBL_POSSESSION|C4|C4:J4|" & "Possession en faveur de : " & vbTab & _
+        "BTN_NOUS|L4|L4:R4|" & "Nous "
 
     T = T & vbTab & _
-        "BTN_ADV|S4|S4:Y4|" & "Adversaire" & vbTab & _
-        "LBL_MI_TEMPS|AA4|AA4:AG4|" & "Mi-temps :" & vbTab & _
+        "BTN_ADV|T4|T4:Z4|" & "Adversaire" & vbTab & _
+        "LBL_MI_TEMPS|AB4|AB4:AH4|" & "Mi-temps :" & vbTab & _
         "BTN_MT1|AJ4|AJ4:AP4|" & "MT 1" & vbTab & _
         "BTN_MT2|AR4|AR4:AX4|" & "MT2" & vbTab & _
         "LBL_CARTONS|C8|C8:I8|" & "Cartons" & vbTab & _
