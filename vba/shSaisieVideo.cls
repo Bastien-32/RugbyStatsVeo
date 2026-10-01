@@ -57,6 +57,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
     Dim ActionJoueurFinalisee As String
     Dim AjouterArretApresJoueur As Boolean
     Dim ActionFermee As Boolean
+    Dim CartonBouton As String
 
     ' =====================================================
     ' BOUTON FRANCHISSEMENT FUSIONNE
@@ -102,6 +103,48 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     End If
     
+    ' =====================================================
+    ' JOUEUR SOUS CARTON
+    '
+    ' Il n'est pas sur le terrain : son bouton porte les
+    ' couleurs du carton et ne repond plus, tant que son
+    ' retour n'a pas ete declare.
+    '
+    ' Avant toute autre chose, action en attente comprise :
+    ' celle-ci reste en attente et pourra etre donnee a un
+    ' joueur qui joue.
+    '
+    ' Un carton en attente passe outre : le deuxieme jaune
+    ' devient rouge, et il faut pouvoir designer celui qui
+    ' le prend alors qu'il est deja sorti.
+    ' =====================================================
+
+    If EstBoutonJoueur(Target) _
+        And Not EstCartonEnAttenteJoueur Then
+
+        CartonBouton = CartonActuelDuPoste(PosteDuBouton(Target))
+
+        If CartonBouton <> "" Then
+
+            MsgBox _
+                "Ce joueur porte un carton " & _
+                CouleurLisible(CartonBouton) & " : " & _
+                "il n'est pas sur le terrain." & _
+                vbCrLf & vbCrLf & _
+                "Son bouton redeviendra cliquable quand " & _
+                "son retour aura " & ChrW(233) & "t" & _
+                ChrW(233) & " d" & ChrW(233) & "clar" & _
+                ChrW(233) & " avec le bouton Retour.", _
+                vbExclamation, _
+                "Joueur sous carton"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+    End If
+
     ' =====================================================
     ' PENALITE EN ATTENTE D'UN JOUEUR
     ' =====================================================
@@ -278,6 +321,55 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         ReleaseButton
         OuvrirPopupRemplacement GetTimeVideo()
+        Exit Sub
+
+    End If
+
+    ' =====================================================
+    ' RETOUR DE CARTON
+    '
+    ' Comme le remplacement : GetAction ne le connait pas,
+    ' et il ne depend ni de la possession ni d'une reprise
+    ' du jeu. La mi-temps, elle, est exigee : le journal la
+    ' porte.
+    ' =====================================================
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_RETOUR_CARTON") _
+    ) Is Nothing Then
+
+        If CurrentHalf = "" Then
+
+            MsgBox _
+                "S" & ChrW(233) & _
+                "lectionne d'abord la mi-temps.", _
+                vbExclamation, _
+                "Mi-temps manquante"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+        TempsVideo = GetTimeVideo()
+
+        If TempsVideo < 0 Then
+
+            MsgBox _
+                "Impossible de r" & ChrW(233) & "cup" & _
+                ChrW(233) & "rer le temps r" & ChrW(233) & _
+                "el de la vid" & ChrW(233) & "o.", _
+                vbExclamation, _
+                "VeoVideoControl"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+        ReleaseButton
+        OuvrirPopupRetourCarton TempsVideo
         Exit Sub
 
     End If
@@ -1127,20 +1219,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         If EstBoutonJoueur(Target) Then
 
-            If InStr(1, CStr(Target.Value), vbLf) > 0 Then
-
-                NumeroJoueur = Left( _
-                    CStr(Target.Value), _
-                    InStr(1, CStr(Target.Value), vbLf) - 1 _
-                )
-
-            Else
-
-                NumeroJoueur = CStr(Target.Value)
-
-            End If
-
-            NumeroJoueur = Trim(NumeroJoueur)
+            NumeroJoueur = PosteDuBouton(Target)
 
             If NumeroJoueur = "" Then
                 Exit Sub
@@ -1287,6 +1366,24 @@ Public Sub ActualiserListeJoueursJournal()
 
 End Sub
 
+' Le poste que le bouton affiche : la premiere ligne de son
+' texte, le nom venant en dessous. Ce n'est pas forcement le
+' titulaire, un remplacant a pu prendre sa place.
+Private Function PosteDuBouton(ByVal Target As Range) As String
+
+    Dim Texte As String
+
+    Texte = CStr(Target.Value)
+
+    If InStr(1, Texte, vbLf) > 0 Then
+        Texte = Left(Texte, InStr(1, Texte, vbLf) - 1)
+    End If
+
+    PosteDuBouton = Trim(Texte)
+
+End Function
+
+
 Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
 
     Dim Boutons As Range
@@ -1308,6 +1405,8 @@ Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
     EstBoutonJoueur = (Trim(CStr(Target.Value)) <> "")
 
 End Function
+
+
 
 
 

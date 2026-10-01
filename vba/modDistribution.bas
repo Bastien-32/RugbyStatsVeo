@@ -342,7 +342,7 @@ End Sub
 
 
 ' =========================================================
-' Les quatre popups sont redessinees a partir de leur code,
+' Les cinq popups sont redessinees a partir de leur code,
 ' puis remasquees : leur construction les laisse visibles
 ' pour que l'on en verifie le rendu.
 ' =========================================================
@@ -356,6 +356,7 @@ Private Sub ReconstruirePopups()
     ConstruirePopupsTouchesMelees
     ConstruirePopupPenalite
     ConstruirePopupRemplacement
+    ConstruirePopupRetourCarton
 
 Sortie:
 
@@ -365,6 +366,7 @@ Sortie:
     MasquerPopup "Popup melee"
     MasquerPopup "Popup penalite"
     MasquerPopup "Popup remplacement"
+    MasquerPopup FEUILLE_POPUP_RETOUR
 
 End Sub
 

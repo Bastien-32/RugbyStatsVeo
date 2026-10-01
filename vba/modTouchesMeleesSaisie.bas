@@ -256,10 +256,36 @@ End Sub
 
 Public Sub ValiderPopupTouche()
 
+    Dim Sauteur As String
+    Dim Carton As String
+
     If Not PopupOuverte Then Exit Sub
 
+    Sauteur = LireChamp("POPUP_TO_SAUTEUR")
+
+    ' Le sauteur n'est pas choisi dans une palette mais dans
+    ' une liste deroulante : rien ne peut y etre grise, le
+    ' refus se fait donc au moment de valider.
+    Carton = CartonDeJoueurDansListe( _
+        CartonsEnCours(PopupTemps), Sauteur)
+
+    If Carton <> "" Then
+
+        MsgBox _
+            Sauteur & " portait un carton " & _
+            CouleurLisible(Carton) & " " & ChrW(224) & _
+            " cet instant : il n'" & ChrW(233) & "tait pas " & _
+            "sur le terrain." & vbCrLf & vbCrLf & _
+            "Choisis un autre sauteur.", _
+            vbExclamation, _
+            "Joueur sous carton"
+
+        Exit Sub
+
+    End If
+
     EcrireTouche _
-        LireChamp("POPUP_TO_SAUTEUR"), _
+        Sauteur, _
         LireChamp("POPUP_TO_ZONE_SAUT"), _
         LireChamp("POPUP_TO_BALLON"), _
         LireChamp("POPUP_TO_ZONE_TERRAIN"), _

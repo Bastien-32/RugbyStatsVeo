@@ -77,6 +77,11 @@ Private PenaliteType As String
 ' un remplacement a eu lieu.
 Private PostesAffiches(1 To 15) As String
 
+' Carton porte par l'occupant de chaque emplacement au
+' moment de la faute. Une case ne revient donc pas toujours
+' au ciel quand la selection change.
+Private CartonsAffiches(1 To 15) As String
+
 
 ' ---------------------------------------------------------
 ' Disposition
@@ -269,7 +274,10 @@ GestionErreur:
         vbExclamation, _
         "Penalites"
 
-End SubPrivate Sub EcrireTitre(ByVal ws As Worksheet)
+End Sub
+
+
+Private Sub EcrireTitre(ByVal ws As Worksheet)
 
     With ws.Cells(2, COL_MOTIF_1)
         .Value = "PENALITE"
@@ -599,7 +607,8 @@ End Function
 ' que les boutons de la palette de saisie.
 Private Sub EcrireCaseJoueur( _
     ByVal Cellule As Range, _
-    ByVal Poste As String)
+    ByVal Poste As String, _
+    Optional ByVal Carton As String = "")
 
     Dim Nom As String
 
@@ -612,15 +621,26 @@ Private Sub EcrireCaseJoueur( _
         .VerticalAlignment = xlCenter
 
         ' Une case eteinte a perdu son fond et ses
-        ' bordures : il faut les lui rendre.
-        .Interior.Color = CIEL
-
+        ' bordures : il faut les lui rendre. Les bordures
+        ' d'abord : le carton blanc pose les siennes en noir
+        ' et doit avoir le dernier mot.
         If .MergeCells Then
             .MergeArea.Borders.LineStyle = xlContinuous
             .MergeArea.Borders.Color = RGB(150, 150, 150)
         Else
             .Borders.LineStyle = xlContinuous
             .Borders.Color = RGB(150, 150, 150)
+        End If
+
+        If Carton = "" Then
+
+            .Interior.Color = CIEL
+            .Font.Color = RGB(0, 0, 0)
+
+        Else
+
+            AppliquerCouleursCarton ZoneCase(Cellule), Carton
+
         End If
 
         If Nom = Poste Then
@@ -666,12 +686,21 @@ Private Sub RafraichirLibelles( _
     Dim Etiquette As String
     Dim Emplacement As Long
     Dim Cellule As Range
+    Dim Cartons As Collection
 
     ' Les evenements sont rendus meme en cas d'erreur :
     ' coupes, plus aucun clic ne passerait ensuite.
     On Error GoTo Sortie
 
     Application.EnableEvents = False
+
+    ' Les cartons en cours au moment de la faute, releves
+    ' une seule fois pour toute la composition.
+    Set Cartons = CartonsEnCours(TempsVideo)
+
+    For i = 1 To 15
+        CartonsAffiches(i) = ""
+    Next i
 
     ' Deux lignes de texte par case : sans cette hauteur,
     ' le renvoi a la ligne masque le nom et seul le numero
@@ -724,8 +753,15 @@ Private Sub RafraichirLibelles( _
                 PostesAffiches(Emplacement) = _
                     OccupantEmplacement(Emplacement, TempsVideo)
 
+                CartonsAffiches(Emplacement) = _
+                    CartonDeJoueurDansListe( _
+                        Cartons, _
+                        GetPlayerName( _
+                            PostesAffiches(Emplacement)))
+
                 EcrireCaseJoueur Cellule, _
-                    PostesAffiches(Emplacement)
+                    PostesAffiches(Emplacement), _
+                    CartonsAffiches(Emplacement)
 
             Else
 
@@ -968,6 +1004,7 @@ End Sub
 Public Sub ClicPopupPenalite(ByVal Target As Range)
 
     Dim ws As Worksheet
+    Dim Carton As String
 
     If Target.Areas.Count > 1 Then Exit Sub
 
@@ -1006,10 +1043,128 @@ Public Sub ClicPopupPenalite(ByVal Target As Range)
 
     End If
 
+    ' Un joueur sous carton n'etait pas sur le terrain a cet
+    ' instant : il ne peut pas etre le fautif.
+    Carton = CartonDeLaCase(ws, Target)
+
+    If Carton <> "" Then
+
+        MsgBox _
+            "Ce joueur portait un carton " & _
+            CouleurLisible(Carton) & " " & ChrW(224) & _
+            " cet instant : il n'" & ChrW(233) & "tait pas " & _
+            "sur le terrain et ne peut pas " & ChrW(234) & _
+            "tre le fautif.", _
+            vbExclamation, _
+            "Joueur sous carton"
+
+        Exit Sub
+
+    End If
+
     BasculerSelection ws, Target, "PEN_MOTIFS", SABLE
     BasculerSelection ws, Target, "PEN_JOUEURS", CIEL
 
 End Sub
+
+
+' Rend aux cases de la composition leur fond d'origine : le
+' ciel habituel, ou la couleur du carton pour qui en porte
+' un. La selection, elle, eteint tout sans distinction.
+Private Sub RendreCasesJoueurs(ByVal ws As Worksheet)
+
+    Dim Entrees As Variant
+    Dim i As Long
+    Dim Etiquette As String
+    Dim Emplacement As Long
+    Dim Cellule As Range
+
+    Entrees = JoueursDisposes
+
+    For i = 0 To UBound(Entrees)
+
+        Etiquette = Champ(CStr(Entrees(i)), 2)
+
+        Set Cellule = ws.Cells( _
+            CLng(Champ(CStr(Entrees(i)), 0)), _
+            CLng(Champ(CStr(Entrees(i)), 1)))
+
+        If Trim(CStr(Cellule.Value)) <> "" Then
+
+            If Not IsNumeric(Etiquette) Then
+
+                EcrireCaseJoueur Cellule, Etiquette
+
+            Else
+
+                Emplacement = CLng(Etiquette)
+
+                If Emplacement <= 15 Then
+
+                    EcrireCaseJoueur Cellule, _
+                        PostesAffiches(Emplacement), _
+                        CartonsAffiches(Emplacement)
+
+                End If
+
+            End If
+
+        End If
+
+    Next i
+
+End Sub
+
+
+' Le carton porte par la case cliquee, vide si elle n'en
+' montre pas ou si ce n'est pas une case de joueur.
+Private Function CartonDeLaCase( _
+    ByVal ws As Worksheet, _
+    ByVal Target As Range) As String
+
+    Dim Entrees As Variant
+    Dim i As Long
+    Dim Etiquette As String
+    Dim Emplacement As Long
+
+    Entrees = JoueursDisposes
+
+    For i = 0 To UBound(Entrees)
+
+        If ws.Cells( _
+            CLng(Champ(CStr(Entrees(i)), 0)), _
+            CLng(Champ(CStr(Entrees(i)), 1))).Address = _
+            Target.Address Then
+
+            Etiquette = Champ(CStr(Entrees(i)), 2)
+
+            If Not IsNumeric(Etiquette) Then Exit Function
+
+            Emplacement = CLng(Etiquette)
+
+            If Emplacement > 15 Then Exit Function
+
+            CartonDeLaCase = CartonsAffiches(Emplacement)
+            Exit Function
+
+        End If
+
+    Next i
+
+End Function
+
+
+' Le fond et les bordures se posent sur la zone fusionnee
+' entiere, jamais sur son ancre seule.
+Private Function ZoneCase(ByVal Cellule As Range) As Range
+
+    If Cellule.MergeCells Then
+        Set ZoneCase = Cellule.MergeArea
+    Else
+        Set ZoneCase = Cellule
+    End If
+
+End Function
 
 
 Private Sub BasculerSelection( _
@@ -1035,14 +1190,24 @@ Private Sub BasculerSelection( _
 
     Application.EnableEvents = False
 
-    For Each Cellule In Grille
+    If NomGrille = "PEN_JOUEURS" Then
 
-        If Trim(CStr(Cellule.Value)) <> "" Then
-            Cellule.Interior.Color = CouleurNormale
-            Cellule.Font.Color = RGB(0, 0, 0)
-        End If
+        ' Les cases ne reviennent pas toutes au ciel : celle
+        ' d'un joueur sous carton garde sa couleur.
+        RendreCasesJoueurs ws
 
-    Next Cellule
+    Else
+
+        For Each Cellule In Grille
+
+            If Trim(CStr(Cellule.Value)) <> "" Then
+                Cellule.Interior.Color = CouleurNormale
+                Cellule.Font.Color = RGB(0, 0, 0)
+            End If
+
+        Next Cellule
+
+    End If
 
     If Not DejaChoisie Then
         Target.Interior.Color = BLEU

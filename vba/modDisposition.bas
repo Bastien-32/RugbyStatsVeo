@@ -720,6 +720,9 @@ Private Function StyleDe(ByVal Nom As String) As String
         Case "BTN_REPRISE_TOUCHE"
             StyleDe = "STYLE_BTN_REPRISE"
 
+        Case "BTN_RETOUR_CARTON"
+            StyleDe = "STYLE_BTN_REPRISE"
+
         Case "BTN_TO_G"
             StyleDe = "STYLE_BTN_PL_TOUCHES"
 
@@ -1096,6 +1099,7 @@ Private Function ComposantsPleinEcran() As Variant
 
     T = T & vbTab & _
         "BTN_CARTON_BLEU|AI8|AI8:AO8|" & vbTab & _
+        "BTN_RETOUR_CARTON|AQ8|AQ8:AW8|" & "Retour" & vbTab & _
         "TITRE_PALETTE_JOUEURS|C12|C12:AX12|" & "PALETTE JOUEURS" & vbTab & _
         "BTN_JO_1|C14|C14:I14|" & vbTab & _
         "BTN_JO_2|K14|K14:Q14|" & vbTab & _
@@ -1208,6 +1212,7 @@ Private Function ComposantsBandeau() As Variant
 
     T = T & vbTab & _
         "BTN_CARTON_BLEU|AB8|AB8:AF8|" & vbTab & _
+        "BTN_RETOUR_CARTON|AH8|AH8:AL8|" & "Retour" & vbTab & _
         "TITRE_PALETTE_JOUEURS|C34|C34:AL34|" & "PALETTE JOUEURS" & vbTab & _
         "BTN_JO_1|C36|C36:G36|" & vbTab & _
         "BTN_JO_2|I36|I36:M36|" & vbTab & _
