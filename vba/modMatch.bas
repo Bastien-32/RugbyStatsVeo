@@ -419,30 +419,14 @@ Public Sub CreerFichierMatch()
         Procedure:=NomProcedureInitialisation, _
         Schedule:=True
 
-    If NumeroErreur = 1004 Then
-    
-        MsgBox _
-            "Le fichier du match n'a pas pu etre cree." & _
-            vbCrLf & vbCrLf & _
-            "Erreur " & NumeroErreur & " : " & DescriptionErreur & _
-            vbCrLf & vbCrLf & _
-            "Chemin vise :" & vbCrLf & CheminChoisi, _
-            vbExclamation, _
-            "Creation du fichier de match"
-    
-    Else
-
-
-        MsgBox _
-            "Le fichier du match a ete cree :" & _
-            vbCrLf & vbCrLf & _
-            wbMatch.Name & _
-            vbCrLf & vbCrLf & _
-            "Tu peux maintenant terminer la composition.", _
-            vbInformation, _
-            "Fichier du match cree"
-
-    End If
+    MsgBox _
+        "Le fichier du match a ete cree :" & _
+        vbCrLf & vbCrLf & _
+        wbMatch.Name & _
+        vbCrLf & vbCrLf & _
+        "Tu peux maintenant terminer la composition.", _
+        vbInformation, _
+        "Fichier du match cree"
 
     ' Cette instruction doit rester la derniere :
     ' l'initialisation de la copie est deja planifiee.
@@ -472,11 +456,12 @@ GestionErreur:
         MsgBox _
             "Le fichier du match n'a pas pu etre cree." & _
             vbCrLf & vbCrLf & _
-            "Verifie qu'un dossier nomme 'Matchs' existe dans le meme dossier que ce classeur, puis recommence." & _
+            "Erreur " & NumeroErreur & " : " & DescriptionErreur & _
             vbCrLf & vbCrLf & _
-            "Si le dossier a ete supprime, recree simplement un dossier nomme 'Matchs'.", _
+            "Chemin vise :" & vbCrLf & CheminChoisi, _
             vbExclamation, _
             "Creation du fichier de match"
+
     
     Else
     

@@ -1,6 +1,12 @@
 Attribute VB_Name = "modStatsPossession"
 Option Explicit
 
+' Temps de possession cumule par mi-temps, en fractions de
+' jour comme les temps du journal. Indice 1 = MT1, 2 = MT2.
+Private PossessionNous(1 To 2) As Double
+
+Private PossessionAdv(1 To 2) As Double
+
 Public Sub RecalculerStatsMatch()
 
     RecalculerTempsJeuEffectif
@@ -34,6 +40,11 @@ Public Sub RecalculerStatsSequencesPossession()
     Dim CompteursNous(1 To 5) As Long
     Dim CompteursAdv(1 To 5) As Long
 
+    PossessionNous(1) = 0
+    PossessionNous(2) = 0
+    PossessionAdv(1) = 0
+    PossessionAdv(2) = 0
+
     Set wsJournal = _
         ThisWorkbook.Worksheets("Journal actions")
 
@@ -49,6 +60,8 @@ Public Sub RecalculerStatsSequencesPossession()
             wsStats, _
             CompteursNous, _
             CompteursAdv
+            
+        EcrireTableauPossession wsStats
 
         Exit Sub
 
@@ -193,6 +206,8 @@ Public Sub RecalculerStatsSequencesPossession()
         wsStats, _
         CompteursNous, _
         CompteursAdv
+        
+    EcrireTableauPossession wsStats
 
 End Sub
 
@@ -217,6 +232,14 @@ Private Sub AnalyserSequencesMiTemps( _
 
     Dim ActionTexte As String
     Dim PossessionAction As String
+    
+    Dim IndiceMiTemps As Long
+    Dim JeuArrete As Boolean
+
+    JeuArrete = True
+    IndiceMiTemps = IIf( _
+        UCase(MiTempsRecherchee) = "MT2", 2, 1)
+
 
     For i = 1 To NbEvenements
 
@@ -244,6 +267,7 @@ Private Sub AnalyserSequencesMiTemps( _
                         EquipeSequence, _
                         DebutSequence, _
                         TempsAction, _
+                        IndiceMiTemps, _
                         CompteursNous, _
                         CompteursAdv
 
@@ -251,6 +275,7 @@ Private Sub AnalyserSequencesMiTemps( _
                     EquipeSequence = ""
 
                 End If
+                JeuArrete = True
 
             ' =================================================
             ' REPRISE DU JEU
@@ -268,6 +293,7 @@ Private Sub AnalyserSequencesMiTemps( _
                         EquipeSequence, _
                         DebutSequence, _
                         TempsAction, _
+                        IndiceMiTemps, _
                         CompteursNous, _
                         CompteursAdv
 
@@ -275,6 +301,7 @@ Private Sub AnalyserSequencesMiTemps( _
 
                 SequenceOuverte = False
                 EquipeSequence = ""
+                JeuArrete = False
 
                 If PossessionValide( _
                     PossessionAction _
@@ -292,7 +319,7 @@ Private Sub AnalyserSequencesMiTemps( _
 
             ElseIf PossessionValide( _
                 PossessionAction _
-            ) Then
+            ) And Not JeuArrete Then
 
                 If Not SequenceOuverte Then
 
@@ -316,6 +343,7 @@ Private Sub AnalyserSequencesMiTemps( _
                         EquipeSequence, _
                         DebutSequence, _
                         TempsAction, _
+                        IndiceMiTemps, _
                         CompteursNous, _
                         CompteursAdv
 
@@ -341,6 +369,7 @@ Private Sub ComptabiliserSequence( _
     ByVal Equipe As String, _
     ByVal TempsDebut As Double, _
     ByVal TempsFin As Double, _
+    ByVal IndiceMiTemps As Long, _
     ByRef CompteursNous() As Long, _
     ByRef CompteursAdv() As Long _
 )
@@ -372,6 +401,11 @@ Private Sub ComptabiliserSequence( _
 
         CompteursNous(Classe) = _
             CompteursNous(Classe) + 1
+            
+        PossessionNous(IndiceMiTemps) = _
+            PossessionNous(IndiceMiTemps) + _
+            (TempsFin - TempsDebut)
+
 
     ElseIf StrComp( _
         Equipe, _
@@ -381,6 +415,11 @@ Private Sub ComptabiliserSequence( _
 
         CompteursAdv(Classe) = _
             CompteursAdv(Classe) + 1
+            
+        PossessionAdv(IndiceMiTemps) = _
+            PossessionAdv(IndiceMiTemps) + _
+            (TempsFin - TempsDebut)
+
 
     End If
 
@@ -755,6 +794,74 @@ Public Sub ActualiserGraphiqueSequencesPossession()
             "Nombre de sequences"
 
         On Error GoTo 0
+
+    End With
+
+End Sub
+' Temps de possession par mi-temps, a cote du temps de jeu
+' effectif : H pour nous, I pour eux, J restant au total
+' deja calcule par modTempsJeu.
+Private Sub EcrireTableauPossession( _
+    ByVal wsStats As Worksheet _
+)
+
+    Dim i As Long
+
+    With wsStats
+
+        .Range("H44").Value = "Nous"
+        .Range("I44").Value = "Eux"
+        .Range("J44").Value = "Total"
+
+        For i = 1 To 2
+
+            .Cells(44 + i, "H").Value = PossessionNous(i)
+            .Cells(44 + i, "I").Value = PossessionAdv(i)
+
+        Next i
+
+        .Range("H47").Value = _
+            PossessionNous(1) + PossessionNous(2)
+
+        .Range("I47").Value = _
+            PossessionAdv(1) + PossessionAdv(2)
+
+        ' Les formats sont repris des colonnes voisines :
+        ' en-tete vert, lignes de donnees, ligne de total.
+        .Range("G44").Copy
+        .Range("H44:J44").PasteSpecial Paste:=xlPasteFormats
+
+        .Range("J45").Copy
+        .Range("H45:I45").PasteSpecial Paste:=xlPasteFormats
+
+        .Range("J46").Copy
+        .Range("H46:I46").PasteSpecial Paste:=xlPasteFormats
+
+        .Range("J47").Copy
+        .Range("H47:I47").PasteSpecial Paste:=xlPasteFormats
+
+        Application.CutCopyMode = False
+
+        ' Trait de separation entre le jeu effectif et la
+        ' possession.
+        With .Range("H44:H47").Borders(xlEdgeLeft)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+            .Color = RGB(0, 0, 0)
+        End With
+
+        .Range("G44:J44").HorizontalAlignment = xlCenter
+
+        .Range("G47").HorizontalAlignment = xlRight
+        
+        ' Le format d'en-tete repris de G44 n'a pas de bord
+        ' droit : le cadre resterait ouvert sur le titre.
+        With .Range("J44").Borders(xlEdgeRight)
+            .LineStyle = xlContinuous
+            .Weight = xlThin
+            .Color = RGB(0, 0, 0)
+        End With
+
 
     End With
 

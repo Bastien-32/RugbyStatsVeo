@@ -1049,18 +1049,24 @@ Public Sub ClicPopupPenalite(ByVal Target As Range)
 
     If Carton <> "" Then
 
-        MsgBox _
+        If MsgBox( _
             "Ce joueur portait un carton " & _
             CouleurLisible(Carton) & " " & ChrW(224) & _
-            " cet instant : il n'" & ChrW(233) & "tait pas " & _
-            "sur le terrain et ne peut pas " & ChrW(234) & _
-            "tre le fautif.", _
-            vbExclamation, _
-            "Joueur sous carton"
+            " cet instant." & vbCrLf & vbCrLf & _
+            "Si le carton vient d'" & ChrW(234) & "tre donn" & _
+            ChrW(233) & " pour cette faute, tu peux quand m" & _
+            ChrW(234) & "me le d" & ChrW(233) & "signer." & _
+            vbCrLf & vbCrLf & _
+            "Le d" & ChrW(233) & "signer comme fautif ?", _
+            vbQuestion + vbYesNo + vbDefaultButton2, _
+            "Joueur sous carton") <> vbYes Then
 
-        Exit Sub
+            Exit Sub
+
+        End If
 
     End If
+
 
     BasculerSelection ws, Target, "PEN_MOTIFS", SABLE
     BasculerSelection ws, Target, "PEN_JOUEURS", CIEL
