@@ -8,6 +8,9 @@ Private Const NOM_BOUTON As String = "BTN_CONNECTER_VIDEO"
 Private Const URL_CONNEXION_VIDEO As String = _
     "http://127.0.0.1:48652/connect-video"
 
+Private Const URL_ETAT_NAVIGATEUR As String = _
+    "http://127.0.0.1:48652/video/state"
+
 Private ConnexionEnCours As Boolean
 
 Public Sub ConnecterVideo()
@@ -28,7 +31,39 @@ Public Sub ConnecterVideo()
 
     DoEvents
 
+    ' Le moteur s'arrete de lui-meme apres trente secondes
+    ' sans signal de vie. Le bouton doit pouvoir le
+    ' relancer : sans cela il ne reste qu'a rouvrir le
+    ' classeur.
+    If Not MoteurVideoDisponible() Then
+
+        DemarrerVeoVideoControl
+
+        If Not MoteurVideoDisponible() Then
+            AfficherEtatMoteurIndisponible
+            GoTo Fin
+        End If
+
+        AttendreLecteurNavigateur
+
+    End If
+
     ReponseJSON = AppelerConnexionVideo()
+
+    ' Sur Mac, curl rend son message d'erreur comme un
+    ' resultat ordinaire. Sans ce controle, un moteur
+    ' injoignable passe pour une absence de lecteur et
+    ' envoie chercher la panne du mauvais cote.
+    If InStr( _
+        1, _
+        ReponseJSON, _
+        Chr(34) & "connected" & Chr(34), _
+        vbTextCompare) = 0 Then
+
+        AfficherEtatMoteurIndisponible
+        GoTo Fin
+
+    End If
 
     If JSONContientVrai(ReponseJSON, "connected") Then
 
@@ -205,6 +240,112 @@ Private Function ExtraireTexteJSON( _
         PositionGuillemetFin - _
             PositionGuillemetDebut - 1 _
     )
+
+End Function
+
+
+' Le moteur s'arrete de lui-meme apres trente secondes
+' sans signal de vie, qu'une cellule laissee en cours de
+' saisie suffit a interrompre. Ce retablissement ne coute
+' qu'un appel local quand tout va bien : le moteur deja
+' en place rend la main aussitot.
+Public Sub RetablirMoteurVideo()
+
+    If FermetureEnCours Then Exit Sub
+
+    On Error GoTo Sortie
+
+    If MoteurVideoDisponible() Then Exit Sub
+
+    DemarrerVeoVideoControl
+
+    If Not MoteurVideoDisponible() Then Exit Sub
+
+    AttendreLecteurNavigateur
+
+    ' Le moteur redemarre sans lecteur actif : sans cette
+    ' reconnexion, les boutons video resteraient muets.
+    ConnecterVideo
+
+Sortie:
+
+End Sub
+
+
+' Un moteur qui vient de redemarrer ne connait plus aucun
+' lecteur : l'extension Chrome ne se manifeste qu'a son
+' envoi suivant, une seconde plus tard. Trancher dans cet
+' intervalle retient VLC alors qu'une video Veo est
+' ouverte. On laisse donc au navigateur le temps de se
+' presenter, et on repart des qu'il l'a fait.
+Private Sub AttendreLecteurNavigateur()
+
+    Dim HeureDebut As Double
+
+    On Error GoTo Sortie
+
+    HeureDebut = Timer
+
+    Do
+
+        If NavigateurAnnonce() Then Exit Sub
+
+        DoEvents
+
+    Loop While Timer >= HeureDebut And Timer - HeureDebut < 5
+
+Sortie:
+
+End Sub
+
+
+' Le moteur garde le dernier etat recu du navigateur, et
+' le remet a zero en redemarrant : tant qu'il l'annonce
+' deconnecte, aucune page Veo ne lui a encore parle.
+Private Function NavigateurAnnonce() As Boolean
+
+    Dim JSON As String
+
+#If Mac Then
+
+    Dim ScriptApple As String
+
+    On Error GoTo Sortie
+
+    ScriptApple = _
+        "do shell script " & _
+        Chr(34) & _
+        "/usr/bin/curl " & _
+        "--silent " & _
+        "--fail " & _
+        "--max-time 1 " & _
+        URL_ETAT_NAVIGATEUR & _
+        Chr(34)
+
+    JSON = MacScript(ScriptApple)
+
+#Else
+
+    Dim Requete As Object
+
+    On Error GoTo Sortie
+
+    Set Requete = _
+        CreateObject("WinHttp.WinHttpRequest.5.1")
+
+    Requete.Open "GET", URL_ETAT_NAVIGATEUR, False
+
+    Requete.SetTimeouts 1000, 1000, 1000, 1000
+
+    Requete.Send
+
+    JSON = Requete.ResponseText
+
+#End If
+
+    NavigateurAnnonce = JSONContientVrai(JSON, "connected")
+
+Sortie:
 
 End Function
 

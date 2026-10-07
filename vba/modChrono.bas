@@ -36,8 +36,22 @@ Public Sub MettreAJourAffichageChronoVideo()
     Dim TempsSecondes As Double
 
     If FermetureEnCours Then Exit Sub
-    
+
+    ' Un rendez-vous rattrape par VerifierChronoVideo peut
+    ' se presenter alors qu'un autre bat deja : sans ce
+    ' garde-fou, le chrono se mettrait a battre deux fois.
+    If MiseAJourPlanifiee Then
+        If ProchaineMiseAJour > Now Then Exit Sub
+    End If
+
     MiseAJourPlanifiee = False
+
+    ' Le battement suivant est pose avant le travail : une
+    ' erreur dans ce qui suit romprait sinon la chaine, que
+    ' plus rien ne relancerait.
+    PlanifierProchainBattement
+
+    On Error Resume Next
 
     TempsSecondes = GetTimeVideo()
 
@@ -53,19 +67,54 @@ Public Sub MettreAJourAffichageChronoVideo()
         ' La palette suit le temps : les quinze boutons
         ' montrent qui est sur le terrain a cet instant.
         ' Rien n'est reecrit tant que rien ne change.
-        On Error Resume Next
         EcrirePalettePresents TempsSecondes
-        On Error GoTo 0
 
     End If
 
+    On Error GoTo 0
+
+End Sub
+
+
+' Excel abandonne un rendez-vous OnTime quand il est
+' occupe a l'heure dite : une cellule en cours de saisie
+' suffit. La chaine meurt alors sans bruit et le chrono
+' se fige. Ce controle la remet en marche au premier
+' clic qui suit.
+Public Sub VerifierChronoVideo()
+
+    If FermetureEnCours Then Exit Sub
+
+    If MiseAJourPlanifiee Then
+        If Now <= ProchaineMiseAJour + TimeSerial(0, 0, 5) Then
+            Exit Sub
+        End If
+    End If
+
+    PlanifierProchainBattement
+
+End Sub
+
+
+Private Sub PlanifierProchainBattement()
+
+    On Error Resume Next
+
     ProchaineMiseAJour = Now + TimeSerial(0, 0, 1)
     MiseAJourPlanifiee = True
+
+    Err.Clear
 
     Application.OnTime _
         EarliestTime:=ProchaineMiseAJour, _
         Procedure:=NomProcedureChrono(), _
         Schedule:=True
+
+    ' Rendez-vous refuse : le marquer comme absent pour que
+    ' le prochain controle retente.
+    If Err.Number <> 0 Then MiseAJourPlanifiee = False
+
+    On Error GoTo 0
 
 End Sub
 

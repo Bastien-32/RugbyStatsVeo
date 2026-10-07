@@ -393,6 +393,12 @@ End Sub
 
 Public Sub ReprendreVideoApresPopup()
 
+    ' Une popup peut rester ouverte plus de trente secondes,
+    ' le temps de saisir une observation : le moteur se
+    ' ferme alors, faute de signal de vie. Il est retabli
+    ' avant que la main revienne a la saisie.
+    RetablirMoteurVideo
+
     If Not VideoSuspendue Then Exit Sub
 
     VideoSuspendue = False
