@@ -381,6 +381,7 @@ Private Sub EcrireTouche( _
     ByVal Obs As String)
 
     Dim Ligne As ListRow
+    Dim EtatEvenements As Boolean
 
     SetCurrentTeam PopupEquipeAction
 
@@ -389,6 +390,15 @@ Private Sub EcrireTouche( _
     SetCurrentTeam PopupPossessionApres
 
     Set Ligne = LigneLibre(TAB_TOUCHES)
+
+    ' Chaque cellule ecrite reveille Worksheet_Change :
+    ' sans cette coupure, les regles seraient reposees
+    ' dix fois pour une seule touche.
+    EtatEvenements = Application.EnableEvents
+
+    On Error GoTo Sortie
+
+    Application.EnableEvents = False
 
     EcrireTemps Ligne, "Temps video", PopupTemps
     EcrireCellule Ligne, "Mi-temps", CurrentHalf
@@ -401,6 +411,15 @@ Private Sub EcrireTouche( _
     EcrireCellule Ligne, "Alignement", Alignement
     EcrireCellule Ligne, "Observations", Obs
 
+Sortie:
+
+    Application.EnableEvents = EtatEvenements
+
+    ' La ligne nouvelle sort du domaine des regles posees
+    ' plus tot : elles sont reposees sur le tableau tel
+    ' qu'il est maintenant.
+    ReposerMFCTouchesMelees
+
 End Sub
 
 
@@ -411,6 +430,7 @@ Private Sub EcrireMelee( _
     ByVal Obs As String)
 
     Dim Ligne As ListRow
+    Dim EtatEvenements As Boolean
 
     SetCurrentTeam PopupEquipeAction
 
@@ -419,6 +439,14 @@ Private Sub EcrireMelee( _
     SetCurrentTeam PopupPossessionApres
 
     Set Ligne = LigneLibre(TAB_MELEES)
+
+    ' Meme raison que pour la touche : une seule repose
+    ' des regles, une fois la ligne entiere ecrite.
+    EtatEvenements = Application.EnableEvents
+
+    On Error GoTo Sortie
+
+    Application.EnableEvents = False
 
     EcrireTemps Ligne, "Temps video", PopupTemps
     EcrireCellule Ligne, "Mi-temps", CurrentHalf
@@ -451,6 +479,15 @@ Private Sub EcrireMelee( _
             EcrireCellule Ligne, "Jeu 3/4", CocheTM
 
     End Select
+
+Sortie:
+
+    Application.EnableEvents = EtatEvenements
+
+    ' La ligne nouvelle sort du domaine des regles posees
+    ' plus tot : elles sont reposees sur le tableau tel
+    ' qu'il est maintenant.
+    ReposerMFCTouchesMelees
 
 End Sub
 

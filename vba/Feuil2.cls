@@ -22,3 +22,30 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
 
 End Sub
 
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim lo As ListObject
+
+    On Error Resume Next
+
+    For Each lo In Me.ListObjects
+
+        If Not lo.DataBodyRange Is Nothing Then
+
+            If Not Intersect(Target, lo.DataBodyRange) _
+                Is Nothing Then
+
+                ReposerMFCTouchesMelees
+                Exit For
+
+            End If
+
+        End If
+
+    Next lo
+
+    On Error GoTo 0
+
+End Sub
+
+

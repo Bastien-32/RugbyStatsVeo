@@ -59,6 +59,10 @@ Private MFCEchouees As Long
 ' compteur seul ne dit pas ce qu'Excel a rejete.
 Private DetailRefus As String
 
+' L'erreur rencontree par la pose silencieuse : la macro
+' manuelle la reprend pour en rendre compte.
+Private ErreurMFC As String
+
 
 Public Sub ConstruireFeuilleTouchesMelees()
 
@@ -1098,33 +1102,18 @@ End Sub
 
 Public Sub RecolorerTouchesMelees()
 
-    Dim ws As Worksheet
-    Dim lo As ListObject
+    ReposerMFCTouchesMelees
 
-    MFCEchouees = 0
-    DetailRefus = ""
+    If ErreurMFC <> "" Then
 
-    On Error GoTo GestionErreur
+        MsgBox _
+            "La recoloration a echoue pendant : " & _
+            EtapeEnCours & "." & vbCrLf & vbCrLf & _
+            ErreurMFC, _
+            vbExclamation, _
+            "Touches et melees"
 
-    Set ws = FeuilleTouchesMelees
-
-    EtapeEnCours = "tableau des touches"
-    Set lo = ws.ListObjects(TAB_TOUCHES)
-    AssurerUneLigne lo
-    lo.DataBodyRange.FormatConditions.Delete
-    PoserMFCIssue lo, "Lance pour", "Issue"
-    PoserMFCBallon lo, "Ballon"
-    PoserMFCLigne lo, "Lance pour", BLEU_CLAIR, BLEU_ENTETE
-
-    EtapeEnCours = "tableau des melees"
-    Set lo = ws.ListObjects(TAB_MELEES)
-    AssurerUneLigne lo
-    lo.DataBodyRange.FormatConditions.Delete
-    PoserMFCIssue lo, "Introduction pour", "Issue"
-    PoserMFCLigne lo, "Introduction pour", _
-        ORANGE_CLAIR, ORANGE_ENTETE
-
-    If MFCEchouees = 0 Then
+    ElseIf MFCEchouees = 0 Then
 
         MsgBox _
             "Les deux tableaux sont recolores.", _
@@ -1141,16 +1130,65 @@ Public Sub RecolorerTouchesMelees()
 
     End If
 
+End Sub
+
+
+' ---------------------------------------------------------
+' La meme pose, sans rien dire : chaque ligne ecrite et
+' chaque retouche du tableau la rappelle, un message a
+' chaque fois serait intenable.
+' ---------------------------------------------------------
+
+Public Sub ReposerMFCTouchesMelees()
+
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim EtatEvenements As Boolean
+
+    MFCEchouees = 0
+    DetailRefus = ""
+    ErreurMFC = ""
+
+    EtatEvenements = Application.EnableEvents
+    Application.EnableEvents = False
+
+    On Error GoTo GestionErreur
+
+    Set ws = FeuilleTouchesMelees
+
+    ' Les regles d'un tableau qui a retreci restent
+    ' accrochees aux lignes qu'il n'occupe plus, hors de
+    ' portee d'un nettoyage limite au tableau courant.
+    ' Cette feuille n'est ecrite que par ce module : rien
+    ' d'autre n'y pose de mise en forme conditionnelle.
+    EtapeEnCours = "nettoyage des anciennes regles"
+    ws.Cells.FormatConditions.Delete
+
+    EtapeEnCours = "tableau des touches"
+    Set lo = ws.ListObjects(TAB_TOUCHES)
+    AssurerUneLigne lo
+    PoserMFCIssue lo, "Lance pour", "Issue"
+    PoserMFCBallon lo, "Ballon"
+    PoserMFCLigne lo, "Lance pour", BLEU_CLAIR, BLEU_ENTETE
+
+    EtapeEnCours = "tableau des melees"
+    Set lo = ws.ListObjects(TAB_MELEES)
+    AssurerUneLigne lo
+    PoserMFCIssue lo, "Introduction pour", "Issue"
+    PoserMFCLigne lo, "Introduction pour", _
+        ORANGE_CLAIR, ORANGE_ENTETE
+
+Sortie:
+
+    Application.EnableEvents = EtatEvenements
     Exit Sub
 
 GestionErreur:
 
-    MsgBox _
-        "La recoloration a echoue pendant : " & _
-        EtapeEnCours & "." & vbCrLf & vbCrLf & _
-        "Erreur " & Err.Number & " : " & Err.Description, _
-        vbExclamation, _
-        "Touches et melees"
+    ErreurMFC = _
+        "Erreur " & Err.Number & " : " & Err.Description
+
+    Resume Sortie
 
 End Sub
 
