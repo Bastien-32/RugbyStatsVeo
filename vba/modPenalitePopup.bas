@@ -118,7 +118,8 @@ Private Function MotifsCoupFranc() As Variant
         "13:2:Melee - Pouss" & ChrW(233) & "e anticip" & ChrW(233) & "e" & vbTab & _
         "15:2:Melee - Introduction irreguliere" & vbTab & _
         "17:2:Melee - Talonnage irregulier" & vbTab & _
-        "23:2:Jeu-rapide 10m de plus"
+        "27:2:Autre" & vbTab & _
+        "29:2:?"
 
     T = T & vbTab & _
         "9:5:Touche - Mise en place trop longue" & vbTab & _
@@ -127,13 +128,16 @@ Private Function MotifsCoupFranc() As Variant
         "15:5:Touche - Saut ou soutien premature" & vbTab & _
         "17:5:Touche - Sauteur mal redescendu" & vbTab & _
         "19:5:Touche - Soutient devant sauteur retomb" & ChrW(233) & "e" & vbTab & _
-        "23:5:Autre"
+        "21:5:Touche - Lancer dans les 5 m"
 
     T = T & vbTab & _
         "9:8:Ruck - Fausse sortie" & vbTab & _
         "11:8:Perte de temps" & vbTab & _
+        "13:8:Jeu " & ChrW(224) & " la main - mauvaise remise en jeu" & vbTab & _
         "15:8:Passage " & ChrW(224) & " vide" & vbTab & _
-        "17:8:Ecran"
+        "17:8:Ecran" & vbTab & _
+        "27:8:Jeu-rapide 10m de plus" & vbTab & _
+        "29:8:10m de plus - contestation"
 
     MotifsCoupFranc = Split(T, vbTab)
 
@@ -149,12 +153,15 @@ Private Function MotifsPenalite() As Variant
     ' dans une meme instruction.
 
     T = "9:2:En-avant volontaire" & vbTab & _
+        "11:2:En-avant repris devant" & vbTab & _
         "13:2:Maul - Entrer sur le c" & ChrW(244) & "t" & ChrW(233) & vbTab & _
         "15:2:Maul - Ecroulement" & vbTab & _
         "17:2:Melee - Poussee avant introduction" & vbTab & _
         "21:2:Touche - Saisie bras sauteur" & vbTab & _
         "23:2:Touche - Plaquage sauteur avant retomb" & ChrW(233) & "e" & vbTab & _
-        "25:2:Touche - Pouss" & ChrW(233) & "e avant retomb" & ChrW(233) & "e sauteur"
+        "25:2:Touche - Pouss" & ChrW(233) & "e avant retomb" & ChrW(233) & "e sauteur" & vbTab & _
+        "27:2:Autre" & vbTab & _
+        "29:2:?"
 
     T = T & vbTab & _
         "9:5:Parle arbitre" & vbTab & _
@@ -176,10 +183,11 @@ Private Function MotifsPenalite() As Variant
         "15:8:Plaquage - sans ballon" & vbTab & _
         "17:8:Plaquage - " & ChrW(224) & " retardement" & vbTab & _
         "19:8:Plaquage - en l'air" & vbTab & _
+        "21:8:Porteur roule au sol" & vbTab & _
         "23:8:Passage " & ChrW(224) & " vide" & vbTab & _
         "25:8:Hors-jeu" & vbTab & _
         "27:8:10m de plus" & vbTab & _
-        "29:8:Autre"
+        "29:8:10m de plus - contestation"
 
     MotifsPenalite = Split(T, vbTab)
 
@@ -197,10 +205,7 @@ Private Function JoueursDisposes() As Variant
         "15:16:10", _
         "17:13:12", "17:17:13", _
         "19:11:11", "19:15:15", "19:19:14", _
-        "21:11:16", "21:15:17", "21:19:18", _
-        "23:11:19", "23:15:20", "23:19:21", _
-        "25:15:22", _
-        "27:11:Collectif", "27:19:?")
+        "21:11:Collectif", "21:19:?")
 
 End Function
 
@@ -883,6 +888,14 @@ Private Sub OuvrirPopupFaute( _
         .Cells(3, 1).Value = _
             IIf(Equipe = "Nous", "Adversaire", "Nous")
     End With
+
+    ' La selection est restee ou le dernier clic l'a
+    ' laissee, souvent sur ANNULER : reclique au meme
+    ' endroit, Excel ne signale aucun changement et le
+    ' bouton reste muet. Une case neutre la libere.
+    Application.EnableEvents = False
+    ws.Range("A1").Select
+    Application.EnableEvents = True
 
     ' La touche Entree vaut validation, comme le fait deja
     ' la popup d'ajout de joueur pour son bouton.
