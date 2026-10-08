@@ -235,6 +235,10 @@ Private Sub AfficherPopup( _
     ' inapercue.
     ws.Range(NomChamps).ClearContents
 
+    ' Les boutons aussi : la valeur est effacee, la
+    ' couleur doit suivre.
+    EffacerSelectionsOptions ws
+
     With ws.Range(NomContexte)
         ' Format texte impose : sans lui, Excel lit
         ' "64:48" comme 64 heures 48 et affiche 16:48.
@@ -245,7 +249,13 @@ Private Sub AfficherPopup( _
         .Cells(4, 1).Value = IssueEnToutesLettres(PopupIssue)
     End With
 
-    ws.Range(NomChamps).Cells(1, 1).Select
+    ' Une case neutre et visible : les valeurs des boutons
+    ' vivent desormais dans une colonne masquee, qu'on ne
+    ' peut pas selectionner. Laisser la selection sur un
+    ' bouton empecherait d'ailleurs de le recliquer.
+    Application.EnableEvents = False
+    ws.Range("A1").Select
+    Application.EnableEvents = True
 
 End Sub
 
@@ -608,7 +618,7 @@ End Sub
 ' le journal : une seule source de noms dans le classeur.
 ' ---------------------------------------------------------
 
-Private Sub PoserListeSauteur()
+Public Sub PoserListeSauteur()
 
     Dim wsCompo As Worksheet
     Dim Derniere As Long
@@ -670,7 +680,8 @@ Private Function LireChamp( _
     ByVal NomPlage As String) As String
 
     LireChamp = Trim(CStr( _
-        ThisWorkbook.Names(NomPlage).RefersToRange.Value))
+        ThisWorkbook.Names(NomPlage) _
+            .RefersToRange.Cells(1, 1).Value))
 
 End Function
 

@@ -4,6 +4,14 @@ Option Explicit
 Private ProchaineMiseAJour As Date
 Private MiseAJourPlanifiee As Boolean
 
+' Now et la date d'un rendez-vous sont des nombres a
+' virgule : "Now + une seconde" ne retombe pas exactement
+' sur ce que Now rendra une seconde plus tard. Comparer au
+' plus juste ferait passer un battement ponctuel pour un
+' doublon. Une demi-seconde de marge separe les deux cas
+' sans ambiguite.
+Private Const MARGE As Double = 0.5 / 86400#
+
 
 Public Sub DemarrerAffichageChronoVideo()
 
@@ -41,7 +49,7 @@ Public Sub MettreAJourAffichageChronoVideo()
     ' se presenter alors qu'un autre bat deja : sans ce
     ' garde-fou, le chrono se mettrait a battre deux fois.
     If MiseAJourPlanifiee Then
-        If ProchaineMiseAJour > Now Then Exit Sub
+        If ProchaineMiseAJour - Now > MARGE Then Exit Sub
     End If
 
     MiseAJourPlanifiee = False

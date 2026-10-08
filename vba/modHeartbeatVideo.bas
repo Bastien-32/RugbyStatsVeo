@@ -10,6 +10,11 @@ Private ProchainHeartbeat As Date
 Private HeartbeatActif As Boolean
 Private HeartbeatPlanifie As Boolean
 
+' Meme raison que pour le chrono : les dates sont des
+' nombres a virgule, et comparer au plus juste prendrait
+' un battement ponctuel pour un doublon.
+Private Const MARGE As Double = 0.5 / 86400#
+
 
 Public Sub DemarrerHeartbeatVideo()
 
@@ -36,7 +41,7 @@ Public Sub EnvoyerHeartbeatVideo()
     ' peut se presenter alors qu'un autre bat deja : sans
     ' ce garde-fou, deux chaines tourneraient en parallele.
     If HeartbeatPlanifie Then
-        If ProchainHeartbeat > Now Then Exit Sub
+        If ProchainHeartbeat - Now > MARGE Then Exit Sub
     End If
 
     HeartbeatPlanifie = False

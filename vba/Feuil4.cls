@@ -8,24 +8,8 @@ Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = True
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
 
-    If Not Intersect(Target, Range("POPUP_TO_PLAY_PAUSE")) _
-        Is Nothing Then
-
-        BasculerLectureDepuisPopup
-
-    ElseIf Not Intersect(Target, Range("POPUP_TO_VALIDER")) _
-        Is Nothing Then
-
-        ValiderPopupTouche
-
-    ElseIf Not Intersect(Target, Range("POPUP_TO_ANNULER")) _
-        Is Nothing Then
-
-        AnnulerPopupTouche
-
-    End If
+    ClicPopupTouche Target
 
 End Sub
 
-
-
+ 
