@@ -41,6 +41,8 @@ Private Const BLEU As Long = 12611584     ' RGB(0, 112, 192)
 Private Const VERT As Long = 32768        ' RGB(0, 128, 0)
 Private Const ROUGE As Long = 192         ' RGB(192, 0, 0)
 Private Const SABLE As Long = 14083324    ' RGB(252, 228, 214)
+Private Const PELOUSE As Long = 14282978  ' RGB(226, 240, 217)
+Private Const ENBUT As Long = 11854022    ' RGB(198, 224, 180)
 
 ' Disposition commune aux deux popups.
 Private Const COL_LIBELLE As Long = 2
@@ -59,13 +61,23 @@ Private EtapeEnCours As String
 ' Une entree par bouton, lue aussi bien pour dessiner la
 ' popup que pour reconnaitre le bouton clique :
 '
-'     nom de plage | ligne | rang | libelle | valeur
+'     nom | ligne | rang | libelle | valeur
+'     nom | ligne | rang | libelle | valeur | largeur
+'     nom | ligne | rang | libelle | valeur | largeur | nom2 | valeur2
 '
 ' Le rang est la position du bouton sur sa ligne, a partir
 ' de zero. Le libelle est ce qui s'affiche, la valeur ce
 ' qui part dans le tableau : les zones de terrain disent
 ' "en-but" des deux cotes, mais ecrivent "N en-but" ou
 ' "E en-but" selon le camp.
+'
+' La largeur est le nombre de colonnes du bouton, deux
+' par defaut. Les cases du terrain n'en prennent qu'une,
+' sans quoi ses onze zones deborderaient de l'ecran.
+'
+' Les deux derniers champs servent au terrain de la
+' melee : une case y renseigne a la fois la longueur et
+' la largeur, d'un seul clic.
 ' ---------------------------------------------------------
 
 Public Function OptionsTouche() As Variant
@@ -73,25 +85,25 @@ Public Function OptionsTouche() As Variant
     Dim T As String
 
     T = _
-        "POPUP_TO_ZONE_SAUT|11|0|Z0|Z0" & vbTab & _
-        "POPUP_TO_ZONE_SAUT|11|1|Z1|Z1" & vbTab & _
-        "POPUP_TO_ZONE_SAUT|11|2|Z1,5|Z1,5" & vbTab & _
-        "POPUP_TO_ZONE_SAUT|11|3|Z2|Z2" & vbTab & _
-        "POPUP_TO_ZONE_SAUT|11|4|Z3|Z3"
+        "POPUP_TO_ZONE_SAUT|13|0|Z0|Z0" & vbTab & _
+        "POPUP_TO_ZONE_SAUT|13|1|Z1|Z1" & vbTab & _
+        "POPUP_TO_ZONE_SAUT|13|2|Z1,5|Z1,5" & vbTab & _
+        "POPUP_TO_ZONE_SAUT|13|3|Z2|Z2" & vbTab & _
+        "POPUP_TO_ZONE_SAUT|13|4|Z3|Z3"
 
     T = T & vbTab & _
-        "POPUP_TO_BALLON|13|0|Chaud|Chaud" & vbTab & _
-        "POPUP_TO_BALLON|13|1|Froid|Froid"
+        "POPUP_TO_BALLON|15|0|Chaud|Chaud" & vbTab & _
+        "POPUP_TO_BALLON|15|1|Froid|Froid"
 
-    T = T & vbTab & ZonesTerrain("POPUP_TO_ZONE_TERRAIN", 16)
+    T = T & vbTab & BandeTerrain("POPUP_TO_ZONE_TERRAIN", 19)
 
     T = T & vbTab & _
-        "POPUP_TO_ALIGNEMENT|22|0|2|2" & vbTab & _
-        "POPUP_TO_ALIGNEMENT|22|1|3|3" & vbTab & _
-        "POPUP_TO_ALIGNEMENT|22|2|4|4" & vbTab & _
-        "POPUP_TO_ALIGNEMENT|22|3|5|5" & vbTab & _
-        "POPUP_TO_ALIGNEMENT|22|4|6|6" & vbTab & _
-        "POPUP_TO_ALIGNEMENT|22|5|Complet|Complet"
+        "POPUP_TO_ALIGNEMENT|11|0|2|2" & vbTab & _
+        "POPUP_TO_ALIGNEMENT|11|1|3|3" & vbTab & _
+        "POPUP_TO_ALIGNEMENT|11|2|4|4" & vbTab & _
+        "POPUP_TO_ALIGNEMENT|11|3|5|5" & vbTab & _
+        "POPUP_TO_ALIGNEMENT|11|4|6|6" & vbTab & _
+        "POPUP_TO_ALIGNEMENT|11|5|Complet|Complet"
 
     OptionsTouche = Split(T, vbTab)
 
@@ -102,57 +114,115 @@ Public Function OptionsMelee() As Variant
 
     Dim T As String
 
-    T = ZonesTerrain("POPUP_ME_ZONE_LONGUEUR", 10)
+    ' Une seule grille pour les deux champs : le couloir
+    ' se lit du rang clique, la distance de sa colonne.
+    T = GrilleTerrain( _
+        "POPUP_ME_ZONE_LONGUEUR", "POPUP_ME_ZONE_LARGEUR", 11)
 
     T = T & vbTab & _
-        "POPUP_ME_ZONE_LARGEUR|16|0|Gauche|Gauche" & vbTab & _
-        "POPUP_ME_ZONE_LARGEUR|16|1|Milieu|Milieu" & vbTab & _
-        "POPUP_ME_ZONE_LARGEUR|16|2|Droit|Droit"
-
-    T = T & vbTab & _
-        "POPUP_ME_UTILISATION|18|0|Avants|Avants" & vbTab & _
-        "POPUP_ME_UTILISATION|18|1|Trois-quart|Trois-quart" & vbTab & _
-        "POPUP_ME_UTILISATION|18|2|Pied|Pied"
+        "POPUP_ME_UTILISATION|15|0|Avants|Avants" & vbTab & _
+        "POPUP_ME_UTILISATION|15|1|Trois-quart|Trois-quart" & vbTab & _
+        "POPUP_ME_UTILISATION|15|2|Pied|Pied"
 
     OptionsMelee = Split(T, vbTab)
 
 End Function
 
 
-' Les onze zones du terrain, sur trois rangs : le notre,
-' le milieu, celui d'en face. Le bouton ne porte que la
-' distance, le camp etant donne par le libelle du rang ;
-' la valeur ecrite, elle, reste celle du tableau.
-Private Function ZonesTerrain( _
+' ---------------------------------------------------------
+' Le terrain
+'
+' Onze zones dans la longueur, de notre en-but a celui
+' d'en face. La touche n'en retient que la distance, et
+' se contente d'une bande ; la melee se joue n'importe ou
+' et demande la grille entiere, ou chaque case porte sa
+' longueur et sa largeur.
+' ---------------------------------------------------------
+
+' La distance affichee sur chaque case, de gauche a droite.
+Private Function DistancesTerrain() As Variant
+
+    DistancesTerrain = Array( _
+        "en-but", "15m", "22m", "30m", "40m", "50m", _
+        "40m", "30m", "22m", "15m", "en-but")
+
+End Function
+
+
+' Ce que la case ecrit dans le tableau : notre camp a
+' gauche, le milieu neutre, celui d'en face a droite.
+Private Function ValeurTerrain(ByVal Rang As Long) As String
+
+    Dim Distances As Variant
+
+    Distances = DistancesTerrain
+
+    If Rang = 5 Then
+        ValeurTerrain = "50m"
+    ElseIf Rang < 5 Then
+        ValeurTerrain = "N " & Distances(Rang)
+    Else
+        ValeurTerrain = "E " & Distances(Rang)
+    End If
+
+End Function
+
+
+' La bande de la touche : une seule rangee, la longueur
+' seule, le tableau des touches n'ayant pas de colonne
+' pour le cote.
+Private Function BandeTerrain( _
     ByVal NomPlage As String, _
-    ByVal PremiereLigne As Long) As String
+    ByVal Ligne As Long) As String
 
     Dim T As String
     Dim Distances As Variant
     Dim i As Long
 
-    Distances = Array("en-but", "15m", "22m", "30m", "40m")
+    Distances = DistancesTerrain
 
     For i = 0 To UBound(Distances)
 
-        T = T & NomPlage & "|" & PremiereLigne & "|" & i & _
-            "|" & Distances(i) & "|N " & Distances(i) & vbTab
+        T = T & NomPlage & "|" & Ligne & "|" & i & "|" & _
+            Distances(i) & "|" & ValeurTerrain(i) & "|1" & vbTab
 
     Next i
 
-    T = T & NomPlage & "|" & (PremiereLigne + 2) & _
-        "|0|50m|50m" & vbTab
+    BandeTerrain = Left$(T, Len(T) - 1)
 
-    For i = 0 To UBound(Distances)
+End Function
 
-        T = T & NomPlage & "|" & (PremiereLigne + 4) & "|" & i & _
-            "|" & Distances(i) & "|E " & Distances(i) & vbTab
 
-    Next i
+' La grille de la melee : trois rangees, un clic pour les
+' deux champs.
+Private Function GrilleTerrain( _
+    ByVal NomLongueur As String, _
+    ByVal NomLargeur As String, _
+    ByVal PremiereLigne As Long) As String
 
-    ' Le dernier vbTab est de trop : il ouvrirait une
-    ' entree vide au moment du Split.
-    ZonesTerrain = Left$(T, Len(T) - 1)
+    Dim T As String
+    Dim Distances As Variant
+    Dim Couloirs As Variant
+    Dim i As Long
+    Dim j As Long
+
+    Distances = DistancesTerrain
+    Couloirs = Array("Gauche", "Milieu", "Droit")
+
+    For j = 0 To UBound(Couloirs)
+
+        For i = 0 To UBound(Distances)
+
+            T = T & NomLongueur & "|" & (PremiereLigne + j) & _
+                "|" & i & "|" & Distances(i) & "|" & _
+                ValeurTerrain(i) & "|1|" & NomLargeur & "|" & _
+                Couloirs(j) & vbTab
+
+        Next i
+
+    Next j
+
+    GrilleTerrain = Left$(T, Len(T) - 1)
 
 End Function
 
@@ -220,28 +290,31 @@ Private Sub ConstruirePopupTouche()
     ' pas en boutons.
     EcrireChampListe ws, 9, "Sauteur", "POPUP_TO_SAUTEUR"
 
-    EcrireLibelle ws, 11, "Zone de saut"
-    EcrireLibelle ws, 13, "Ballon"
+    ' L'alignement suit le sauteur : les deux se lisent
+    ' sur la meme image, avant d'en venir au ballon.
+    EcrireLibelle ws, 11, "Alignement"
 
-    EcrireSousTitre ws, 15, "ZONE TERRAIN"
-    EcrireLibelle ws, 16, "Notre camp"
-    EcrireLibelle ws, 18, "Milieu"
-    EcrireLibelle ws, 20, "Camp adverse"
+    EcrireLibelle ws, 13, "Zone de saut"
+    EcrireLibelle ws, 15, "Ballon"
 
-    EcrireLibelle ws, 22, "Alignement"
+    ' L'intitule tient sur la rangee des deux camps :
+    ' une ligne pour lui seul ne servait a rien.
+    EcrireSousTitre ws, 17, "ZONE TERRAIN"
+    EcrireEnTetesTerrain ws, 17
+    EcrireLibelle ws, 19, "Zone de touche"
 
     DessinerOptions ws, OptionsTouche
 
     PoserValeurs ws, OptionsTouche
 
-    EcrireChampTexte ws, 24, "Observations", "POPUP_TO_OBS"
+    EcrireChampTexte ws, 21, "Observations", "POPUP_TO_OBS"
 
     ' La saisie la repose a chaque ouverture, en suivant
     ' la composition : la poser ici donne une popup
     ' complete des sa construction.
     PoserListeSauteur
 
-    EcrireBoutons ws, 26, "POPUP_TO_VALIDER", _
+    EcrireBoutons ws, 23, "POPUP_TO_VALIDER", _
         "POPUP_TO_ANNULER"
 
     NommerPlage ws, "E4", "POPUP_TO_PLAY_PAUSE"
@@ -255,7 +328,7 @@ Private Sub ConstruirePopupTouche()
         AdresseNommee("POPUP_TO_OBS"), _
         "POPUP_TO_CHAMPS"
 
-    MettreEnFormePopup ws, 26
+    MettreEnFormePopup ws, 23
 
 End Sub
 
@@ -272,21 +345,21 @@ Private Sub ConstruirePopupMelee()
     EcrireTitre ws, "MELEE"
     EcrireContexte ws, "Introduction pour"
 
-    EcrireSousTitre ws, 9, "ZONE LONGUEUR"
-    EcrireLibelle ws, 10, "Notre camp"
+    EcrireSousTitre ws, 9, "ZONE DE JEU"
+    EcrireEnTetesTerrain ws, 9
+    EcrireLibelle ws, 11, "Gauche"
     EcrireLibelle ws, 12, "Milieu"
-    EcrireLibelle ws, 14, "Camp adverse"
+    EcrireLibelle ws, 13, "Droit"
 
-    EcrireLibelle ws, 16, "Zone largeur"
-    EcrireLibelle ws, 18, "Utilisation"
+    EcrireLibelle ws, 15, "Utilisation"
 
     DessinerOptions ws, OptionsMelee
 
     PoserValeurs ws, OptionsMelee
 
-    EcrireChampTexte ws, 20, "Observations", "POPUP_ME_OBS"
+    EcrireChampTexte ws, 17, "Observations", "POPUP_ME_OBS"
 
-    EcrireBoutons ws, 22, "POPUP_ME_VALIDER", _
+    EcrireBoutons ws, 19, "POPUP_ME_VALIDER", _
         "POPUP_ME_ANNULER"
 
     NommerPlage ws, "E4", "POPUP_ME_PLAY_PAUSE"
@@ -297,7 +370,7 @@ Private Sub ConstruirePopupMelee()
         AdresseNommee("POPUP_ME_OBS"), _
         "POPUP_ME_CHAMPS"
 
-    MettreEnFormePopup ws, 22
+    MettreEnFormePopup ws, 19
 
 End Sub
 
@@ -321,13 +394,25 @@ Private Sub DessinerOptions( _
         With ZoneBouton(ws, CStr(Entrees(i)))
 
             .Merge
-            .Value = Champ(CStr(Entrees(i)), 3)
-            .Interior.Color = SABLE
+
+            If Not EstCaseTerrain(CStr(Entrees(i))) Then
+                .Value = Champ(CStr(Entrees(i)), 3)
+            End If
+
+            .Interior.Color = CouleurRepos(CStr(Entrees(i)))
             .Font.Color = RGB(0, 0, 0)
             .HorizontalAlignment = xlCenter
             .VerticalAlignment = xlCenter
             .Borders.LineStyle = xlContinuous
-            .Borders.Color = RGB(150, 150, 150)
+
+            ' Les lignes du terrain sont blanches, comme
+            ' sur une pelouse ; les boutons gardent leur
+            ' contour gris.
+            If EstCaseTerrain(CStr(Entrees(i))) Then
+                .Borders.Color = RGB(255, 255, 255)
+            Else
+                .Borders.Color = RGB(150, 150, 150)
+            End If
 
         End With
 
@@ -336,32 +421,65 @@ Private Sub DessinerOptions( _
 End Sub
 
 
+' Les champs renseignes par ces boutons, dans l'ordre ou
+' ils apparaissent et sans doublon. Une case du terrain
+' en porte deux : la longueur et le couloir.
+Private Function NomsDesChamps( _
+    ByVal Entrees As Variant) As Variant
+
+    Dim i As Long
+    Dim j As Long
+    Dim Noms As String
+    Dim Vus As String
+    Dim Candidat As String
+
+    For i = 0 To UBound(Entrees)
+
+        For j = 0 To 6 Step 6
+
+            Candidat = Champ(CStr(Entrees(i)), j)
+
+            If Candidat <> "" Then
+
+                If InStr(1, Vus, "|" & Candidat & "|") = 0 Then
+
+                    Vus = Vus & "|" & Candidat & "|"
+
+                    If Noms <> "" Then Noms = Noms & vbTab
+                    Noms = Noms & Candidat
+
+                End If
+
+            End If
+
+        Next j
+
+    Next i
+
+    NomsDesChamps = Split(Noms, vbTab)
+
+End Function
+
+
 ' Une cellule par champ, dans la colonne masquee : c'est
 ' elle que la saisie lit, et c'est elle que le clic sur un
-' bouton remplit.
+' bouton remplit. Elles sont empilees a partir du haut,
+' sans rapport avec la ligne des boutons : une case du
+' terrain en nourrit deux, qui se marcheraient dessus.
 Private Sub PoserValeurs( _
     ByVal ws As Worksheet, _
     ByVal Entrees As Variant)
 
+    Dim Noms As Variant
     Dim i As Long
-    Dim Vus As String
-    Dim NomPlage As String
 
-    For i = 0 To UBound(Entrees)
+    Noms = NomsDesChamps(Entrees)
 
-        NomPlage = Champ(CStr(Entrees(i)), 0)
+    For i = 0 To UBound(Noms)
 
-        If InStr(1, Vus, "|" & NomPlage & "|") = 0 Then
-
-            Vus = Vus & "|" & NomPlage & "|"
-
-            NommerPlage ws, _
-                ws.Cells( _
-                    CLng(Champ(CStr(Entrees(i)), 1)), _
-                    COL_VALEURS).Address, _
-                NomPlage
-
-        End If
+        NommerPlage ws, _
+            ws.Cells(2 + i, COL_VALEURS).Address, _
+            CStr(Noms(i))
 
     Next i
 
@@ -376,30 +494,13 @@ Private Function AdresseValeurs( _
     ByVal ws As Worksheet, _
     ByVal Entrees As Variant) As String
 
-    Dim i As Long
-    Dim Vus As String
-    Dim NomPlage As String
-    Dim Adresses As String
+    Dim Noms As Variant
 
-    For i = 0 To UBound(Entrees)
+    Noms = NomsDesChamps(Entrees)
 
-        NomPlage = Champ(CStr(Entrees(i)), 0)
-
-        If InStr(1, Vus, "|" & NomPlage & "|") = 0 Then
-
-            Vus = Vus & "|" & NomPlage & "|"
-
-            If Adresses <> "" Then Adresses = Adresses & ","
-
-            Adresses = Adresses & ws.Cells( _
-                CLng(Champ(CStr(Entrees(i)), 1)), _
-                COL_VALEURS).Address
-
-        End If
-
-    Next i
-
-    AdresseValeurs = Adresses
+    AdresseValeurs = ws.Range( _
+        ws.Cells(2, COL_VALEURS), _
+        ws.Cells(2 + UBound(Noms), COL_VALEURS)).Address
 
 End Function
 
@@ -409,7 +510,7 @@ Private Function ZoneBouton( _
     ByVal Entree As String) As Range
 
     Set ZoneBouton = CelluleOption(ws, Entree) _
-        .Resize(1, LARGEUR_BOUTON)
+        .Resize(1, LargeurOption(Entree))
 
 End Function
 
@@ -421,7 +522,63 @@ Private Function CelluleOption( _
     Set CelluleOption = ws.Cells( _
         CLng(Champ(Entree, 1)), _
         COL_PREMIER_BOUTON + _
-            CLng(Champ(Entree, 2)) * LARGEUR_BOUTON)
+            CLng(Champ(Entree, 2)) * LargeurOption(Entree))
+
+End Function
+
+
+' Deux colonnes par defaut, une seule pour les cases du
+' terrain : onze zones de deux colonnes sortiraient de
+' l'ecran.
+Private Function LargeurOption( _
+    ByVal Entree As String) As Long
+
+    Dim Largeur As String
+
+    Largeur = Champ(Entree, 5)
+
+    If Largeur = "" Then
+        LargeurOption = LARGEUR_BOUTON
+    Else
+        LargeurOption = CLng(Largeur)
+    End If
+
+End Function
+
+
+' Les cases du terrain se reconnaissent a leur champ :
+' elles seules portent la pelouse, et restent muettes,
+' la distance etant ecrite une fois pour toutes en tete
+' de colonne.
+Private Function EstCaseTerrain( _
+    ByVal Entree As String) As Boolean
+
+    EstCaseTerrain = _
+        InStr(1, Champ(Entree, 0), "ZONE_TERRAIN") > 0 Or _
+        InStr(1, Champ(Entree, 0), "ZONE_LONGUEUR") > 0
+
+End Function
+
+
+' La couleur de repos : le terrain porte la sienne, ses
+' en-buts plus soutenus, et les autres choix gardent le
+' sable commun aux popups.
+Private Function CouleurRepos( _
+    ByVal Entree As String) As Long
+
+    If Not EstCaseTerrain(Entree) Then
+
+        CouleurRepos = SABLE
+
+    ElseIf InStr(1, Champ(Entree, 3), "en-but") > 0 Then
+
+        CouleurRepos = ENBUT
+
+    Else
+
+        CouleurRepos = PELOUSE
+
+    End If
 
 End Function
 
@@ -557,6 +714,7 @@ Private Sub AppliquerClicOption( _
     Dim i As Long
     Dim Choisie As Long
     Dim NomPlage As String
+    Dim Autre As String
     Dim DejaChoisi As Boolean
 
     Choisie = -1
@@ -589,7 +747,7 @@ Private Sub AppliquerClicOption( _
         If Champ(CStr(Entrees(i)), 0) = NomPlage Then
 
             With ZoneBouton(ws, CStr(Entrees(i)))
-                .Interior.Color = SABLE
+                .Interior.Color = CouleurRepos(CStr(Entrees(i)))
                 .Font.Color = RGB(0, 0, 0)
             End With
 
@@ -597,19 +755,30 @@ Private Sub AppliquerClicOption( _
 
     Next i
 
+    Autre = Champ(CStr(Entrees(Choisie)), 6)
+
     If DejaChoisi Then
 
         ws.Range(NomPlage).ClearContents
 
+        ' La case du terrain porte deux champs : les
+        ' abandonner ensemble.
+        If Autre <> "" Then ws.Range(Autre).ClearContents
+
     Else
 
-        With Cellule.Resize(1, LARGEUR_BOUTON)
+        With ZoneBouton(ws, CStr(Entrees(Choisie)))
             .Interior.Color = BLEU
             .Font.Color = RGB(255, 255, 255)
         End With
 
         ws.Range(NomPlage).Value = _
             Champ(CStr(Entrees(Choisie)), 4)
+
+        If Autre <> "" Then
+            ws.Range(Autre).Value = _
+                Champ(CStr(Entrees(Choisie)), 7)
+        End If
 
     End If
 
@@ -640,7 +809,7 @@ Public Sub EffacerSelectionsOptions(ByVal ws As Worksheet)
     For i = 0 To UBound(Entrees)
 
         With ZoneBouton(ws, CStr(Entrees(i)))
-            .Interior.Color = SABLE
+            .Interior.Color = CouleurRepos(CStr(Entrees(i)))
             .Font.Color = RGB(0, 0, 0)
         End With
 
@@ -738,8 +907,54 @@ Private Sub EcrireSousTitre( _
         .Font.Size = 9
         .Font.Color = BLEU
         .HorizontalAlignment = xlRight
-        .VerticalAlignment = xlBottom
+        .VerticalAlignment = xlCenter
     End With
+
+End Sub
+
+
+' Au-dessus du terrain : les deux camps, puis la distance
+' de chaque colonne. Du texte, pas des boutons : seules
+' les cases du terrain se cliquent.
+Private Sub EcrireEnTetesTerrain( _
+    ByVal ws As Worksheet, _
+    ByVal Ligne As Long)
+
+    Dim Distances As Variant
+    Dim i As Long
+
+    ' Les cinq colonnes de chaque cote, le milieu laisse
+    ' a decouvert entre les deux.
+    With ws.Cells(Ligne, COL_PREMIER_BOUTON).Resize(1, 5)
+        .Merge
+        .Value = "NOTRE CAMP"
+        .HorizontalAlignment = xlCenter
+        .Font.Bold = True
+        .Font.Size = 9
+        .Font.Color = BLEU
+    End With
+
+    With ws.Cells(Ligne, COL_PREMIER_BOUTON + 6).Resize(1, 5)
+        .Merge
+        .Value = "CAMP ADVERSE"
+        .HorizontalAlignment = xlCenter
+        .Font.Bold = True
+        .Font.Size = 9
+        .Font.Color = BLEU
+    End With
+
+    Distances = DistancesTerrain
+
+    For i = 0 To UBound(Distances)
+
+        With ws.Cells(Ligne + 1, COL_PREMIER_BOUTON + i)
+            .Value = Distances(i)
+            .HorizontalAlignment = xlCenter
+            .Font.Size = 9
+            .Font.Italic = True
+        End With
+
+    Next i
 
 End Sub
 
@@ -807,7 +1022,9 @@ Private Sub EcrireBoutons( _
     ByVal NomValider As String, _
     ByVal NomAnnuler As String)
 
-    With ws.Cells(Ligne, COL_LIBELLE).Resize(1, 2)
+    ' Les deux boutons commencent sous les choix, pas
+    ' sous leurs intitules.
+    With ws.Cells(Ligne, COL_LIBELLE + 1).Resize(1, 2)
         .Merge
         .Value = "ANNULER"
         .Interior.Color = ROUGE
@@ -817,7 +1034,7 @@ Private Sub EcrireBoutons( _
         .VerticalAlignment = xlCenter
     End With
 
-    With ws.Cells(Ligne, COL_LIBELLE + 3).Resize(1, 4)
+    With ws.Cells(Ligne, COL_LIBELLE + 4).Resize(1, 4)
         .Merge
         .Value = "VALIDER  (Entree)"
         .Interior.Color = VERT
@@ -828,10 +1045,10 @@ Private Sub EcrireBoutons( _
     End With
 
     NommerPlage ws, _
-        ws.Cells(Ligne, COL_LIBELLE).Address, NomAnnuler
+        ws.Cells(Ligne, COL_LIBELLE + 1).Address, NomAnnuler
 
     NommerPlage ws, _
-        ws.Cells(Ligne, COL_LIBELLE + 3).Address, NomValider
+        ws.Cells(Ligne, COL_LIBELLE + 4).Address, NomValider
 
 End Sub
 
@@ -845,8 +1062,9 @@ Private Sub MettreEnFormePopup( _
     ws.Columns("A").ColumnWidth = 2
     ws.Columns("B").ColumnWidth = 16
 
-    ' Douze colonnes de boutons : six options par ligne au
-    ' plus large, l'alignement complet des touches.
+    ' Douze colonnes de boutons : les onze zones du terrain,
+    ' une par colonne, et de quoi loger six options de deux
+    ' colonnes sur une meme ligne.
     ws.Range(ws.Columns(COL_PREMIER_BOUTON), _
         ws.Columns(COL_PREMIER_BOUTON + 11)).ColumnWidth = 6.5
 
