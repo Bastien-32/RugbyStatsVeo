@@ -1061,6 +1061,14 @@ Private Sub AjouterMatchEnBase( _
     Dim Fiche As Variant
     Dim DateModifiee As Double
 
+    ' Un fichier qui ne porte aucun identifiant de match
+    ' n'est pas un match : un export de touches et melees
+    ' pose a la racine prenait une ligne dans l'inventaire
+    ' sans rien y apporter.
+    If Len(Trim(Match.IdMatch)) = 0 Then
+        Exit Sub
+    End If
+
     AjouterLignesTableau _
         TableauRecap(FEUILLE_JOURNAL, TBL_JOURNAL), _
         Match.Actions, _
@@ -1121,39 +1129,49 @@ End Sub
 ' =========================================================
 Public Sub RetirerMatch()
 
-    Dim Fichier As String
+    Dim Fichiers As Collection
+    Dim Fichier As Variant
 
-    Fichier = FichierDeLaLigneSelectionnee()
+    Set Fichiers = FichiersRetenus()
 
-    If Len(Fichier) = 0 Then
+    If Fichiers.Count = 0 Then
         Exit Sub
     End If
 
+    ' Les noms sont rappeles : un retrait multiple ne doit
+    ' pas se faire a l'aveugle.
     If MsgBox( _
-        "Retirer de la base le match du fichier" & vbCrLf & _
-        Fichier & " ?" & vbCrLf & vbCrLf & _
-        "Ses actions et sa composition seront " & _
-        "effac" & ChrW(233) & "es. Le fichier de match, lui, " & _
-        "n'est pas touch" & ChrW(233) & ".", _
+        "Retirer de la base " & Fichiers.Count & _
+        " match(s) ?" & vbCrLf & _
+        ListeDesFichiers(Fichiers) & vbCrLf & vbCrLf & _
+        "Leurs actions et leurs compositions seront " & _
+        "effac" & ChrW(233) & "es. Les fichiers de match, eux, " & _
+        "ne sont pas touch" & ChrW(233) & "s.", _
         vbQuestion + vbYesNo + vbDefaultButton2, _
-        "Retirer un match" _
+        "Retirer des matchs" _
     ) <> vbYes Then
 
         Exit Sub
 
     End If
 
-    EffacerMatchDeLaBase Fichier
+    For Each Fichier In Fichiers
+        EffacerMatchDeLaBase CStr(Fichier)
+    Next Fichier
+
+    ViderSelectionMatchs
 
     ConstruireListesFiltres
 
     AppliquerFiltres
 
     MsgBox _
-        "Match retir" & ChrW(233) & " de la base." & vbCrLf & vbCrLf & _
-        "Il sera r" & ChrW(233) & "int" & ChrW(233) & "gr" & ChrW(233) & _
-        " " & ChrW(224) & " la prochaine actualisation si son " & _
-        "fichier est toujours " & ChrW(224) & " la racine.", _
+        Fichiers.Count & " match(s) retir" & ChrW(233) & _
+        "(s) de la base." & vbCrLf & vbCrLf & _
+        "Ils seront r" & ChrW(233) & "int" & ChrW(233) & "gr" & _
+        ChrW(233) & "s " & ChrW(224) & " la prochaine " & _
+        "actualisation si leur fichier est toujours " & _
+        ChrW(224) & " la racine.", _
         vbInformation, _
         "Retrait termin" & ChrW(233)
 
@@ -1167,38 +1185,42 @@ End Sub
 ' =========================================================
 Public Sub ReimporterMatch()
 
-    Dim Fichier As String
+    Dim Fichier As Variant
     Dim Match As InfosMatch
+    Dim Vierge As InfosMatch
     Dim Fichiers As Collection
+    Dim NbLus As Long
+    Dim NbEchecs As Long
 
     Dim EtatAffichage As Boolean
     Dim EtatEvenements As Boolean
     Dim EtatAlertes As Boolean
     Dim EtatCalcul As XlCalculation
 
-    Fichier = FichierDeLaLigneSelectionnee()
+    Set Fichiers = FichiersRetenus()
 
-    If Len(Fichier) = 0 Then
+    If Fichiers.Count = 0 Then
         Exit Sub
     End If
 
-    If Dir(CheminComplet(Fichier)) = "" Then
+    For Each Fichier In Fichiers
 
-        MsgBox _
-            "Le fichier" & vbCrLf & Fichier & vbCrLf & _
-            "n'est plus " & ChrW(224) & " la racine du dossier." & _
-            vbCrLf & vbCrLf & _
-            "Utilise " & ChrW(171) & " Retirer ce match " & _
-            ChrW(187) & " si le match ne doit plus compter.", _
-            vbExclamation, _
-            "Fichier introuvable"
+        If Dir(CheminComplet(CStr(Fichier))) = "" Then
 
-        Exit Sub
+            MsgBox _
+                "Le fichier" & vbCrLf & CStr(Fichier) & vbCrLf & _
+                "n'est plus " & ChrW(224) & " la racine du dossier." & _
+                vbCrLf & vbCrLf & _
+                "Utilise " & ChrW(171) & " Retirer ce match " & _
+                ChrW(187) & " si le match ne doit plus compter.", _
+                vbExclamation, _
+                "Fichier introuvable"
 
-    End If
+            Exit Sub
 
-    Set Fichiers = New Collection
-    Fichiers.Add Fichier
+        End If
+
+    Next Fichier
 
     If Not AutoriserLecture(Fichiers) Then
         Exit Sub
@@ -1216,18 +1238,34 @@ Public Sub ReimporterMatch()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
 
-    LireFichierMatch Fichier, Match
+    For Each Fichier In Fichiers
 
-    If Match.Lu Then
+        ' Remis a neuf avant chaque lecture : sans cela, un
+        ' fichier illisible garderait le Lu du precedent.
+        Match = Vierge
 
-        ' Le retrait n'a lieu qu'une fois la relecture
-        ' reussie : un fichier devenu illisible ne doit pas
-        ' faire perdre ce qui etait deja en base.
-        EffacerMatchDeLaBase Fichier
+        LireFichierMatch CStr(Fichier), Match
 
-        AjouterMatchEnBase Match, Fichier
+        If Match.Lu Then
 
-    End If
+            ' Le retrait n'a lieu qu'une fois la relecture
+            ' reussie : un fichier devenu illisible ne doit
+            ' pas faire perdre ce qui etait deja en base.
+            EffacerMatchDeLaBase CStr(Fichier)
+
+            AjouterMatchEnBase Match, CStr(Fichier)
+
+            NbLus = NbLus + 1
+
+        Else
+
+            NbEchecs = NbEchecs + 1
+
+        End If
+
+    Next Fichier
+
+    ViderSelectionMatchs
 
     ConstruireListesFiltres
 
@@ -1238,24 +1276,23 @@ Public Sub ReimporterMatch()
 
     AppliquerFiltres
 
-    If Match.Lu Then
+    If NbEchecs = 0 Then
 
         MsgBox _
-            "Match relu : " & Match.NbActions & " action(s), " & _
-            Match.NbJoueurs & " joueur(s), " & _
-            Match.NbMinutes & " temps de jeu saisi(s).", _
+            NbLus & " match(s) relu(s).", _
             vbInformation, _
             "R" & ChrW(233) & "import termin" & ChrW(233)
 
     Else
 
         MsgBox _
-            "Le fichier n'a pas pu " & ChrW(234) & "tre lu." & _
-            vbCrLf & vbCrLf & _
-            "Ce qui " & ChrW(233) & "tait en base a " & ChrW(233) & _
-            "t" & ChrW(233) & " conserv" & ChrW(233) & ".", _
+            NbLus & " match(s) relu(s), " & NbEchecs & _
+            " illisible(s)." & vbCrLf & vbCrLf & _
+            "Ce qui " & ChrW(233) & "tait en base pour ces " & _
+            "derniers a " & ChrW(233) & "t" & ChrW(233) & _
+            " conserv" & ChrW(233) & ".", _
             vbExclamation, _
-            "Fichier illisible"
+            "R" & ChrW(233) & "import partiel"
 
     End If
 
@@ -1283,6 +1320,78 @@ GestionErreur:
         "Erreur"
 
 End Sub
+
+
+' =========================================================
+' Les matchs sur lesquels les boutons agissent : ceux
+' coches en colonne Selection.
+'
+' Aucune coche : on retombe sur la ligne ou se trouve le
+' curseur, comme avant l'arrivee de cette colonne.
+' =========================================================
+Private Function FichiersRetenus() As Collection
+
+    Dim Tableau As ListObject
+    Dim Fichiers As Collection
+    Dim Ligne As Long
+    Dim Fichier As String
+
+    Set Fichiers = New Collection
+
+    Set Tableau = TableauRecap(FEUILLE_MATCHS, TBL_MATCHS)
+
+    If Not Tableau Is Nothing Then
+
+        If Tableau.ListRows.Count > 0 Then
+
+            For Ligne = 1 To Tableau.ListRows.Count
+
+                If EstCoche(Tableau.DataBodyRange.Cells( _
+                    Ligne, MTC_SELECTION).Value) Then
+
+                    Fichier = Trim(CStr( _
+                        Tableau.DataBodyRange.Cells( _
+                            Ligne, MTC_FICHIER).Value))
+
+                    If Len(Fichier) > 0 Then
+                        Fichiers.Add Fichier
+                    End If
+
+                End If
+
+            Next Ligne
+
+        End If
+
+    End If
+
+    If Fichiers.Count = 0 Then
+
+        Fichier = FichierDeLaLigneSelectionnee()
+
+        If Len(Fichier) > 0 Then
+            Fichiers.Add Fichier
+        End If
+
+    End If
+
+    Set FichiersRetenus = Fichiers
+
+End Function
+
+
+' Les noms, un par ligne, pour les montrer avant d'agir.
+Private Function ListeDesFichiers( _
+    ByVal Fichiers As Collection _
+) As String
+
+    Dim Fichier As Variant
+
+    For Each Fichier In Fichiers
+        ListeDesFichiers = ListeDesFichiers & vbCrLf & CStr(Fichier)
+    Next Fichier
+
+End Function
 
 
 ' =========================================================
@@ -1462,6 +1571,12 @@ Public Sub ConstruireListesFiltres()
 
     EcrireListe ws, "N", "LST_ADVERSAIRES", _
         ValeursDistinctes(Donnees, MTC_ADVERSAIRE)
+
+    ' Ces listes ne se lisent pas : elles alimentent les
+    ' menus de la feuille Filtres. Elles encombraient la
+    ' seule feuille que l'entraineur a besoin de voir, et
+    ' les menus fonctionnent sur une colonne masquee.
+    ws.Range("I:N").EntireColumn.Hidden = True
 
 End Sub
 

@@ -47,7 +47,14 @@ Public Sub ConstruireClasseurRecapitulatif()
 
     Application.ScreenUpdating = EtatAffichage
 
-    FeuilleRecap(FEUILLE_JOURNAL).Activate
+    ' Les feuilles de donnees peuvent avoir ete masquees :
+    ' les activer leverait une erreur. La feuille Matchs
+    ' porte le meme bouton d'actualisation.
+    If FeuilleRecap(FEUILLE_JOURNAL).Visible = xlSheetVisible Then
+        FeuilleRecap(FEUILLE_JOURNAL).Activate
+    Else
+        FeuilleRecap(FEUILLE_MATCHS).Activate
+    End If
 
     MsgBox _
         "Classeur r" & ChrW(233) & "capitulatif pr" & ChrW(234) & "t." & _
@@ -200,12 +207,12 @@ End Sub
 '
 ' Une seule colonne se coche a la main :
 '
-'   Cibler : le match fait partie d'une selection
+'   Matchs a analyser : le match entre dans la selection
 '            manuelle, utilisee quand le filtre
 '            "Matchs cibles uniquement" est sur Oui.
 '
-' La colonne Retenu est ecrite par le calcul : elle montre
-' quels matchs ont servi au dernier classement.
+' Le tableau n'inventorie que les matchs reellement
+' importes : un fichier illisible n'y laisse pas de ligne.
 ' =========================================================
 Private Sub ConstruireFeuilleMatchs()
 
@@ -213,27 +220,22 @@ Private Sub ConstruireFeuilleMatchs()
 
     Set ws = FeuilleRecapOuCreee(FEUILLE_MATCHS)
 
+    EffacerBoutons ws
+
     EcrireTitre _
         ws, _
         "Matchs de la base", _
-        "Coche Cibler pour retenir un match dans une " & _
-        "s" & ChrW(233) & "lection manuelle. Pour reprendre un " & _
-        "match dont la saisie a chang" & ChrW(233) & ", clique sur " & _
-        "sa ligne puis sur " & ChrW(171) & " R" & ChrW(233) & _
-        "importer ce match " & ChrW(187) & "."
+        "Coche S" & ChrW(233) & "lection pour d" & ChrW(233) & _
+        "signer les matchs sur lesquels agissent les " & _
+        "boutons, et Matchs " & ChrW(224) & " analyser pour " & _
+        "composer une s" & ChrW(233) & "lection manuelle de " & _
+        "r" & ChrW(233) & "sultats."
 
     CreerTableau _
         ws, _
         TBL_MATCHS, _
-        Array( _
-            "Cibler", "Retenu", "ID match", "Fichier", _
-            "Saison", "Date", "Cat" & ChrW(233) & "gorie", _
-            "Adversaire", "Lieu", "Phase", _
-            "Journ" & ChrW(233) & "e", "R" & ChrW(233) & "sultat", _
-            "Actions", "Joueurs", "Minutes saisies", _
-            "Ajout" & ChrW(233) & " le", _
-            "Fichier modifi" & ChrW(233) & " le" _
-        )
+        EntetesMatchs
+    AjusterTableauMatchs ws
 
     PoserBouton _
         ws, "Ajouter les nouveaux matchs", _
@@ -241,21 +243,19 @@ Private Sub ConstruireFeuilleMatchs()
         LIGNE_ENTETE - 2, PREMIERE_COLONNE, 210
 
     PoserBouton _
-        ws, "R" & ChrW(233) & "importer ce match", _
-        "ReimporterMatch", _
-        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 150, 220
+        ws, "R" & ChrW(233) & "importer", "ReimporterMatch", _
+        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 110, 220
 
     PoserBouton _
-        ws, "Retirer ce match", "RetirerMatch", _
-        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 140, 380
+        ws, "Retirer", "RetirerMatch", _
+        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 90, 340
 
+    ' Pas de "Tout analyser" : pour prendre tous les
+    ' matchs, le filtre "Matchs cibles uniquement" passe
+    ' sur Non et les coches ne comptent plus.
     PoserBouton _
-        ws, "Tout cibler", "ToutCibler", _
-        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 100, 530
-
-    PoserBouton _
-        ws, "Ne rien cibler", "RienCibler", _
-        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 110, 640
+        ws, "Ne rien analyser", "RienAnalyser", _
+        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 130, 450
 
     With ws.Columns(PREMIERE_COLONNE).Resize(, 2)
         .ColumnWidth = 9
@@ -272,10 +272,18 @@ Private Sub ConstruireFeuilleMatchs()
     ws.Columns(PREMIERE_COLONNE + 12).Resize(, 3).ColumnWidth = 12
     ws.Columns(PREMIERE_COLONNE + 15).Resize(, 2).ColumnWidth = 18
 
-    PoserListeCoche ws, PREMIERE_COLONNE
+    PoserColonneCoche ws, PREMIERE_COLONNE
+    PoserColonneCoche ws, PREMIERE_COLONNE + 1
 
     ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + MTC_DATE - 1) _
         .EntireColumn.NumberFormat = "dd/mm/yyyy"
+
+    ' L'identifiant ne dit rien de plus que le nom du
+    ' fichier, mais c'est lui qui empeche un meme match
+    ' d'entrer deux fois sous deux noms : il reste en
+    ' place, simplement hors de vue.
+    ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + MTC_ID - 1) _
+        .EntireColumn.Hidden = True
 
     ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + MTC_AJOUTE - 1) _
         .Resize(1, 2).EntireColumn.NumberFormat = "dd/mm/yyyy hh:mm"
@@ -414,9 +422,9 @@ Private Sub ConstruireFeuilleTemps()
     EcrireTitre _
         ws, _
         "Temps de jeu par cat" & ChrW(233) & "gorie", _
-        "Matchs, minutes et moyenne, s" & ChrW(233) & "par" & _
+        "Matchs et minutes, s" & ChrW(233) & "par" & _
         ChrW(233) & "s selon l'" & ChrW(233) & "quipe dans laquelle " & _
-        "le joueur a jou" & ChrW(233) & "."
+        "le joueur a jou" & ChrW(233) & ", puis cumul" & ChrW(233) & "s."
 
     PoserBouton _
         ws, "Recalculer", "AppliquerFiltres", _
@@ -446,6 +454,16 @@ Private Sub ConstruireFeuilleParametres()
     Dim Tableau As ListObject
 
     Set ws = FeuilleRecapOuCreee(FEUILLE_PARAMETRES)
+
+    EffacerBoutons ws
+
+    PoserBouton _
+        ws, "Tout afficher", "ToutAfficher", _
+        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 110, 420
+
+    PoserBouton _
+        ws, "Ne rien afficher", "RienAfficher", _
+        LIGNE_ENTETE - 2, PREMIERE_COLONNE, 120, 540
 
     EcrireTitre _
         ws, _
@@ -478,7 +496,7 @@ Private Sub ConstruireFeuilleParametres()
     ws.Columns(PREMIERE_COLONNE + 3).ColumnWidth = 18
     ws.Columns(PREMIERE_COLONNE + 4).ColumnWidth = 16
 
-    PoserListeCoche ws, PREMIERE_COLONNE
+    PoserColonneCoche ws, PREMIERE_COLONNE
 
     ws.Range("I5").Value = "Listes des menus de la feuille Filtres"
     ws.Range("I5").Font.Bold = True
@@ -706,7 +724,7 @@ Private Sub AjouterStat( _
     NbStats = NbStats + 1
 
     If Afficher Then
-        Lignes(NbStats, 1) = MARQUE_COCHE
+        Lignes(NbStats, 1) = MarqueCoche()
     End If
 
     Lignes(NbStats, 2) = Colonne
@@ -805,6 +823,27 @@ End Sub
 ' depuis le bord gauche de la premiere colonne, pour
 ' aligner plusieurs boutons sur une meme ligne.
 ' =========================================================
+' =========================================================
+' Les boutons d'une feuille sont tous retires avant d'etre
+' reposes : un bouton qu'on cesse de poser resterait
+' sinon affiche, PoserBouton ne supprimant que la forme de
+' meme nom.
+' =========================================================
+Private Sub EffacerBoutons(ByVal ws As Worksheet)
+
+    Dim i As Long
+
+    For i = ws.Shapes.Count To 1 Step -1
+
+        If Left$(ws.Shapes(i).Name, 4) = "BTN_" Then
+            ws.Shapes(i).Delete
+        End If
+
+    Next i
+
+End Sub
+
+
 Private Sub PoserBouton( _
     ByVal ws As Worksheet, _
     ByVal Libelle As String, _
@@ -891,20 +930,100 @@ Private Sub PoserListe( _
 End Sub
 
 
+' Les en-tetes du tableau des matchs, a un seul endroit :
+' la creation et la migration doivent dire la meme chose.
+Private Function EntetesMatchs() As Variant
+
+    EntetesMatchs = Array( _
+        "S" & ChrW(233) & "lection", _
+        "Matchs " & ChrW(224) & " analyser", _
+        "ID match", "Fichier", _
+        "Saison", "Date", "Cat" & ChrW(233) & "gorie", _
+        "Adversaire", "Lieu", "Phase", _
+        "Journ" & ChrW(233) & "e", "R" & ChrW(233) & "sultat", _
+        "Actions", "Joueurs", "Minutes saisies", _
+        "Ajout" & ChrW(233) & " le", _
+        "Fichier modifi" & ChrW(233) & " le")
+
+End Function
+
+
 ' =========================================================
-' Menu a deux choix sur toute une colonne d'un tableau :
-' la marque de coche, ou rien.
+' Les classeurs d'avant n'ont pas la colonne Selection :
+' elle s'insere en tete, ce qui decale l'ancienne colonne
+' Cibler d'un rang. Elle devient ainsi "Matchs a
+' analyser", en gardant ce qui y etait coche.
+'
+' CreerTableau ne touche pas a un tableau existant : sans
+' cette reprise, la colonne n'arriverait jamais dans un
+' classeur deja rempli.
 ' =========================================================
-Private Sub PoserListeCoche( _
+Private Sub AjusterTableauMatchs(ByVal ws As Worksheet)
+
+    Dim Tableau As ListObject
+    Dim Entetes As Variant
+    Dim Voulues As Long
+    Dim i As Long
+
+    Set Tableau = TableauRecap(FEUILLE_MATCHS, TBL_MATCHS)
+
+    If Tableau Is Nothing Then
+        Exit Sub
+    End If
+
+    Entetes = EntetesMatchs
+    Voulues = UBound(Entetes) - LBound(Entetes) + 1
+
+    ' La colonne Retenu des premieres versions disparait :
+    ' elle disait ce que le dernier calcul avait garde, ce
+    ' que le bandeau du classement rappelle deja.
+    For i = Tableau.ListColumns.Count To 1 Step -1
+
+        If StrComp(Trim(CStr( _
+            Tableau.HeaderRowRange.Cells(1, i).Value)), _
+            "Retenu", vbTextCompare) = 0 Then
+
+            Tableau.ListColumns(i).Delete
+
+        End If
+
+    Next i
+
+    Do While Tableau.ListColumns.Count < Voulues
+        Tableau.ListColumns.Add Position:=1
+    Loop
+
+    For i = LBound(Entetes) To UBound(Entetes)
+
+        Tableau.HeaderRowRange.Cells( _
+            1, i - LBound(Entetes) + 1).Value = Entetes(i)
+
+    Next i
+
+End Sub
+
+
+' =========================================================
+' La colonne se coche d'un clic : le menu deroulant qu'on
+' y trouvait obligeait a derouler puis choisir, pour un
+' seul choix possible. On le retire, et on centre la
+' marque.
+' =========================================================
+Private Sub PoserColonneCoche( _
     ByVal ws As Worksheet, _
     ByVal Colonne As Long _
 )
 
-    PoserListe _
-        ws.Columns(Colonne).Cells( _
-            LIGNE_ENTETE + 1 _
-        ).Resize(5000), _
-        MARQUE_COCHE
+    Dim Plage As Range
+
+    Set Plage = ws.Columns(Colonne).Cells( _
+        LIGNE_ENTETE + 1).Resize(5000)
+
+    On Error Resume Next
+    Plage.Validation.Delete
+    On Error GoTo 0
+
+    Plage.HorizontalAlignment = xlCenter
 
 End Sub
 
@@ -1089,29 +1208,160 @@ End Sub
 
 
 ' =========================================================
-' BOUTONS DE CIBLAGE DE LA FEUILLE MATCHS
+' BOUTONS DE LA FEUILLE PARAMETRES
+'
+' La colonne "Afficher" se coche d'un clic, ligne par
+' ligne. Ces deux boutons evitent de parcourir la liste
+' entiere pour n'en garder qu'une, ou pour tout reprendre.
 ' =========================================================
 
-Public Sub ToutCibler()
+' Un clic dans la colonne a cocher bascule la ligne. La
+' selection file ensuite d'une case vers la droite :
+' laissee sur place, elle empecherait Excel de voir le
+' clic suivant au meme endroit.
+'
+' Seule la colonne "Afficher" des statistiques et la
+' colonnes "Selection" et "Matchs a analyser" se
+' cliquent.
+Public Sub BasculerCocheStat(ByVal Target As Range)
 
-    CocherColonneCibler True
+    BasculerCocheColonne _
+        Target, FEUILLE_PARAMETRES, TBL_STATS, 1
 
 End Sub
 
 
-Public Sub RienCibler()
+Public Sub BasculerCocheMatchs(ByVal Target As Range)
 
-    CocherColonneCibler False
+    BasculerCocheColonne _
+        Target, FEUILLE_MATCHS, TBL_MATCHS, MTC_SELECTION
+
+    BasculerCocheColonne _
+        Target, FEUILLE_MATCHS, TBL_MATCHS, MTC_ANALYSER
 
 End Sub
 
 
-Private Sub CocherColonneCibler( _
+Private Sub BasculerCocheColonne( _
+    ByVal Target As Range, _
+    ByVal NomFeuille As String, _
+    ByVal NomTableau As String, _
+    ByVal IndexColonne As Long _
+)
+
+    Dim Tableau As ListObject
+    Dim Colonne As Range
+    Dim EtatEvenements As Boolean
+
+    If Target.Cells.Count > 1 Then
+        Exit Sub
+    End If
+
+    Set Tableau = TableauRecap(NomFeuille, NomTableau)
+
+    If Tableau Is Nothing Then
+        Exit Sub
+    End If
+
+    If Tableau.ListRows.Count = 0 Then
+        Exit Sub
+    End If
+
+    Set Colonne = Tableau.ListColumns(IndexColonne).DataBodyRange
+
+    If Intersect(Target, Colonne) Is Nothing Then
+        Exit Sub
+    End If
+
+    EtatEvenements = Application.EnableEvents
+
+    On Error GoTo Sortie
+
+    Application.EnableEvents = False
+
+    If EstCoche(Target.Value) Then
+        Target.ClearContents
+    Else
+        Target.Value = MarqueCoche()
+    End If
+
+    Target.Offset(0, 1).Select
+
+Sortie:
+
+    Application.EnableEvents = EtatEvenements
+
+End Sub
+
+
+Public Sub ToutAfficher()
+
+    CocherColonneAfficher True
+
+End Sub
+
+
+Public Sub RienAfficher()
+
+    CocherColonneAfficher False
+
+End Sub
+
+
+Private Sub CocherColonneAfficher( _
     ByVal Cocher As Boolean _
 )
 
     Dim Tableau As ListObject
     Dim Colonne As Range
+
+    Set Tableau = TableauRecap(FEUILLE_PARAMETRES, TBL_STATS)
+
+    If Tableau Is Nothing Then
+        Exit Sub
+    End If
+
+    If Tableau.ListRows.Count = 0 Then
+        Exit Sub
+    End If
+
+    Set Colonne = Tableau.ListColumns(1).DataBodyRange
+
+    If Cocher Then
+        Colonne.Value = MarqueCoche()
+    Else
+        Colonne.ClearContents
+    End If
+
+End Sub
+
+
+' =========================================================
+' BOUTONS DE LA COLONNE "MATCHS A ANALYSER"
+' =========================================================
+
+Public Sub RienAnalyser()
+
+    ViderColonneMatchs MTC_ANALYSER
+
+End Sub
+
+
+' Les cases de Selection sont rendues apres chaque action :
+' laissees cochees, un second clic distrait sur Retirer
+' emporterait les memes matchs.
+Public Sub ViderSelectionMatchs()
+
+    ViderColonneMatchs MTC_SELECTION
+
+End Sub
+
+
+Private Sub ViderColonneMatchs( _
+    ByVal IndexColonne As Long _
+)
+
+    Dim Tableau As ListObject
 
     Set Tableau = TableauRecap(FEUILLE_MATCHS, TBL_MATCHS)
 
@@ -1123,12 +1373,7 @@ Private Sub CocherColonneCibler( _
         Exit Sub
     End If
 
-    Set Colonne = Tableau.ListColumns(MTC_CIBLER).DataBodyRange
-
-    If Cocher Then
-        Colonne.Value = MARQUE_COCHE
-    Else
-        Colonne.ClearContents
-    End If
+    Tableau.ListColumns(IndexColonne) _
+        .DataBodyRange.ClearContents
 
 End Sub
