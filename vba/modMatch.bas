@@ -70,6 +70,7 @@ Public Sub CreerFichierMatch()
 
     Dim AccesAccorde As Boolean
     Dim FichiersDemandes As Variant
+    Dim CopieFaite As Boolean
 
 #End If
 
@@ -360,7 +361,49 @@ Public Sub CreerFichierMatch()
 
 #End If
 
+#If Mac Then
+
+    ' Le jeton d'autorisation d'Excel se perime en cours de
+    ' session : accorde quelques instants plus tot, il
+    ' laisse quand meme la copie echouer. Redesigner le
+    ' dossier en delivre un neuf, et la creation repart
+    ' sans avoir a quitter Excel.
+    On Error Resume Next
+
     wbModele.SaveCopyAs CheminChoisi
+    CopieFaite = (Err.Number = 0)
+    Err.Clear
+
+    On Error GoTo GestionErreur
+
+    If Not CopieFaite Then
+
+        Application.DisplayAlerts = EtatAlertes
+        Application.ScreenUpdating = EtatAffichage
+
+        If DemanderAutorisationDossierMatchs() Then
+
+            FichiersDemandes = Array(CheminChoisi)
+
+            AccesAccorde = _
+                GrantAccessToMultipleFiles(FichiersDemandes)
+
+        End If
+
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+
+        ' Un second echec part dans le gestionnaire, qui
+        ' dira quoi faire.
+        wbModele.SaveCopyAs CheminChoisi
+
+    End If
+
+#Else
+
+    wbModele.SaveCopyAs CheminChoisi
+
+#End If
 
     ' Empeche le Workbook_Open de la copie de se lancer
     ' pendant que le modele execute encore cette macro.
@@ -456,6 +499,11 @@ GestionErreur:
         MsgBox _
             "Le fichier du match n'a pas pu etre cree." & _
             vbCrLf & vbCrLf & _
+            "macOS refuse a Excel l'ecriture dans le " & _
+            "dossier Matchs, meme apres une nouvelle " & _
+            "autorisation." & vbCrLf & vbCrLf & _
+            "Quitte Excel entierement (Cmd+Q), relance, " & _
+            "puis retente la creation." & vbCrLf & vbCrLf & _
             "Erreur " & NumeroErreur & " : " & DescriptionErreur & _
             vbCrLf & vbCrLf & _
             "Chemin vise :" & vbCrLf & CheminChoisi, _

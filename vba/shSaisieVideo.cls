@@ -1262,9 +1262,16 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
             GroupeFautif = ""
 
-            If PendingGroupeFautifRequired Then
+            ' Avant ou Trois-quarts : le joueur reste
+            ' inconnu, mais sa ligne est celle que le
+            ' bouton nomme, et cela vaut pour toutes les
+            ' actions, pas seulement les penalites.
+            If EstBoutonGroupe(NumeroJoueur) Then
+                GroupeFautif = NumeroJoueur
+            ElseIf PendingGroupeFautifRequired Then
                 GroupeFautif = GetPlayerGroup(Joueur)
             End If
+
 
             ActionJoueurFinalisee = PendingAction
             

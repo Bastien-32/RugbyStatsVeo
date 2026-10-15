@@ -648,6 +648,12 @@ Private Function StyleDe(ByVal Nom As String) As String
         Case "BTN_JO_NON_IDENTIFIE"
             StyleDe = "STYLE_BTN_JOUEUR_INACTIF"
 
+        Case "BTN_JO_AVANT"
+            StyleDe = "STYLE_BTN_JOUEUR_INACTIF"
+
+        Case "BTN_JO_TROIS_QUARTS"
+            StyleDe = "STYLE_BTN_JOUEUR_INACTIF"
+
         Case "BTN_ME_G"
             StyleDe = "STYLE_BTN_PL_TOUCHES"
 
@@ -973,7 +979,9 @@ Public Function PlageBoutonsJoueurs( _
         Set Cible = ws
     End If
 
-    Noms = Array("BTN_JO_COLLECTIF", "BTN_JO_NON_IDENTIFIE")
+    Noms = Array( _
+        "BTN_JO_COLLECTIF", "BTN_JO_NON_IDENTIFIE", _
+        "BTN_JO_AVANT", "BTN_JO_TROIS_QUARTS")
 
     For i = 1 To 15
 
@@ -1121,6 +1129,9 @@ Private Function ComposantsPleinEcran() As Variant
     T = T & vbTab & _
         "BTN_JO_15|AJ18|AJ18:AP18|" & vbTab & _
         "BTN_JO_COLLECTIF|K20|K20:Q20|Collectif" & vbTab & _
+        "BTN_JO_AVANT|S20|S20:Y20|" & "Avant" & vbTab & _
+        "BTN_JO_TROIS_QUARTS|AB20|AB20:AH20|" & _
+            "Trois-quarts" & vbTab & _
         "BTN_JO_NON_IDENTIFIE|AJ20|AJ20:AP20|?" & vbTab & _
         "TITRE_CHRONO_VIDEO|C24|C24:AX24|" & "Gestion chrono  + vid" & ChrW(233) & "o" & vbTab & _
         "LBL_POSITION_VIDEO|C26|C26:K26|" & "Position vid" & ChrW(233) & "o" & vbTab & _
@@ -1234,6 +1245,9 @@ Private Function ComposantsBandeau() As Variant
     T = T & vbTab & _
         "BTN_JO_15|AB40|AB40:AF40|" & vbTab & _
         "BTN_JO_COLLECTIF|I42|I42:M42|Collectif" & vbTab & _
+        "BTN_JO_AVANT|O42|O42:S42|" & "Avant" & vbTab & _
+        "BTN_JO_TROIS_QUARTS|V42|V42:Z42|" & _
+            "Trois-quarts" & vbTab & _
         "BTN_JO_NON_IDENTIFIE|AB42|AB42:AF42|?" & vbTab & _
         "TITRE_CHRONO_VIDEO|C46|C46:AL46|" & "Gestion chrono  + vid" & ChrW(233) & "o" & vbTab & _
         "LBL_POSITION_VIDEO|C48|C48:J48|" & "Position vid" & ChrW(233) & "o" & vbTab & _

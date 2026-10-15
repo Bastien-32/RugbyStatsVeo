@@ -1,7 +1,26 @@
 Attribute VB_Name = "modPlayers"
 Option Explicit
 
+' Les libelles des deux boutons de ligne, repris mot pour
+' mot de la colonne "Avant ou 3/4" de la composition : les
+' lignes sans joueur identifie se cumulent ainsi avec
+' celles des joueurs nommes.
+Public Const GROUPE_AVANT As String = "Avant"
+Public Const GROUPE_TROIS_QUARTS As String = "Trois-quarts"
+
 Private EtatNavigationPopup As Long
+
+' Les deux boutons de ligne : ils ne nomment personne,
+' ils disent seulement de quel paquet venait le joueur
+' qu'on n'a pas su reconnaitre.
+Public Function EstBoutonGroupe( _
+    ByVal Poste As String) As Boolean
+
+    EstBoutonGroupe = _
+        (Poste = GROUPE_AVANT Or Poste = GROUPE_TROIS_QUARTS)
+
+End Function
+
 
 Public Function GetPlayerName( _
     ByVal Numero As String) As String
@@ -15,6 +34,13 @@ Public Function GetPlayerName( _
         GetPlayerName = Numero
         Exit Function
 
+    End If
+
+    ' Avant ou Trois-quarts : le joueur reste inconnu, et
+    ' c'est le groupe fautif qui portera l'information.
+    If EstBoutonGroupe(Numero) Then
+        GetPlayerName = "?"
+        Exit Function
     End If
 
     Set rngCompo = Sheets("Compo").Range("COMPO")

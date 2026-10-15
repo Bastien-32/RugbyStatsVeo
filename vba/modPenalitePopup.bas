@@ -205,7 +205,8 @@ Private Function JoueursDisposes() As Variant
         "15:16:10", _
         "17:13:12", "17:17:13", _
         "19:11:11", "19:15:15", "19:19:14", _
-        "21:11:Collectif", "21:19:?")
+        "21:11:Collectif", "21:19:?", _
+        "23:11:Avant", "23:19:Trois-quarts")
 
 End Function
 
@@ -534,8 +535,12 @@ Private Sub MettreEnForme(ByVal ws As Worksheet)
 End Sub
 
 
-' Les rangs qui portent quelque chose font 20, les rangs
+' Les rangs qui portent quelque chose font 25, les rangs
 ' intercalaires 10 : la grille respire sans s'etaler.
+'
+' Motifs et boutons de joueur partagent la meme hauteur :
+' les traiter separement laissait des rangs plus fins que
+' leurs voisins.
 Private Sub AjusterHauteurs(ByVal ws As Worksheet)
 
     Dim Ligne As Long
@@ -547,7 +552,7 @@ Private Sub AjusterHauteurs(ByVal ws As Worksheet)
                 ws.Cells(Ligne, 2), _
                 ws.Cells(Ligne, 21))) > 0 Then
 
-            ws.Rows(Ligne).RowHeight = 20
+            ws.Rows(Ligne).RowHeight = 25
 
         Else
 
@@ -618,6 +623,18 @@ Private Sub EcrireCaseJoueur( _
     Dim Nom As String
 
     Nom = LibelleJoueur(Poste)
+
+    ' La fusion sur trois colonnes est posee par
+    ' EcrireJoueurs, que seule la construction appelle :
+    ' une case ajoutee depuis reste etroite. On la rattrape
+    ' ici, plutot que d'exiger une reconstruction.
+    If Not Cellule.MergeCells Then
+
+        On Error Resume Next
+        Cellule.Resize(1, LARGEUR_JOUEUR).Merge
+        On Error GoTo 0
+
+    End If
 
     With Cellule
 
@@ -707,9 +724,12 @@ Private Sub RafraichirLibelles( _
         CartonsAffiches(i) = ""
     Next i
 
-    ' Deux lignes de texte par case : sans cette hauteur,
-    ' le renvoi a la ligne masque le nom et seul le numero
-    ' reste visible.
+    ' La grille entiere d'abord, les rangs du terrain
+    ' ensuite : eux seuls portent deux lignes de texte, et
+    ' sans cette hauteur le renvoi a la ligne masque le nom
+    ' pour ne laisser que le numero.
+    AjusterHauteurs ws
+
     For i = PREMIERE_LIGNE To 19 Step 2
         ws.Rows(i).RowHeight = 32
     Next i
@@ -911,11 +931,14 @@ Public Sub ValiderPopupPenalite()
 
     Dim Motif As String
     Dim Joueur As String
+    Dim Groupe As String
+    Dim Choisi As String
 
     If Not PenaliteOuverte Then Exit Sub
 
     Motif = SelectionCourante("PEN_MOTIFS")
-    Joueur = PosteSelectionne
+    Choisi = PosteSelectionne
+    Joueur = Choisi
 
     If Motif = "" Then Motif = "?"
 
@@ -939,6 +962,16 @@ Public Sub ValiderPopupPenalite()
 
     End If
 
+    ' Avant ou Trois-quarts : le fautif reste inconnu, mais
+    ' sa ligne est celle que le bouton nomme.
+    If Joueur = "" Then
+        Groupe = ""
+    ElseIf EstBoutonGroupe(Choisi) Then
+        Groupe = Choisi
+    Else
+        Groupe = GetPlayerGroup(Joueur)
+    End If
+
     SetCurrentTeam PenaliteEquipe
 
     AjouterAction _
@@ -946,7 +979,7 @@ Public Sub ValiderPopupPenalite()
         PenaliteAction, _
         PenaliteTemps, _
         Motif, _
-        IIf(Joueur = "", "", GetPlayerGroup(Joueur))
+        Groupe
 
     ArreterLeJeu
 
