@@ -13,7 +13,7 @@
 Avant la première utilisation, installer les logiciels suivants.
 
 - Microsoft Excel 2019, 2021 ou Microsoft 365 avec prise en charge des macros VBA.
-- VLC media player (dernière version stable).
+- VLC media player (dernière version stable), à télécharger : voir **logiciels à installer/LIENS.md**.
 - Google Chrome (uniquement pour utiliser les vidéos Veo).
 - Lors de la première ouverture, macOS peut demander une autorisation d'accès au dossier **VeoVideoControl** : il faut l'accepter.
 
