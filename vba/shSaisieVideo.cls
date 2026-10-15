@@ -21,9 +21,11 @@ End Sub
 
 Private Sub Worksheet_Deactivate()
 
+    ' Pas de reinitialisation ici : la possession et la
+    ' mi-temps doivent survivre au passage sur la popup.
+    
     DesactiverRaccourcisVideo
     ArreterAffichageChronoVideo
-    ReinitialiserSelectionSaisieVideo
 
 End Sub
 
@@ -48,15 +50,14 @@ End Sub
 Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     Dim ActionTexte As String
-    Dim joueur As String
+    Dim Joueur As String
     Dim NumeroJoueur As String
     Dim TempsVideo As Double
-    Dim MotifPenalite As String
     Dim GroupeFautif As String
-    Dim TempsPenaliteFinalisee As Double
     Dim ActionJoueurFinalisee As String
     Dim AjouterArretApresJoueur As Boolean
     Dim ActionFermee As Boolean
+    Dim CartonBouton As String
 
     ' =====================================================
     ' BOUTON FRANCHISSEMENT FUSIONNE
@@ -91,94 +92,59 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         End If
 
-        Exit Sub
+        ' Les boutons sont des cellules fusionnees : un
+        ' clic livre toute la plage, on ne garde que son
+        ' ancre. Une selection faite a la souris sur
+        ' plusieurs cellules, elle, n'est pas une fusion
+        ' et reste ignoree.
+        If Not Target.MergeCells Then Exit Sub
+
+        Set Target = Target.Cells(1, 1)
 
     End If
     
     ' =====================================================
-    ' PENALITE EN ATTENTE D'UN MOTIF
+    ' JOUEUR SOUS CARTON
+    '
+    ' Il n'est pas sur le terrain : son bouton porte les
+    ' couleurs du carton et ne repond plus, tant que son
+    ' retour n'a pas ete declare.
+    '
+    ' Avant toute autre chose, action en attente comprise :
+    ' celle-ci reste en attente et pourra etre donnee a un
+    ' joueur qui joue.
+    '
+    ' Un carton en attente passe outre : le deuxieme jaune
+    ' devient rouge, et il faut pouvoir designer celui qui
+    ' le prend alors qu'il est deja sorti.
     ' =====================================================
-    
-    If PendingPenaltyActive Then
-    
-        If IsPenaltyReasonButton(Target) Then
-    
-            MotifPenalite = GetPenaltyReason(Target)
-    
-            ActiverBoutonPenaliteEnAttente
-    
-            If PendingPenaltyNeedsPlayer Then
-    
-                TransformerPenaliteEnAttenteJoueur _
-                    MotifPenalite
-    
-                Exit Sub
-    
-            Else
-    
-                ActionTexte = PendingPenaltyBaseAction
-                TempsPenaliteFinalisee = PendingPenaltyTime
-    
-                SetCurrentTeam PendingPenaltyForcedTeam
-    
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsPenaliteFinalisee, _
-                    MotifPenalite, _
-                    ""
-    
-                FermerPenaliteEnAttente
-    
-                AjouterArretJeuAutomatique _
-                    TempsPenaliteFinalisee
-    
-                ReleaseButton
-                Exit Sub
-    
-            End If
-    
-            ElseIf PendingPenaltyNeedsPlayer And _
-                EstBoutonJoueur(Target) Then
-    
-            ' Joueur choisi sans motif :
-            ' le motif devient "?".
-            TransformerPenaliteEnAttenteJoueur "?"
-    
-            ' Ne pas quitter la procedure :
-            ' le clic joueur sera traite plus bas.
-    
-        ElseIf EstBoutonRepriseJeu(Target) Then
-    
-            ' La reprise finalise la penalite avec les
-            ' informations manquantes remplacees par "?".
-            FinaliserPenaliteOubliee
-    
-            ' Ne pas quitter :
-            ' la reprise cliquee doit ensuite etre enregistree.
-    
-        ElseIf Not Intersect( _
-            Target, _
-            Range("BTN_ARRET_DU_JEU") _
-        ) Is Nothing Then
-    
-            FinaliserPenaliteOubliee
-    
+
+    If EstBoutonJoueur(Target) _
+        And Not EstCartonEnAttenteJoueur Then
+
+        CartonBouton = CartonActuelDuPoste(PosteDuBouton(Target))
+
+        If CartonBouton <> "" Then
+
+            MsgBox _
+                "Ce joueur porte un carton " & _
+                CouleurLisible(CartonBouton) & " : " & _
+                "il n'est pas sur le terrain." & _
+                vbCrLf & vbCrLf & _
+                "Son bouton redeviendra cliquable quand " & _
+                "son retour aura " & ChrW(233) & "t" & _
+                ChrW(233) & " d" & ChrW(233) & "clar" & _
+                ChrW(233) & " avec le bouton Retour.", _
+                vbExclamation, _
+                "Joueur sous carton"
+
             ReleaseButton
             Exit Sub
-    
-        Else
-    
-            AfficherAlertePenaliteEnAttente
-    
-            ReleaseButton
-            Exit Sub
-    
+
         End If
-    
+
     End If
-    
-    
+
     ' =====================================================
     ' PENALITE EN ATTENTE D'UN JOUEUR
     ' =====================================================
@@ -264,11 +230,13 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     If Not Intersect(Target, Range("BTN_NOUS")) Is Nothing Then
         SetCurrentTeam "Nous"
+        ReleaseButton
         Exit Sub
     End If
 
     If Not Intersect(Target, Range("BTN_ADV")) Is Nothing Then
         SetCurrentTeam "Adv"
+        ReleaseButton
         Exit Sub
     End If
 
@@ -276,6 +244,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ResetHalfButtons
         SetActiveButton Range("BTN_MT1")
         CurrentHalf = "MT1"
+        ReleaseButton
         Exit Sub
     End If
 
@@ -283,6 +252,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ResetHalfButtons
         SetActiveButton Range("BTN_MT2")
         CurrentHalf = "MT2"
+        ReleaseButton
         Exit Sub
     End If
 
@@ -336,6 +306,74 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
     End If
 
+    ' =====================================================
+    ' REMPLACEMENT
+    '
+    ' Ni action de jeu ni ligne de journal : traite avant
+    ' GetAction, qui ne le connait pas, et sans exiger de
+    ' possession ni de reprise.
+    ' =====================================================
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_REMPLACEMENT") _
+    ) Is Nothing Then
+
+        ReleaseButton
+        OuvrirPopupRemplacement GetTimeVideo()
+        Exit Sub
+
+    End If
+
+    ' =====================================================
+    ' RETOUR DE CARTON
+    '
+    ' Comme le remplacement : GetAction ne le connait pas,
+    ' et il ne depend ni de la possession ni d'une reprise
+    ' du jeu. La mi-temps, elle, est exigee : le journal la
+    ' porte.
+    ' =====================================================
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_RETOUR_CARTON") _
+    ) Is Nothing Then
+
+        If CurrentHalf = "" Then
+
+            MsgBox _
+                "S" & ChrW(233) & _
+                "lectionne d'abord la mi-temps.", _
+                vbExclamation, _
+                "Mi-temps manquante"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+        TempsVideo = GetTimeVideo()
+
+        If TempsVideo < 0 Then
+
+            MsgBox _
+                "Impossible de r" & ChrW(233) & "cup" & _
+                ChrW(233) & "rer le temps r" & ChrW(233) & _
+                "el de la vid" & ChrW(233) & "o.", _
+                vbExclamation, _
+                "VeoVideoControl"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+        ReleaseButton
+        OuvrirPopupRetourCarton TempsVideo
+        Exit Sub
+
+    End If
+
     ActionTexte = GetAction(Target)
     
     If ActionTexte <> "" Then
@@ -352,7 +390,20 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         End If
     
-        If JeuActuellementArrete Then
+        If CurrentTeam = "" Then
+
+            MsgBox _
+                "S" & ChrW(233) & _
+                "lectionne d'abord la possession.", _
+                vbExclamation, _
+                "Possession manquante"
+
+            ReleaseButton
+            Exit Sub
+
+        End If
+
+        If JeuNonRepris Then
     
             If Not EstActionAutoriseePendantArret(Target) Then
     
@@ -362,9 +413,9 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 ) Is Nothing Then
     
                     MsgBox _
-                        "Le jeu est actuellement arr" & _
-                        ChrW(234) & _
-                        "t" & ChrW(233) & "." & _
+                        "Le jeu n'est pas ouvert : aucune " & _
+                        "reprise ne pr" & ChrW(233) & "c" & _
+                        ChrW(232) & "de." & _
                         vbCrLf & vbCrLf & _
                         "La prochaine action doit " & _
                         ChrW(234) & _
@@ -577,280 +628,115 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ' =====================================================
         ' TOUCHES
         '
-        ' Le resultat d_pend de l'equipe qui effectue la touche,
-        ' donc de la possession active.
+        ' Le resultat depend de l'equipe qui effectue la
+        ' touche, donc de la possession active.
+        '
+        ' La popup recueille le sauteur et le detail, puis
+        ' ecrit l'action dans le journal et la ligne dans
+        ' "Touches Melees". Le controle de possession et les
+        ' regles de bascule sont dans
+        ' modTouchesMeleesSaisie.OuvrirTouche :
+        '
+        '   G  : le ballon revient a Nous, quel que soit le
+        '        lanceur, G voulant dire "pour nous" ;
+        '   P  : il reste a Adv ;
+        '   ND : la touche est rejouee par l'autre equipe.
         ' =====================================================
-        
+
         If Not Intersect( _
             Target, _
             Range("BTN_TO_G") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui effectue la touche.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            If CurrentTeam = "Nous" Then
-        
-                ' Touche a nous conservee.
-                '
-                ' Attend le joueur.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession reste a Nous.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    False, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                ' Touche a eux volee.
-                '
-                ' Attend le joueur qui vole le ballon.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession passe ensuite a Nous.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Adv", _
-                    False
-        
-            End If
-        
+
             ReleaseButton
+            OuvrirTouche ActionTexte, TempsVideo, "G"
             Exit Sub
-        
+
         End If
-        
-        
+
+
         If Not Intersect( _
             Target, _
             Range("BTN_TO_P") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui effectue la touche.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            If CurrentTeam = "Nous" Then
-        
-                ' Touche a nous perdue.
-                '
-                ' Attend le joueur.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession passe ensuite a Adv.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                ' Touche a eux perdue.
-                '
-                ' Aucun joueur demande.
-                ' La ligne est creee immediatement.
-                ' La possession reste a adv.
-        
-                FermerActionEnAttente
-        
-                SetCurrentTeam "Adv"
-        
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-        
-                ReleaseButton
-        
-            End If
-        
+
+            ReleaseButton
+            OuvrirTouche ActionTexte, TempsVideo, "P"
             Exit Sub
-        
+
         End If
-        
-        
+
+
         If Not Intersect( _
             Target, _
             Range("BTN_TO_PAS_DROIT") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui effectue la touche.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            If CurrentTeam = "Nous" Then
-        
-                ' Touche a nous pas droite.
-                '
-                ' Attend le joueur.
-                ' Si aucun joueur n'est choisi avant une autre action,
-                ' "?" sera ajoute automatiquement.
-                ' La possession passe ensuite a Adv.
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                ' Touche a eux pas droite.
-                '
-                ' Aucun joueur demande.
-                ' La ligne est creee immediatement.
-                ' La possession passe a Nous.
-        
-                FermerActionEnAttente
-        
-                SetCurrentTeam "Adv"
-        
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-        
-                SetCurrentTeam "Nous"
-        
-                ReleaseButton
-        
-            End If
-        
+
+            ReleaseButton
+            OuvrirTouche ActionTexte, TempsVideo, "ND"
             Exit Sub
-        
+
         End If
 
         ' =====================================================
         ' MELEES
+        '
+        ' L'action garde la possession en cours, puis celle-ci
+        ' est forcee : Nous si la melee est gagnee, Adv si
+        ' elle est perdue. Voir
+        ' modTouchesMeleesSaisie.OuvrirMelee.
+        '
+        ' Pas de "pas droit" ici : la palette n'a que les
+        ' deux issues.
         ' =====================================================
-        
+
         If Not Intersect( _
             Target, _
             Range("BTN_ME_G") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui introduit la melee.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            FermerActionEnAttente
-        
-            AjouterAction _
-                "", _
-                ActionTexte, _
-                TempsVideo
-                
-            SetCurrentTeam "Nous"
-        
+
             ReleaseButton
+            OuvrirMelee ActionTexte, TempsVideo, "G"
             Exit Sub
-        
+
         End If
-        
-        
+
+
         If Not Intersect( _
             Target, _
             Range("BTN_ME_P") _
         ) Is Nothing Then
-        
-            If CurrentTeam = "" Then
-        
-                MsgBox _
-                    "Selectionne d'abord l'equipe qui introduit la melee.", _
-                    vbExclamation, _
-                    "Possession manquante"
-        
-                ReleaseButton
-                Exit Sub
-        
-            End If
-        
-            FermerActionEnAttente
-        
-            AjouterAction _
-                "", _
-                ActionTexte, _
-                TempsVideo
-        
-            SetCurrentTeam "Adv"
-        
+
             ReleaseButton
+            OuvrirMelee ActionTexte, TempsVideo, "P"
             Exit Sub
-        
+
         End If
 
         ' =====================================================
         ' PENALITE POUR NOUS
         '
-        ' Aucun joueur demande.
-        ' La possession passe a Nous.
+        ' La popup recueille le motif et le fautif.
+        ' L'action est enregistree sous notre possession.
         ' =====================================================
 
-         If Not Intersect( _
+        If Not Intersect( _
             Target, _
             Range("BTN_PEN_CONTRE_ADV") _
         ) Is Nothing Then
 
-            InitialiserPenalite _
-                ActionTexte, _
-                TempsVideo, _
-                "Nous", _
-                False
-
+            ReleaseButton
+            OuvrirPopupPenalite ActionTexte, TempsVideo, "Nous"
             Exit Sub
 
         End If
 
+
         ' =====================================================
         ' PENALITE POUR ADV
         '
-        ' Attend le joueur de notre equipe ayant commis la faute.
-        ' Si aucun joueur n'est saisi, "?" sera ajoute.
+        ' La popup recueille le motif et le joueur de notre
+        ' equipe ayant commis la faute. Sans choix, "?".
         ' =====================================================
 
         If Not Intersect( _
@@ -858,12 +744,39 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             Range("BTN_PEN_CONTRE_NOUS") _
         ) Is Nothing Then
 
-            InitialiserPenalite _
-                ActionTexte, _
-                TempsVideo, _
-                "Adv", _
-                True
+            ReleaseButton
+            OuvrirPopupPenalite ActionTexte, TempsVideo, "Adv"
+            Exit Sub
 
+        End If
+
+        ' =====================================================
+        ' COUP FRANC POUR NOUS
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_CF_CONTRE_ADV") _
+        ) Is Nothing Then
+
+            ReleaseButton
+            OuvrirPopupCoupFranc ActionTexte, TempsVideo, "Nous"
+            Exit Sub
+
+        End If
+
+
+        ' =====================================================
+        ' COUP FRANC POUR ADV
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_CF_CONTRE_NOUS") _
+        ) Is Nothing Then
+
+            ReleaseButton
+            OuvrirPopupCoupFranc ActionTexte, TempsVideo, "Adv"
             Exit Sub
 
         End If
@@ -1306,26 +1219,13 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         If EstBoutonJoueur(Target) Then
 
-            If InStr(1, CStr(Target.Value), vbLf) > 0 Then
-
-                NumeroJoueur = Left( _
-                    CStr(Target.Value), _
-                    InStr(1, CStr(Target.Value), vbLf) - 1 _
-                )
-
-            Else
-
-                NumeroJoueur = CStr(Target.Value)
-
-            End If
-
-            NumeroJoueur = Trim(NumeroJoueur)
+            NumeroJoueur = PosteDuBouton(Target)
 
             If NumeroJoueur = "" Then
                 Exit Sub
             End If
 
-            joueur = GetPlayerName(NumeroJoueur)
+            Joueur = GetPlayerName(NumeroJoueur)
 
             If PendingActionTimeAvailable Then
 
@@ -1362,9 +1262,16 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
             GroupeFautif = ""
 
-            If PendingGroupeFautifRequired Then
-                GroupeFautif = GetPlayerGroup(joueur)
+            ' Avant ou Trois-quarts : le joueur reste
+            ' inconnu, mais sa ligne est celle que le
+            ' bouton nomme, et cela vaut pour toutes les
+            ' actions, pas seulement les penalites.
+            If EstBoutonGroupe(NumeroJoueur) Then
+                GroupeFautif = NumeroJoueur
+            ElseIf PendingGroupeFautifRequired Then
+                GroupeFautif = GetPlayerGroup(Joueur)
             End If
+
 
             ActionJoueurFinalisee = PendingAction
             
@@ -1374,7 +1281,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 )
             
             AjouterAction _
-                joueur, _
+                Joueur, _
                 ActionJoueurFinalisee, _
                 TempsVideo, _
                 PendingMotifPenalite, _
@@ -1466,6 +1373,24 @@ Public Sub ActualiserListeJoueursJournal()
 
 End Sub
 
+' Le poste que le bouton affiche : la premiere ligne de son
+' texte, le nom venant en dessous. Ce n'est pas forcement le
+' titulaire, un remplacant a pu prendre sa place.
+Private Function PosteDuBouton(ByVal Target As Range) As String
+
+    Dim Texte As String
+
+    Texte = CStr(Target.Value)
+
+    If InStr(1, Texte, vbLf) > 0 Then
+        Texte = Left(Texte, InStr(1, Texte, vbLf) - 1)
+    End If
+
+    PosteDuBouton = Trim(Texte)
+
+End Function
+
+
 Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
 
     Dim Boutons As Range
@@ -1487,6 +1412,8 @@ Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
     EstBoutonJoueur = (Trim(CStr(Target.Value)) <> "")
 
 End Function
+
+
 
 
 

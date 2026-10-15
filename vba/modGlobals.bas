@@ -1,6 +1,10 @@
 Attribute VB_Name = "modGlobals"
 Option Explicit
 
+' Met en sourdine les messages de fin des procedures de
+' construction, que la reinitialisation enchaine.
+Public ModeSilencieux As Boolean
+
 Public CurrentTeam As String
 Public CurrentHalf As String
 
@@ -14,12 +18,6 @@ Public PendingActionChangesPossession As Boolean
 Public PendingPlayerCount As Long
 Public PendingAllowMultiplePlayers As Boolean
 Public PendingForcedTeam As String
-
-Public PendingPenaltyActive As Boolean
-Public PendingPenaltyBaseAction As String
-Public PendingPenaltyTime As Double
-Public PendingPenaltyForcedTeam As String
-Public PendingPenaltyNeedsPlayer As Boolean
 
 Public PendingMotifPenalite As String
 Public PendingGroupeFautifRequired As Boolean

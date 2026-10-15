@@ -13,6 +13,12 @@ Public Sub InitialiserClasseurStatsRugby()
 
     FermetureEnCours = False
 
+    ' Avant toute connexion : remettre la palette a zero
+    ' ne doit pas dependre du demarrage du moteur video,
+    ' qui peut echouer et laisser les boutons dans l'etat
+    ' ou le classeur a ete enregistre.
+    ReinitialiserSelectionSaisieVideo
+    
     DemarrerVeoVideoControl
 
     ' Le premier heartbeat est envoye immediatement.
@@ -21,7 +27,6 @@ Public Sub InitialiserClasseurStatsRugby()
     InitialiserEtatConnexionVideo
     AttendreUneSeconde
     ConnecterVideo
-    ReinitialiserSelectionSaisieVideo
 
     If ActiveSheet Is shSaisieVideo Then
 
@@ -65,6 +70,7 @@ Public Sub CreerFichierMatch()
 
     Dim AccesAccorde As Boolean
     Dim FichiersDemandes As Variant
+    Dim CopieFaite As Boolean
 
 #End If
 
@@ -185,7 +191,7 @@ Public Sub CreerFichierMatch()
 
         ' Sur Mac, ne pas tester le dossier avec Dir :
         ' Excel peut le d_clarer introuvable malgr_ son existence
-        ' ö cause des autorisations de la sandbox.
+        ' A cause des autorisations de la sandbox.
         ' L'acc_s au fichier sera trait_ plus bas avec
         ' GrantAccessToMultipleFiles.
     
@@ -355,7 +361,49 @@ Public Sub CreerFichierMatch()
 
 #End If
 
+#If Mac Then
+
+    ' Le jeton d'autorisation d'Excel se perime en cours de
+    ' session : accorde quelques instants plus tot, il
+    ' laisse quand meme la copie echouer. Redesigner le
+    ' dossier en delivre un neuf, et la creation repart
+    ' sans avoir a quitter Excel.
+    On Error Resume Next
+
     wbModele.SaveCopyAs CheminChoisi
+    CopieFaite = (Err.Number = 0)
+    Err.Clear
+
+    On Error GoTo GestionErreur
+
+    If Not CopieFaite Then
+
+        Application.DisplayAlerts = EtatAlertes
+        Application.ScreenUpdating = EtatAffichage
+
+        If DemanderAutorisationDossierMatchs() Then
+
+            FichiersDemandes = Array(CheminChoisi)
+
+            AccesAccorde = _
+                GrantAccessToMultipleFiles(FichiersDemandes)
+
+        End If
+
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+
+        ' Un second echec part dans le gestionnaire, qui
+        ' dira quoi faire.
+        wbModele.SaveCopyAs CheminChoisi
+
+    End If
+
+#Else
+
+    wbModele.SaveCopyAs CheminChoisi
+
+#End If
 
     ' Empeche le Workbook_Open de la copie de se lancer
     ' pendant que le modele execute encore cette macro.
@@ -414,30 +462,14 @@ Public Sub CreerFichierMatch()
         Procedure:=NomProcedureInitialisation, _
         Schedule:=True
 
-    If NumeroErreur = 1004 Then
-    
-        MsgBox _
-            "Le fichier du match n'a pas pu etre cree." & _
-            vbCrLf & vbCrLf & _
-            "Erreur " & NumeroErreur & " : " & DescriptionErreur & _
-            vbCrLf & vbCrLf & _
-            "Chemin vise :" & vbCrLf & CheminChoisi, _
-            vbExclamation, _
-            "Creation du fichier de match"
-    
-    Else
-
-
-        MsgBox _
-            "Le fichier du match a ete cree :" & _
-            vbCrLf & vbCrLf & _
-            wbMatch.Name & _
-            vbCrLf & vbCrLf & _
-            "Tu peux maintenant terminer la composition.", _
-            vbInformation, _
-            "Fichier du match cree"
-
-    End If
+    MsgBox _
+        "Le fichier du match a ete cree :" & _
+        vbCrLf & vbCrLf & _
+        wbMatch.Name & _
+        vbCrLf & vbCrLf & _
+        "Tu peux maintenant terminer la composition.", _
+        vbInformation, _
+        "Fichier du match cree"
 
     ' Cette instruction doit rester la derniere :
     ' l'initialisation de la copie est deja planifiee.
@@ -467,11 +499,17 @@ GestionErreur:
         MsgBox _
             "Le fichier du match n'a pas pu etre cree." & _
             vbCrLf & vbCrLf & _
-            "Verifie qu'un dossier nomme 'Matchs' existe dans le meme dossier que ce classeur, puis recommence." & _
+            "macOS refuse a Excel l'ecriture dans le " & _
+            "dossier Matchs, meme apres une nouvelle " & _
+            "autorisation." & vbCrLf & vbCrLf & _
+            "Quitte Excel entierement (Cmd+Q), relance, " & _
+            "puis retente la creation." & vbCrLf & vbCrLf & _
+            "Erreur " & NumeroErreur & " : " & DescriptionErreur & _
             vbCrLf & vbCrLf & _
-            "Si le dossier a ete supprime, recree simplement un dossier nomme 'Matchs'.", _
+            "Chemin vise :" & vbCrLf & CheminChoisi, _
             vbExclamation, _
             "Creation du fichier de match"
+
     
     Else
     
@@ -532,7 +570,10 @@ Private Function ConstruireMatchID( _
         Case "DOMICILE"
             LieuCode = "DOM"
     
-        Case "EXTƒRIEUR", "EXTERIEUR"
+        ' Le E accent aigu passe par ChrW : ecrit tel
+        ' quel, il ne survivrait pas a un import, et le
+        ' Case ne reconnaitrait plus le lieu.
+        Case "EXT" & ChrW(201) & "RIEUR", "EXTERIEUR"
             LieuCode = "EXT"
     
         Case "TERRAIN NEUTRE"

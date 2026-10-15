@@ -65,6 +65,30 @@ Private Sub Workbook_SheetActivate( _
 
 End Sub
 
+' Les deux chaines de rendez-vous - le chrono video et le
+' signal de vie envoye au moteur - s'interrompent quand
+' Excel est occupe a l'heure dite, typiquement pendant la
+' saisie d'une observation. Chaque clic sert de controle :
+' ce qui s'est arrete repart aussitot.
+Private Sub Workbook_SheetSelectionChange( _
+    ByVal Sh As Object, _
+    ByVal Target As Range _
+)
+
+    If FermetureEnCours Then Exit Sub
+
+    On Error Resume Next
+
+    VerifierHeartbeatVideo
+
+    If Sh Is shSaisieVideo Then
+        VerifierChronoVideo
+    End If
+
+    On Error GoTo 0
+
+End Sub
+
 
 Private Sub Workbook_BeforeClose( _
     Cancel As Boolean _

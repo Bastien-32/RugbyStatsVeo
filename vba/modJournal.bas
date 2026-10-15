@@ -2,7 +2,7 @@ Attribute VB_Name = "modJournal"
 Option Explicit
 
 Public Sub AjouterAction( _
-    ByVal joueur As String, _
+    ByVal Joueur As String, _
     ByVal ActionTexte As String, _
     ByVal TempsVideoSecondes As Double, _
     Optional ByVal MotifPenalite As String = "", _
@@ -80,7 +80,7 @@ Public Sub AjouterAction( _
             CurrentHalf
 
         .Cells(1, lo.ListColumns("Joueur").Index).Value = _
-            joueur
+            Joueur
 
         .Cells(1, lo.ListColumns("Groupe fautif").Index).Value = _
             GroupeFautif
@@ -138,24 +138,24 @@ Private Sub AppliquerValidationListe( _
     ByVal Cellule As Range, _
     ByVal NomListe As String)
 
-    Dim nomExiste As Boolean
+    Dim NomExiste As Boolean
     Dim nomTest As Name
 
-    nomExiste = False
+    NomExiste = False
 
     For Each nomTest In ThisWorkbook.Names
 
         If UCase(Split(nomTest.Name, "!")(UBound(Split(nomTest.Name, "!")))) = _
             UCase(NomListe) Then
 
-            nomExiste = True
+            NomExiste = True
             Exit For
 
         End If
 
     Next nomTest
 
-    If Not nomExiste Then
+    If Not NomExiste Then
 
         MsgBox _
             "La plage nomm" & ChrW(233) & _

@@ -1,7 +1,26 @@
 Attribute VB_Name = "modPlayers"
 Option Explicit
 
+' Les libelles des deux boutons de ligne, repris mot pour
+' mot de la colonne "Avant ou 3/4" de la composition : les
+' lignes sans joueur identifie se cumulent ainsi avec
+' celles des joueurs nommes.
+Public Const GROUPE_AVANT As String = "Avant"
+Public Const GROUPE_TROIS_QUARTS As String = "Trois-quarts"
+
 Private EtatNavigationPopup As Long
+
+' Les deux boutons de ligne : ils ne nomment personne,
+' ils disent seulement de quel paquet venait le joueur
+' qu'on n'a pas su reconnaitre.
+Public Function EstBoutonGroupe( _
+    ByVal Poste As String) As Boolean
+
+    EstBoutonGroupe = _
+        (Poste = GROUPE_AVANT Or Poste = GROUPE_TROIS_QUARTS)
+
+End Function
+
 
 Public Function GetPlayerName( _
     ByVal Numero As String) As String
@@ -15,6 +34,13 @@ Public Function GetPlayerName( _
         GetPlayerName = Numero
         Exit Function
 
+    End If
+
+    ' Avant ou Trois-quarts : le joueur reste inconnu, et
+    ' c'est le groupe fautif qui portera l'information.
+    If EstBoutonGroupe(Numero) Then
+        GetPlayerName = "?"
+        Exit Function
     End If
 
     Set rngCompo = Sheets("Compo").Range("COMPO")
@@ -51,6 +77,10 @@ Public Sub AnnulerPopupAjouterJoueur()
     Sheets("Popup").Range("POPUP_NOM").Value = ""
     Sheets("Popup").Range("POPUP_PRENOM").Value = ""
     Sheets("Listes").Activate
+    
+    ' Apres Activate : une feuille active ne se masque pas.
+    Sheets("Popup").Visible = xlSheetHidden
+
 
 End Sub
 
@@ -82,6 +112,10 @@ Public Sub ValiderPopupAjouterJoueur()
     Sheets("Popup").Range("POPUP_PRENOM").Value = ""
 
     Sheets("Listes").Activate
+    
+    ' Apres Activate : une feuille active ne se masque pas.
+    Sheets("Popup").Visible = xlSheetHidden
+
 
 End Sub
 
@@ -111,7 +145,12 @@ Public Sub AjouterJoueurDansTableau( _
         .Cells(1, lo.ListColumns("nom").Index).Value = UCase(Trim(Nom))
         .Cells(1, lo.ListColumns("prenom").Index).Value = Trim(Prenom)
         .Cells(1, lo.ListColumns("prenom NOM").Index).Formula = "=[@prenom] & "" "" & [@nom]"
-        .Cells(1, lo.ListColumns("NOM Prénom").Index).Formula = "=[@nom] & "" "" & [@prenom]"
+        ' Le nom de colonne porte un accent : ecrit tel
+        ' quel, il ne survivrait pas a un import, et la
+        ' colonne ne serait plus trouvee.
+        .Cells(1, lo.ListColumns( _
+            "NOM Pr" & ChrW(233) & "nom").Index).Formula = _
+            "=[@nom] & "" "" & [@prenom]"
     End With
 
 End Sub
@@ -122,6 +161,7 @@ Public Sub ActualiserJoueursJournal()
     Dim wsJournal As Worksheet
     Dim rngCompo As Range
     Dim rngListe As Range
+    Dim wsListe As Worksheet
     Dim loJournal As ListObject
     Dim joueurs() As String
     Dim i As Long
@@ -136,7 +176,12 @@ Public Sub ActualiserJoueursJournal()
     Set rngCompo = wsCompo.Range("COMPO")
     Set loJournal = wsJournal.ListObjects("JournalActions")
 
-    Set rngListe = wsCompo.Range("AA1:AA30")
+    ' La liste vit sur Parametres, pas sur Compo : les
+    ' colonnes de remplacement s'etendent vers la droite
+    ' depuis I et finiraient par l'atteindre.
+    Set wsListe = shParametres
+    Set rngListe = wsListe.Range("AA1:AA30")
+
     rngListe.ClearContents
 
     For i = 1 To rngCompo.Rows.Count
@@ -171,10 +216,17 @@ Public Sub ActualiserJoueursJournal()
     rngListe.Cells(ligneDest, 1).Value = "Collectif"
     rngListe.Cells(ligneDest + 1, 1).Value = "?"
 
-    wsCompo.Columns("AA").Hidden = True
+    wsListe.Columns("AA").Hidden = True
 
-    formuleListe = "='" & wsCompo.Name & "'!" & _
-        wsCompo.Range("AA1:AA" & ligneDest + 1).Address
+    formuleListe = "='" & wsListe.Name & "'!" & _
+        wsListe.Range("AA1:AA" & ligneDest + 1).Address
+
+    ' Un journal entierement vide n'a plus de ligne de
+    ' donnees : il n'y aurait aucune cellule ou poser la
+    ' liste deroulante.
+    If loJournal.ListRows.Count = 0 Then
+        loJournal.ListRows.Add
+    End If
 
     With loJournal.ListColumns("Joueur").DataBodyRange.Validation
         .Delete
@@ -188,84 +240,11 @@ End Sub
 
 Public Sub ActualiserPaletteJoueurs()
 
-    Dim wsSaisie As Worksheet
-    Dim wsCompo As Worksheet
-    Dim rngCompo As Range
-    Dim i As Long
-    Dim poste As String
-    Dim joueur As String
-    Dim nomBouton As String
-    Dim mots() As String
-    Dim mot As Variant
-    Dim nomFamille As String
-
-    Set wsSaisie = shSaisieVideo
-    Set wsCompo = Sheets("Compo")
-    Set rngCompo = wsCompo.Range("COMPO")
-
-    For i = 1 To rngCompo.Rows.Count
-
-        poste = Trim(CStr(rngCompo.Cells(i, 1).Value))
-        joueur = Trim(CStr(rngCompo.Cells(i, 2).Value))
-
-        If poste <> "" Then
-
-            nomBouton = "BTN_JO_" & poste
-
-            nomFamille = ""
-
-            If joueur <> "" Then
-
-                mots = Split(joueur, " ")
-
-                For Each mot In mots
-
-                    If CStr(mot) = UCase(CStr(mot)) Then
-
-                        If nomFamille = "" Then
-                            nomFamille = CStr(mot)
-                        Else
-                            nomFamille = nomFamille & " " & CStr(mot)
-                        End If
-
-                    Else
-
-                        Exit For
-
-                    End If
-
-                Next mot
-
-                joueur = nomFamille
-
-                wsSaisie.Range(nomBouton).Value = poste & vbLf & joueur
-
-            Else
-
-                joueur = ""
-                wsSaisie.Range(nomBouton).Value = poste
-
-            End If
-
-            With wsSaisie.Range(nomBouton)
-
-                .WrapText = True
-                .HorizontalAlignment = xlCenter
-                .VerticalAlignment = xlCenter
-
-                .Characters(1, Len(poste)).Font.Size = 18
-                .Characters(1, Len(poste)).Font.Bold = True
-
-                If joueur <> "" Then
-                    .Characters(Len(poste) + 2, Len(joueur)).Font.Size = 9
-                    .Characters(Len(poste) + 2, Len(joueur)).Font.Bold = False
-                End If
-
-            End With
-
-        End If
-
-    Next i
+    ' La palette ne porte plus les vingt-deux postes de la
+    ' composition, mais les quinze emplacements du terrain.
+    ' modRemplacements sait qui occupe chacun d'eux a
+    ' l'instant ou l'on regarde.
+    RafraichirPalettePresents
 
 End Sub
 
@@ -303,7 +282,7 @@ End Function
 ' NAVIGATION CLAVIER POPUP AJOUT JOUEUR
 '
 ' 1 = Nom
-' 2 = Prénom
+' 2 = Prenom
 ' 3 = Ajouter
 ' 4 = Annuler
 ' ============================================================
@@ -401,7 +380,7 @@ Private Sub AfficherEtatNavigationPopup()
 
         Case 3
 
-            ' Déplace la sélection hors des champs visibles.
+            ' Deplace la selection hors des champs visibles.
             ws.Range("F9").Select
 
             ' Focus visuel sur AJOUTER.
@@ -413,7 +392,7 @@ Private Sub AfficherEtatNavigationPopup()
 
         Case 4
 
-            ' Déplace la sélection hors des champs visibles.
+            ' Deplace la selection hors des champs visibles.
             ws.Range("F9").Select
 
             ' Focus visuel sur ANNULER.

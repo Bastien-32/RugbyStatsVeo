@@ -267,6 +267,16 @@ Public Function GetAction( _
         Exit Function
     End If
     
+    If Not Intersect(Target, Range("BTN_CF_CONTRE_ADV")) Is Nothing Then
+        GetAction = Range("ACT_CF_CONTRE_ADV").Value
+        Exit Function
+    End If
+
+    If Not Intersect(Target, Range("BTN_CF_CONTRE_NOUS")) Is Nothing Then
+        GetAction = Range("ACT_CF_CONTRE_NOUS").Value
+        Exit Function
+    End If
+
     If Not Intersect(Target, Range("BTN_ARRACHAGE")) Is Nothing Then
         GetAction = Range("ACT_ARRACHAGE").Value
         Exit Function
@@ -592,164 +602,6 @@ Public Function EstActionSuivieDunRenvoi( _
 
 End Function
 
-Public Function IsPenaltyReasonButton( _
-    ByVal Target As Range) As Boolean
-
-    If Not Intersect(Target, Range("BTN_PEN_MAUL")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_RUCK")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_HORS_JEU")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_A_2")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_HAUT")) Is Nothing Then
-        IsPenaltyReasonButton = True
-        Exit Function
-    End If
-
-    IsPenaltyReasonButton = False
-
-End Function
-
-
-Public Function GetPenaltyReason( _
-    ByVal Target As Range) As String
-
-    If Not Intersect(Target, Range("BTN_PEN_MAUL")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_MAUL").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_RUCK")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_RUCK").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_HORS_JEU")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_HORS_JEU").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_A_2")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_PL_A_2").Value
-        Exit Function
-    End If
-
-    If Not Intersect(Target, Range("BTN_PEN_PL_HAUT")) Is Nothing Then
-        GetPenaltyReason = Range("ACT_PEN_PL_HAUT").Value
-        Exit Function
-    End If
-
-    GetPenaltyReason = ""
-
-End Function
-
-Public Sub InitialiserPenalite( _
-    ByVal ActionBase As String, _
-    ByVal TempsVideo As Double, _
-    ByVal EquipeImposee As String, _
-    ByVal AttendJoueur As Boolean)
-
-    FermerActionEnAttente
-
-    PendingPenaltyActive = True
-    PendingPenaltyBaseAction = ActionBase
-    PendingPenaltyTime = TempsVideo
-    PendingPenaltyForcedTeam = EquipeImposee
-    PendingPenaltyNeedsPlayer = AttendJoueur
-
-End Sub
-
-
-Public Sub FermerPenaliteEnAttente()
-
-    PendingPenaltyActive = False
-    PendingPenaltyBaseAction = ""
-    PendingPenaltyTime = 0
-    PendingPenaltyForcedTeam = ""
-    PendingPenaltyNeedsPlayer = False
-
-End Sub
-
-Public Sub TransformerPenaliteEnAttenteJoueur( _
-    ByVal Motif As String)
-
-    Dim ActionPenalite As String
-    Dim TempsPenalite As Double
-    Dim EquipePenalite As String
-
-    ActionPenalite = PendingPenaltyBaseAction
-    TempsPenalite = PendingPenaltyTime
-    EquipePenalite = PendingPenaltyForcedTeam
-
-    FermerPenaliteEnAttente
-
-    InitialiserActionEnAttente _
-        ActionPenalite, _
-        TempsPenalite, _
-        False, _
-        EquipePenalite, _
-        False
-
-    PendingMotifPenalite = Motif
-    PendingGroupeFautifRequired = True
-
-End Sub
-
-Public Sub FinaliserPenaliteOubliee()
-
-    Dim TempsPenalite As Double
-    Dim ActionPenalite As String
-
-    If Not PendingPenaltyActive Then
-        Exit Sub
-    End If
-
-    TempsPenalite = PendingPenaltyTime
-    ActionPenalite = PendingPenaltyBaseAction
-
-    SetCurrentTeam PendingPenaltyForcedTeam
-
-    If PendingPenaltyNeedsPlayer Then
-
-        AjouterAction _
-            "?", _
-            ActionPenalite, _
-            TempsPenalite, _
-            "?", _
-            "?"
-
-    Else
-
-        AjouterAction _
-            "", _
-            ActionPenalite, _
-            TempsPenalite, _
-            "?", _
-            ""
-
-    End If
-
-    FermerPenaliteEnAttente
-
-    AjouterArretJeuAutomatique _
-        TempsPenalite
-
-End Sub
-
 Public Sub InitialiserActionEnAttente( _
     ByVal ActionTexte As String, _
     ByVal TempsVideo As Double, _
@@ -972,7 +824,7 @@ Public Function EstBoutonRepriseJeu( _
 
 End Function
 
-Private Function EstTexteRepriseOuArret( _
+Public Function EstTexteRepriseOuArret( _
     ByVal ActionTexte As String _
 ) As Boolean
 
@@ -1031,36 +883,6 @@ Private Function EstTexteRepriseOuArret( _
     End If
 
 End Function
-
-Public Sub ActiverBoutonPenaliteEnAttente()
-
-    ResetActionButtons
-
-    If StrComp( _
-        PendingPenaltyBaseAction, _
-        CStr(Range("ACT_PEN_CONTRE_ADV").Value), _
-        vbTextCompare _
-    ) = 0 Then
-
-        SetActiveButton _
-            shSaisieVideo.Range("BTN_PEN_CONTRE_ADV")
-
-        Exit Sub
-
-    End If
-
-    If StrComp( _
-        PendingPenaltyBaseAction, _
-        CStr(Range("ACT_PEN_CONTRE_NOUS").Value), _
-        vbTextCompare _
-    ) = 0 Then
-
-        SetActiveButton _
-            shSaisieVideo.Range("BTN_PEN_CONTRE_NOUS")
-
-    End If
-
-End Sub
 
 Public Sub ActiverBoutonArretDuJeu()
 
@@ -1303,6 +1125,18 @@ Public Function EstPenaliteEnAttenteJoueur() As Boolean
 End Function
 
 
+' Un carton attend le joueur a qui il revient. Le bouton
+' d'un joueur deja sous carton reste alors cliquable : voir
+' shSaisieVideo.
+Public Function EstCartonEnAttenteJoueur() As Boolean
+
+    EstCartonEnAttenteJoueur = _
+        WaitingForPlayer _
+        And EstActionCarton(PendingAction)
+
+End Function
+
+
 Public Sub AfficherAlertePenaliteEnAttente()
 
     MsgBox _
@@ -1368,6 +1202,27 @@ Public Function EstActionAutoriseePendantArret( _
     ) Is Nothing Then
 
         EstActionAutoriseePendantArret = True
+        Exit Function
+
+    End If
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_CF_CONTRE_ADV") _
+    ) Is Nothing Then
+
+        EstActionAutoriseePendantArret = True
+        Exit Function
+
+    End If
+
+    If Not Intersect( _
+        Target, _
+        Range("BTN_CF_CONTRE_NOUS") _
+    ) Is Nothing Then
+
+        EstActionAutoriseePendantArret = True
+        Exit Function
 
     End If
 

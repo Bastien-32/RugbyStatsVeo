@@ -7,6 +7,11 @@ Private Const URL_COMMANDES_VIDEO As String = _
 Private Const URL_ETAT_VIDEO As String = _
     "http://127.0.0.1:48652/video/state/active"
 
+' Vrai quand une popup a mis la lecture en pause : elle
+' seule doit la relancer en se fermant. Une video deja
+' arretee a l'ouverture le reste a la fermeture.
+Private VideoSuspendue As Boolean
+
 
 Public Sub PlayPauseChronoVideo()
 
@@ -299,3 +304,109 @@ Public Sub BasculerRewindVideo()
 
 End Sub
 
+
+' ---------------------------------------------------------
+' PAUSE AUTOUR D'UNE POPUP
+'
+' Une popup ouverte depuis la saisie met la video en
+' pause, et la relance en se fermant : la lecture reprend
+' ou elle s'etait arretee, sans avoir a recliquer.
+'
+' Le moteur ne dit pas s'il lit : on regarde si le temps
+' avance entre deux releves.
+'
+' Une seule popup est ouverte a la fois, un seul drapeau
+' suffit donc.
+' ---------------------------------------------------------
+
+' TempsAvant est le releve que la palette vient de faire :
+' le reutiliser epargne une requete au moteur.
+Public Sub SuspendreVideoPourPopup( _
+    ByVal TempsAvant As Double)
+
+    Dim Apres As Double
+    Dim Fin As Single
+
+    VideoSuspendue = False
+
+    On Error GoTo Sortie
+
+    If TempsAvant <= 0 Then Exit Sub
+
+    Fin = Timer + 0.3
+
+    Do While Timer < Fin
+        DoEvents
+    Loop
+
+    Apres = GetTimeVideo()
+
+    If Apres < 0 Then Exit Sub
+
+    If Abs(Apres - TempsAvant) > 0.05 Then
+
+        PlayPauseChronoVideo
+        VideoSuspendue = True
+
+    End If
+
+Sortie:
+
+End Sub
+
+
+' ---------------------------------------------------------
+' Lecture et pause depuis une popup.
+'
+' Le drapeau suit la main de l'utilisateur : s'il relance
+' la video lui-meme, la fermeture de la popup ne doit plus
+' la remettre en pause, et inversement.
+' ---------------------------------------------------------
+
+' La barre d'espace pilote la video depuis une popup.
+'
+' Quitter la feuille de saisie a coupe les raccourcis :
+' chaque popup repose celui-ci pour elle-meme. Nul besoin
+' de le retirer, le retour sur la saisie video rend la
+' main a ActiverRaccourcisVideo.
+Public Sub ActiverEspacePopup()
+
+    On Error Resume Next
+    Application.OnKey " ", "BasculerLectureDepuisPopup"
+    On Error GoTo 0
+
+End Sub
+
+
+Public Sub BasculerLectureDepuisPopup()
+
+    On Error GoTo Sortie
+
+    PlayPauseChronoVideo
+
+    VideoSuspendue = Not VideoSuspendue
+
+Sortie:
+
+End Sub
+
+
+Public Sub ReprendreVideoApresPopup()
+
+    ' Une popup peut rester ouverte plus de trente secondes,
+    ' le temps de saisir une observation : le moteur se
+    ' ferme alors, faute de signal de vie. Il est retabli
+    ' avant que la main revienne a la saisie.
+    RetablirMoteurVideo
+
+    If Not VideoSuspendue Then Exit Sub
+
+    VideoSuspendue = False
+
+    On Error GoTo Sortie
+
+    PlayPauseChronoVideo
+
+Sortie:
+
+End Sub

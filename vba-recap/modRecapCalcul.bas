@@ -53,7 +53,39 @@ End Type
 ' joueur, ligne de jeu, feuilles de match, matchs joues.
 ' Viennent ensuite une colonne de minutes par categorie,
 ' le total des minutes, puis les statistiques.
-Private Const COLONNES_FIXES As Long = 4
+' Le nom du joueur, et rien d'autre : le classement ne
+' montre que les statistiques choisies. Le temps de jeu a
+' sa feuille, et c'est la qu'on va le chercher.
+' =========================================================
+' Les couleurs des feuilles de match, relevees dans
+' "Stats match" et "Compo" : le recapitulatif doit se lire
+' comme elles.
+'
+' Le corps garde le vert pale et le blanc des feuilles de
+' match. Les trois en-tetes, eux, tranchent franchement :
+' c'est la seule facon de ne jamais lire un chiffre dans
+' la mauvaise colonne.
+' =========================================================
+Private Const VERT_ENTETE As Long = 3057485   ' RGB(77, 167, 46)
+Private Const VERT_FONCE As Long = 2392636    ' RGB(60, 130, 36)
+
+' Les trois groupes, en teintes franches : bleu pour la
+' premiere, orange pour la reserve, et le vert du club
+' pour le cumul, qui couronne les deux.
+Private Const TETE_PREMIERE As Long = 12611584 ' RGB(0, 112, 192)
+Private Const TETE_RESERVE As Long = 36095     ' RGB(255, 140, 0)
+Private Const TETE_TOTAL As Long = 3057485     ' RGB(77, 167, 46)
+
+Private Const GRIS_FILET As Long = 5855577     ' RGB(89, 89, 89)
+
+' Bandes vertes et blanches, au plus pres des feuilles de
+' match parmi les styles qu'Excel propose.
+Private Const STYLE_TABLEAU As String = "TableStyleLight21"
+Private Const VERT_PALE As Long = 13693658    ' RGB(218, 242, 208)
+Private Const BLANC As Long = 16777215
+
+
+Private Const COLONNES_FIXES As Long = 1
 
 ' Duree de reference des ratios.
 Private Const MINUTES_REFERENCE As Double = 80
@@ -332,7 +364,6 @@ Private Function RetenirMatchs( _
 
     Next Ligne
 
-    MarquerColonneRetenu Tableau, Retenu, NbLignes
 
     RetenirMatchs = NbRetenus
 
@@ -352,7 +383,7 @@ Private Function MatchPasseLesFiltres( _
     ' remettre les menus sur (Tous).
     If Filtres.CiblesSeulement Then
 
-        MatchPasseLesFiltres = EstCoche(Donnees(Ligne, MTC_CIBLER))
+        MatchPasseLesFiltres = EstCoche(Donnees(Ligne, MTC_ANALYSER))
         Exit Function
 
     End If
@@ -498,30 +529,6 @@ Private Function DateDuNiemeMatch( _
     End If
 
 End Function
-
-
-Private Sub MarquerColonneRetenu( _
-    ByVal Tableau As ListObject, _
-    ByRef Retenu() As Boolean, _
-    ByVal NbLignes As Long _
-)
-
-    Dim Marques As Variant
-    Dim Ligne As Long
-
-    ReDim Marques(1 To NbLignes, 1 To 1)
-
-    For Ligne = 1 To NbLignes
-
-        If Retenu(Ligne) Then
-            Marques(Ligne, 1) = MARQUE_COCHE
-        End If
-
-    Next Ligne
-
-    Tableau.ListColumns(MTC_RETENU).DataBodyRange.Value = Marques
-
-End Sub
 
 
 ' =========================================================
@@ -1117,26 +1124,14 @@ Private Sub EcrireClassement( _
         Exit Sub
     End If
 
-    NbColonnes = COLONNES_FIXES + NbCategories + 1 + NbStats
+    NbColonnes = COLONNES_FIXES + NbStats
 
     ReDim Entetes(1 To 1, 1 To NbColonnes)
 
     Entetes(1, 1) = "Joueur"
-    Entetes(1, 2) = "Ligne"
-    Entetes(1, 3) = "Feuilles"
-    Entetes(1, 4) = "Matchs jou" & ChrW(233) & "s"
-
-    For c = 1 To NbCategories
-        Entetes(1, COLONNES_FIXES + c) = _
-            "Min. " & NomsCategories(c)
-    Next c
-
-    Entetes(1, COLONNES_FIXES + NbCategories + 1) = _
-        "Min. total"
 
     For s = 1 To NbStats
-        Entetes(1, COLONNES_FIXES + NbCategories + 1 + s) = _
-            NomsStats(s)
+        Entetes(1, COLONNES_FIXES + s) = NomsStats(s)
     Next s
 
     ' Joueurs retenus : ceux qui atteignent le seuil de
@@ -1181,20 +1176,12 @@ Private Sub EcrireClassement( _
             Ligne = Ligne + 1
 
             Sortie(Ligne, 1) = NomsJoueurs(i)
-            Sortie(Ligne, 2) = LignesJoueurs(i)
-            Sortie(Ligne, 3) = Feuilles(i)
-            Sortie(Ligne, 4) = Joues(i)
 
-            For c = 1 To NbCategories
-                Sortie(Ligne, COLONNES_FIXES + c) = MinutesCat(i, c)
-            Next c
-
-            Sortie(Ligne, COLONNES_FIXES + NbCategories + 1) = _
-                MinutesTotal(i)
-
+            ' Les minutes servent encore au calcul des
+            ' ratios, mais ne sont plus affichees ici.
             For s = 1 To NbStats
 
-                Colonne = COLONNES_FIXES + NbCategories + 1 + s
+                Colonne = COLONNES_FIXES + s
 
                 Sortie(Ligne, Colonne) = _
                     ValeurAffichee( _
@@ -1297,36 +1284,44 @@ Private Sub EcrireTempsDeJeu( _
         Exit Sub
     End If
 
-    NbColonnes = 3 + NbCategories * 3 + 3
+    NbColonnes = 1 + NbCategories * 2 + 1
 
     ReDim Entetes(1 To 1, 1 To NbColonnes)
 
     Entetes(1, 1) = "Joueur"
-    Entetes(1, 2) = "Ligne"
-    Entetes(1, 3) = "Feuilles"
 
+    ' La categorie est portee par le regroupement pose au
+    ' dessus : les en-tetes du tableau ne disent plus que
+    ' la nature du chiffre.
+    '
+    ' Excel refuse deux colonnes de meme nom dans un
+    ' tableau. Des espaces de fin, invisibles a l'ecran,
+    ' les distinguent sans changer ce qu'on lit.
     For c = 1 To NbCategories
 
-        Colonne = 3 + (c - 1) * 3
+        Colonne = 1 + (c - 1) * 2
 
-        Entetes(1, Colonne + 1) = NomsCategories(c) & " - matchs"
-        Entetes(1, Colonne + 2) = NomsCategories(c) & " - minutes"
-        Entetes(1, Colonne + 3) = NomsCategories(c) & " - moyenne"
+        Entetes(1, Colonne + 1) = "Matchs" & Space$(c)
+        Entetes(1, Colonne + 2) = "Minutes" & Space$(c)
 
     Next c
 
-    Colonne = 3 + NbCategories * 3
+    ' Le cumul ne garde que les minutes : le nombre de
+    ' matchs se lit deja categorie par categorie.
+    Colonne = 1 + NbCategories * 2
 
-    Entetes(1, Colonne + 1) = "Total matchs jou" & ChrW(233) & "s"
-    Entetes(1, Colonne + 2) = "Total minutes"
-    Entetes(1, Colonne + 3) = "Moyenne par match"
+    Entetes(1, Colonne + 1) = "Minutes"
 
     EcrireBandeau ws, Filtres, NbMatchsRetenus, NbJoueurs
 
     If NbJoueurs = 0 Then
 
         PoserTableauSortie _
-            ws, "RECAP_TEMPS_JOUEURS", Entetes, Sortie, 0, NbColonnes
+            ws, "RECAP_TEMPS_JOUEURS", Entetes, Sortie, 0, _
+            NbColonnes, LIGNE_ENTETE + 1
+
+        EcrireRegroupementTemps _
+            ws, LIGNE_ENTETE, NomsCategories, NbCategories
 
         Exit Sub
 
@@ -1337,45 +1332,34 @@ Private Sub EcrireTempsDeJeu( _
     For i = 1 To NbJoueurs
 
         Sortie(i, 1) = NomsJoueurs(i)
-        Sortie(i, 2) = LignesJoueurs(i)
-        Sortie(i, 3) = Feuilles(i)
 
         TotalMinutes = 0
 
         For c = 1 To NbCategories
 
-            Colonne = 3 + (c - 1) * 3
+            Colonne = 1 + (c - 1) * 2
 
             Sortie(i, Colonne + 1) = MatchsCat(i, c)
             Sortie(i, Colonne + 2) = MinutesCat(i, c)
-
-            If MatchsCat(i, c) > 0 Then
-
-                Sortie(i, Colonne + 3) = _
-                    MinutesCat(i, c) / MatchsCat(i, c)
-
-            End If
 
             TotalMinutes = TotalMinutes + MinutesCat(i, c)
 
         Next c
 
-        Colonne = 3 + NbCategories * 3
+        Colonne = 1 + NbCategories * 2
 
-        Sortie(i, Colonne + 1) = Joues(i)
-        Sortie(i, Colonne + 2) = TotalMinutes
-
-        If Joues(i) > 0 Then
-            Sortie(i, Colonne + 3) = TotalMinutes / Joues(i)
-        End If
+        Sortie(i, Colonne + 1) = TotalMinutes
 
     Next i
 
     PoserTableauSortie _
         ws, "RECAP_TEMPS_JOUEURS", Entetes, Sortie, _
-        NbJoueurs, NbColonnes
+        NbJoueurs, NbColonnes, LIGNE_ENTETE + 1
 
-    MettreEnFormeTemps ws, NbJoueurs, NbColonnes
+    EcrireRegroupementTemps _
+        ws, LIGNE_ENTETE, NomsCategories, NbCategories
+
+    MettreEnFormeTemps ws, NbJoueurs, NbColonnes, NbCategories
 
 End Sub
 
@@ -1391,12 +1375,18 @@ Private Sub PoserTableauSortie( _
     ByRef Entetes As Variant, _
     ByRef Sortie As Variant, _
     ByVal NbLignes As Long, _
-    ByVal NbColonnes As Long _
+    ByVal NbColonnes As Long, _
+    Optional ByVal Entete As Long = 0 _
 )
 
     Dim Tableau As ListObject
     Dim Plage As Range
     Dim DerniereLigne As Long
+
+    ' La feuille des temps de jeu reserve la ligne
+    ' au-dessus a son regroupement par categorie : elle
+    ' pose donc son tableau un rang plus bas.
+    If Entete = 0 Then Entete = LIGNE_ENTETE
 
     On Error Resume Next
     Set Tableau = ws.ListObjects(NomTableau)
@@ -1410,10 +1400,10 @@ Private Sub PoserTableauSortie( _
     DerniereLigne = _
         ws.Cells(ws.Rows.Count, PREMIERE_COLONNE).End(xlUp).Row
 
-    If DerniereLigne >= LIGNE_ENTETE Then
+    If DerniereLigne >= Entete Then
 
         ws.Range( _
-            ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE), _
+            ws.Cells(Entete, PREMIERE_COLONNE), _
             ws.Cells( _
                 DerniereLigne + 5, _
                 PREMIERE_COLONNE + 200 _
@@ -1422,31 +1412,82 @@ Private Sub PoserTableauSortie( _
 
     End If
 
-    ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE) _
+    ws.Cells(Entete, PREMIERE_COLONNE) _
         .Resize(1, NbColonnes).Value = Entetes
 
     If NbLignes > 0 Then
 
-        ws.Cells(LIGNE_ENTETE + 1, PREMIERE_COLONNE) _
+        ws.Cells(Entete + 1, PREMIERE_COLONNE) _
             .Resize(NbLignes, NbColonnes).Value = Sortie
 
     End If
 
     Set Plage = _
-        ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE) _
+        ws.Cells(Entete, PREMIERE_COLONNE) _
             .Resize(Maxi(NbLignes, 1) + 1, NbColonnes)
 
     Set Tableau = _
         ws.ListObjects.Add(xlSrcRange, Plage, , xlYes)
 
     Tableau.Name = NomTableau
-    Tableau.TableStyle = "TableStyleMedium3"
+
+    ' Les bandes d'un tableau Excel suivent les lignes
+    ' visibles : elles se recalculent au tri comme au
+    ' filtre, ce qu'une couleur posee sur la cellule ne
+    ' sait pas faire, et ce que la mise en forme
+    ' conditionnelle refuse sur cette version.
+    On Error Resume Next
+    Tableau.TableStyle = STYLE_TABLEAU
+    If Err.Number <> 0 Then
+        Err.Clear
+        Tableau.TableStyle = "TableStyleMedium7"
+    End If
+    On Error GoTo 0
+
+    Tableau.ShowTableStyleRowStripes = True
 
     With Tableau.HeaderRowRange
         .Font.Bold = True
         .WrapText = True
-        .VerticalAlignment = xlBottom
+        .VerticalAlignment = xlCenter
+        .HorizontalAlignment = xlCenter
+        .Interior.Color = VERT_ENTETE
+        .Font.Color = BLANC
     End With
+
+    PeindreCorps ws, Entete, NbLignes, NbColonnes
+
+End Sub
+
+
+' =========================================================
+' Le corps d'un tableau, aux couleurs des feuilles de
+' match : une ligne sur deux en vert pale, les autres en
+' blanc, et un filet clair pour poser la grille.
+' =========================================================
+Private Sub PeindreCorps( _
+    ByVal ws As Worksheet, _
+    ByVal Entete As Long, _
+    ByVal NbLignes As Long, _
+    ByVal NbColonnes As Long _
+)
+
+    Dim Corps As Range
+
+    If NbLignes <= 0 Then
+        Exit Sub
+    End If
+
+    Set Corps = ws.Range( _
+        ws.Cells(Entete + 1, PREMIERE_COLONNE), _
+        ws.Cells(Entete + NbLignes, _
+            PREMIERE_COLONNE + NbColonnes - 1))
+
+    Corps.Font.Color = RGB(0, 0, 0)
+
+    ' Aucun remplissage pose a la main : les bandes du
+    ' style doivent rester visibles dessous.
+    Corps.Interior.Pattern = xlNone
 
 End Sub
 
@@ -1462,30 +1503,14 @@ Private Sub MettreEnFormeClassement( _
     Dim PremiereStat As Long
     Dim FormatNombre As String
 
-    ws.Columns(PREMIERE_COLONNE).ColumnWidth = 28
-    ws.Columns(PREMIERE_COLONNE + 1).ColumnWidth = 14
+    ws.Columns(PREMIERE_COLONNE).ColumnWidth = 30
 
     ws.Range( _
-        ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + 2), _
+        ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + 1), _
         ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + NbColonnes - 1) _
     ).EntireColumn.ColumnWidth = 10
 
-    ' Les minutes restent des minutes quel que soit le
-    ' mode : ce sont elles qui expliquent les ratios.
-    If NbLignes > 0 Then
-
-        ws.Range( _
-            ws.Cells(LIGNE_ENTETE + 1, PREMIERE_COLONNE + 2), _
-            ws.Cells( _
-                LIGNE_ENTETE + NbLignes, _
-                PREMIERE_COLONNE + COLONNES_FIXES + NbCategories _
-            ) _
-        ).NumberFormat = "0"
-
-    End If
-
-    PremiereStat = _
-        PREMIERE_COLONNE + COLONNES_FIXES + NbCategories + 1
+    PremiereStat = PREMIERE_COLONNE + COLONNES_FIXES
 
     ' Les zeros sont masques, comme dans la feuille Stats
     ' match d'un fichier de match : un tableau de quarante
@@ -1517,30 +1542,245 @@ End Sub
 Private Sub MettreEnFormeTemps( _
     ByVal ws As Worksheet, _
     ByVal NbLignes As Long, _
-    ByVal NbColonnes As Long _
+    ByVal NbColonnes As Long, _
+    ByVal NbCategories As Long _
 )
 
-    ws.Columns(PREMIERE_COLONNE).ColumnWidth = 28
-    ws.Columns(PREMIERE_COLONNE + 1).ColumnWidth = 14
+    Dim Entete As Long
+    Dim c As Long
+    Dim Colonne As Long
+
+    Entete = LIGNE_ENTETE + 1
+
+    ws.Columns(PREMIERE_COLONNE).ColumnWidth = 30
 
     ws.Range( _
-        ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + 2), _
-        ws.Cells(LIGNE_ENTETE, PREMIERE_COLONNE + NbColonnes - 1) _
+        ws.Cells(Entete, PREMIERE_COLONNE + 1), _
+        ws.Cells(Entete, PREMIERE_COLONNE + NbColonnes - 1) _
     ).EntireColumn.ColumnWidth = 12
 
+    ' Les valeurs sont entieres : un format a decimale
+    ' afficherait une virgule seule derriere chaque chiffre.
+    ' Les deux sections vides laissent les zeros en blanc.
     If NbLignes > 0 Then
 
         ws.Range( _
-            ws.Cells(LIGNE_ENTETE + 1, PREMIERE_COLONNE + 2), _
+            ws.Cells(Entete + 1, PREMIERE_COLONNE + 1), _
             ws.Cells( _
-                LIGNE_ENTETE + NbLignes, _
+                Entete + NbLignes, _
                 PREMIERE_COLONNE + NbColonnes - 1 _
             ) _
-        ).NumberFormat = "0.#;;"
+        ).NumberFormat = "0;;"
 
     End If
 
-    ws.Rows(LIGNE_ENTETE).RowHeight = 46
+    ' Chaque groupe porte sa couleur, du bandeau jusqu'aux
+    ' sous-titres, et un trait le separe du precedent.
+    For c = 1 To NbCategories + 1
+
+        Colonne = PREMIERE_COLONNE + 1 + (c - 1) * 2
+
+        HabillerGroupeTemps _
+            ws, Entete, Colonne, NbLignes, _
+            CouleurGroupe(c, NbCategories), _
+            LargeurGroupe(c, NbCategories)
+
+    Next c
+
+    ' Le tableau se ferme de part et d'autre, du vert du
+    ' cumul : un cadre, et non deux traits qui pendent.
+    EncadrerTableauTemps ws, Entete, NbLignes, NbColonnes
+
+    ws.Rows(LIGNE_ENTETE).RowHeight = 22
+    ws.Rows(Entete).RowHeight = 20
+
+End Sub
+
+
+Private Sub EncadrerTableauTemps( _
+    ByVal ws As Worksheet, _
+    ByVal Entete As Long, _
+    ByVal NbLignes As Long, _
+    ByVal NbColonnes As Long _
+)
+
+    Dim Haut As Long
+    Dim Bas As Long
+
+    Haut = Entete + 1
+    Bas = Entete + Maxi(NbLignes, 1)
+
+    With ws.Range( _
+        ws.Cells(Haut, PREMIERE_COLONNE), _
+        ws.Cells(Bas, PREMIERE_COLONNE) _
+    ).Borders(xlEdgeLeft)
+
+        .LineStyle = xlContinuous
+        .Weight = xlMedium
+        .Color = TETE_TOTAL
+
+    End With
+
+    With ws.Range( _
+        ws.Cells(Haut, PREMIERE_COLONNE + NbColonnes - 1), _
+        ws.Cells(Bas, PREMIERE_COLONNE + NbColonnes - 1) _
+    ).Borders(xlEdgeRight)
+
+        .LineStyle = xlContinuous
+        .Weight = xlMedium
+        .Color = TETE_TOTAL
+
+    End With
+
+    With ws.Range( _
+        ws.Cells(Bas, PREMIERE_COLONNE), _
+        ws.Cells(Bas, PREMIERE_COLONNE + NbColonnes - 1) _
+    ).Borders(xlEdgeBottom)
+
+        .LineStyle = xlContinuous
+        .Weight = xlMedium
+        .Color = TETE_TOTAL
+
+    End With
+
+End Sub
+
+
+' La premiere equipe en bleu, la reserve en orange, le
+' cumul en vert : trois teintes franches, pour qu'un
+' chiffre ne soit jamais lu dans la mauvaise colonne.
+' Deux colonnes par equipe, une seule pour le cumul.
+Private Function LargeurGroupe( _
+    ByVal Rang As Long, _
+    ByVal NbCategories As Long _
+) As Long
+
+    LargeurGroupe = IIf(Rang > NbCategories, 1, 2)
+
+End Function
+
+
+Private Function CouleurGroupe( _
+    ByVal Rang As Long, _
+    ByVal NbCategories As Long _
+) As Long
+
+    If Rang > NbCategories Then
+        CouleurGroupe = TETE_TOTAL
+    ElseIf Rang Mod 2 = 1 Then
+        CouleurGroupe = TETE_PREMIERE
+    Else
+        CouleurGroupe = TETE_RESERVE
+    End If
+
+End Function
+
+
+' Les deux colonnes d'un groupe : sous-titres a la couleur
+' du bandeau, et un trait vertical a gauche qui descend sur
+' toute la hauteur du tableau.
+' =========================================================
+' REGROUPEMENT DES COLONNES PAR CATEGORIE
+'
+' Un tableau structure n'a qu'une ligne d'en-tete : la
+' categorie se pose au-dessus de lui, en cellules
+' fusionnees, hors du tableau. Chaque equipe coiffe ses
+' deux colonnes, le cumul les siennes.
+' =========================================================
+Private Sub EcrireRegroupementTemps( _
+    ByVal ws As Worksheet, _
+    ByVal Ligne As Long, _
+    ByRef NomsCategories() As String, _
+    ByVal NbCategories As Long _
+)
+
+    Dim c As Long
+    Dim Colonne As Long
+    Dim Zone As Range
+
+    Set Zone = ws.Range( _
+        ws.Cells(Ligne, PREMIERE_COLONNE), _
+        ws.Cells(Ligne, PREMIERE_COLONNE + 200))
+
+    Zone.UnMerge
+    Zone.Clear
+
+    For c = 1 To NbCategories
+
+        Colonne = PREMIERE_COLONNE + 1 + (c - 1) * 2
+
+        PoserGroupeTemps ws, Ligne, Colonne, _
+            UCase$(NomsCategories(c)), _
+            CouleurGroupe(c, NbCategories), _
+            LargeurGroupe(c, NbCategories)
+
+    Next c
+
+    Colonne = PREMIERE_COLONNE + 1 + NbCategories * 2
+
+    PoserGroupeTemps ws, Ligne, Colonne, "TOTAL", _
+        CouleurGroupe(NbCategories + 1, NbCategories), _
+        LargeurGroupe(NbCategories + 1, NbCategories)
+
+End Sub
+
+
+Private Sub PoserGroupeTemps( _
+    ByVal ws As Worksheet, _
+    ByVal Ligne As Long, _
+    ByVal Colonne As Long, _
+    ByVal Titre As String, _
+    ByVal Couleur As Long, _
+    ByVal Largeur As Long _
+)
+
+    With ws.Cells(Ligne, Colonne).Resize(1, Largeur)
+
+        .Merge
+        .Value = Titre
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .Font.Bold = True
+        .Font.Color = RGB(255, 255, 255)
+        .Interior.Color = Couleur
+        .Borders.LineStyle = xlContinuous
+        .Borders.Color = RGB(255, 255, 255)
+
+    End With
+
+End Sub
+
+
+Private Sub HabillerGroupeTemps( _
+    ByVal ws As Worksheet, _
+    ByVal Entete As Long, _
+    ByVal Colonne As Long, _
+    ByVal NbLignes As Long, _
+    ByVal Couleur As Long, _
+    ByVal Largeur As Long _
+)
+
+    With ws.Cells(Entete, Colonne).Resize(1, Largeur)
+        .Interior.Color = Couleur
+        .Font.Color = RGB(255, 255, 255)
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+    End With
+
+    ' Chaque groupe est precede d'un trait de sa propre
+    ' couleur, sur les seules lignes de donnees : les deux
+    ' rangees d'en-tete portent deja leur fond, un trait de
+    ' plus les alourdirait.
+    With ws.Range( _
+        ws.Cells(Entete + 1, Colonne), _
+        ws.Cells(Entete + Maxi(NbLignes, 1), Colonne) _
+    ).Borders(xlEdgeLeft)
+
+        .LineStyle = xlContinuous
+        .Weight = xlMedium
+        .Color = Couleur
+
+    End With
 
 End Sub
 

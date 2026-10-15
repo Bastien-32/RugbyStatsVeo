@@ -45,11 +45,11 @@ Public Sub ApplyFormat( _
         ' On d_fusionne temporairement.
         ZoneCible.UnMerge
 
-        ' On copie le modle une seule fois.
+        ' On copie le modele une seule fois.
         ModelCell.Copy
 
         ' Puis on applique r_ellement le format
-        ' ˆ CHAQUE cellule de l'ancienne fusion.
+        ' A CHAQUE cellule de l'ancienne fusion.
         For Each Cellule In ZoneCible.Cells
 
             Cellule.PasteSpecial _
@@ -270,24 +270,15 @@ Public Sub ResetActionButtons()
     ApplyFormat ws.Range("BTN_PEN_CONTRE_ADV"), _
         shParametres.Range("STYLE_BTN_PEN")
 
+    ApplyFormat ws.Range("BTN_CF_CONTRE_ADV"), _
+        shParametres.Range("STYLE_BTN_PEN")
+
+    ApplyFormat ws.Range("BTN_CF_CONTRE_NOUS"), _
+        shParametres.Range("STYLE_BTN_PEN")
+
     ApplyFormat ws.Range("BTN_PEN_CONTRE_NOUS"), _
         shParametres.Range("STYLE_BTN_PEN")
 
-    ApplyFormat ws.Range("BTN_PEN_MAUL"), _
-        shParametres.Range("STYLE_BTN_PEN")
-
-    ApplyFormat ws.Range("BTN_PEN_RUCK"), _
-        shParametres.Range("STYLE_BTN_PEN")
-
-    ApplyFormat ws.Range("BTN_PEN_HORS_JEU"), _
-        shParametres.Range("STYLE_BTN_PEN")
-
-    ApplyFormat ws.Range("BTN_PEN_PL_A_2"), _
-        shParametres.Range("STYLE_BTN_PEN")
-
-    ApplyFormat ws.Range("BTN_PEN_PL_HAUT"), _
-        shParametres.Range("STYLE_BTN_PEN")
-        
     ApplyFormat ws.Range("BTN_FRANCHISSEMENT"), _
         shParametres.Range("STYLE_BTN_PTS")
         
@@ -309,6 +300,9 @@ Public Sub ResetActionButtons()
     ApplyFormat ws.Range("BTN_CARTON_BLEU"), _
         shParametres.Range("STYLE_CARTON_BLEU")
 
+    ApplyFormat ws.Range("BTN_RETOUR_CARTON"), _
+        shParametres.Range("STYLE_BTN_REPRISE")
+
 SortiePropre:
 
     Application.CutCopyMode = False
@@ -320,12 +314,19 @@ End Sub
 Public Sub ReleaseButton()
 
     Dim EtatEvenements As Boolean
+    Dim EtatAffichage As Boolean
 
     EtatEvenements = Application.EnableEvents
+    EtatAffichage = Application.ScreenUpdating
 
     On Error GoTo SortiePropre
 
     Application.EnableEvents = False
+
+    ' L'affichage est fige le temps du deplacement : sans
+    ' cela Excel montre la selection passer par la case de
+    ' parking avant que le bouton ne reprenne sa couleur.
+    Application.ScreenUpdating = False
 
     If ActiveWorkbook Is ThisWorkbook Then
         If ActiveSheet Is shSaisieVideo Then
@@ -335,6 +336,7 @@ Public Sub ReleaseButton()
 
 SortiePropre:
 
+    Application.ScreenUpdating = EtatAffichage
     Application.EnableEvents = EtatEvenements
 
 End Sub
@@ -369,12 +371,6 @@ Public Sub ReinitialiserSelectionSaisieVideo()
     PendingAllowMultiplePlayers = False
     PendingForcedTeam = ""
     PendingActionChangesPossession = False
-
-    PendingPenaltyActive = False
-    PendingPenaltyBaseAction = ""
-    PendingPenaltyTime = 0
-    PendingPenaltyForcedTeam = ""
-    PendingPenaltyNeedsPlayer = False
 
     PendingMotifPenalite = ""
     PendingGroupeFautifRequired = False

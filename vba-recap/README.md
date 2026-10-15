@@ -98,14 +98,26 @@ Penser à **enregistrer le classeur** ensuite : c'est lui qui porte la base.
 
 ### Les deux boutons de rattrapage
 
-Feuille **Matchs** → cliquer sur la ligne du match, puis :
+Feuille **Matchs** → cocher la colonne **Sélection** sur un ou plusieurs
+matchs, puis :
 
 - **Réimporter ce match** — force la relecture, même si la date du fichier n'a
   pas bougé. Utile si vous avez corrigé des minutes à la main et voulez
   repartir de ce que dit le fichier.
-- **Retirer ce match** — le sort de la base sans le relire. Le fichier de
-  match, lui, n'est pas touché ; il reviendra à la prochaine actualisation
-  s'il est toujours à la racine.
+- **Retirer ce match** — les sort de la base sans les relire. Les fichiers de
+  match, eux, ne sont pas touchés ; ils reviendront à la prochaine
+  actualisation s'ils sont toujours à la racine.
+
+Les deux agissent sur **toutes** les lignes cochées, et le retrait rappelle les
+noms concernés avant d'effacer quoi que ce soit. Si aucune case n'est cochée,
+ils retombent sur la ligne où se trouve le curseur.
+
+Les colonnes à cocher se cliquent directement : un clic pose la puce, un
+deuxième la retire.
+
+Le tableau n'inventorie que les matchs réellement importés : un fichier posé à
+la racine sans être un fichier de match — un export de touches et mêlées, par
+exemple — n'y laisse pas de ligne.
 
 ### Filtrer
 
@@ -117,8 +129,9 @@ Feuille **Filtres**, puis bouton **Appliquer les filtres**.
 - **N derniers matchs** : `3` pour les trois derniers. S'applique **après** les
   autres critères, donc « catégorie = Réserve » + « 3 derniers » donne bien les
   trois derniers matchs de réserve.
-- **Matchs ciblés uniquement** : sur `Oui`, seuls les matchs cochés *Cibler*
-  dans la feuille Matchs comptent, et les autres critères sont ignorés.
+- **Matchs ciblés uniquement** : sur `Oui`, seuls les matchs cochés *Matchs à
+  analyser* dans la feuille Matchs comptent, et les autres critères sont
+  ignorés.
 - **Minutes jouées minimum** : écarte du classement les joueurs sous le seuil.
 
 Le rappel des filtres s'affiche au-dessus de chaque tableau.
@@ -180,9 +193,9 @@ banc. Un joueur sans minute saisie apparaît donc au classement en mode
 | Feuille | Contenu |
 |---|---|
 | **Classement** | Une ligne par joueur, une colonne par statistique. |
-| **Temps de jeu** | Matchs, minutes et moyenne, par catégorie. |
+| **Temps de jeu** | Matchs et minutes par catégorie, puis cumulés. |
 | **Filtres** | Les critères, et le mode d'affichage. |
-| **Matchs** | Les matchs de la base : inventaire, ciblage, réimport, retrait. |
+| **Matchs** | Les matchs de la base : inventaire, sélection, réimport, retrait. |
 | **Journal actions** | La base : une ligne par action, tous matchs confondus. |
 | **Compositions** | La base : une ligne par joueur et par match, avec les minutes. |
 | **Parametres** | Statistiques affichées, et listes des menus. |

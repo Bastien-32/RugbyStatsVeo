@@ -47,9 +47,12 @@ Public Const TBL_STATS As String = "RECAP_STATS"
 
 ' ---------- Colonnes de RECAP_MATCHS ----------
 
-Public Const MTC_CIBLER As Long = 1
+Public Const MTC_SELECTION As Long = 1
 
-Public Const MTC_RETENU As Long = 2
+' Les matchs sur lesquels portent les boutons de la
+' feuille : reimport et retrait.
+Public Const MTC_ANALYSER As Long = 2
+
 
 Public Const MTC_ID As Long = 3
 
@@ -148,7 +151,6 @@ Public Const MODE_PAR_80 As String = "Par 80 minutes"
 
 Public Const VALEUR_TOUS As String = "(Tous)"
 
-Public Const MARQUE_COCHE As String = "X"
 
 ' Un joueur ne peut pas depasser le temps reglementaire.
 ' Au-dela, la valeur lue dans Compo n'est pas un nombre de
@@ -562,16 +564,30 @@ End Function
 ' Vrai si la cellule porte la marque de coche, quelle que
 ' soit la casse et les espaces autour.
 ' =========================================================
+' La marque des colonnes a cocher. Une fonction et non
+' une constante : VBA n'accepte pas d'appel dans un Const,
+' et aucun caractere hors ASCII ne doit figurer dans ces
+' fichiers, que le VBE de macOS importe en Mac Roman.
+Public Function MarqueCoche() As String
+
+    MarqueCoche = ChrW(10003)
+
+End Function
+
+
 Public Function EstCoche( _
     ByVal Valeur As Variant _
 ) As Boolean
 
+    Dim Texte As String
+
+    Texte = Trim(CStr(Valeur))
+
+    ' La croix des premieres versions reste comprise : les
+    ' reglages deja en place ne doivent pas se perdre.
     EstCoche = _
-        (StrComp( _
-            Trim(CStr(Valeur)), _
-            MARQUE_COCHE, _
-            vbTextCompare _
-        ) = 0)
+        (StrComp(Texte, MarqueCoche(), vbTextCompare) = 0) Or _
+        (StrComp(Texte, "X", vbTextCompare) = 0)
 
 End Function
 

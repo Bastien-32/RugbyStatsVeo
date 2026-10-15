@@ -8,6 +8,12 @@ Private Const INTERVALLE_HEARTBEAT_SECONDES As Long = 1
 
 Private ProchainHeartbeat As Date
 Private HeartbeatActif As Boolean
+Private HeartbeatPlanifie As Boolean
+
+' Meme raison que pour le chrono : les dates sont des
+' nombres a virgule, et comparer au plus juste prendrait
+' un battement ponctuel pour un doublon.
+Private Const MARGE As Double = 0.5 / 86400#
 
 
 Public Sub DemarrerHeartbeatVideo()
@@ -31,18 +37,67 @@ Public Sub EnvoyerHeartbeatVideo()
         Exit Sub
     End If
 
+    ' Un rendez-vous rattrape par VerifierHeartbeatVideo
+    ' peut se presenter alors qu'un autre bat deja : sans
+    ' ce garde-fou, deux chaines tourneraient en parallele.
+    If HeartbeatPlanifie Then
+        If ProchainHeartbeat - Now > MARGE Then Exit Sub
+    End If
+
+    HeartbeatPlanifie = False
+
+    ' Le signal suivant est programme avant l'appel : si
+    ' celui-ci echoue, la chaine survit quand meme.
+    PlanifierProchainHeartbeat
+
     AppelerHeartbeatVideo
 
-    ' Programme le signal suivant dans une seconde.
+End Sub
+
+
+' Excel abandonne un rendez-vous OnTime quand il est
+' occupe a l'heure dite : saisir une observation dans une
+' cellule suffit. Le signal s'arrete alors sans bruit, et
+' le moteur video se ferme au bout de trente secondes
+' sans nouvelles. Ce controle relance la chaine au
+' premier clic qui suit la saisie.
+Public Sub VerifierHeartbeatVideo()
+
+    If FermetureEnCours Then Exit Sub
+
+    If Not HeartbeatActif Then Exit Sub
+
+    If HeartbeatPlanifie Then
+        If Now <= ProchainHeartbeat + TimeSerial(0, 0, 5) Then
+            Exit Sub
+        End If
+    End If
+
+    PlanifierProchainHeartbeat
+    AppelerHeartbeatVideo
+
+End Sub
+
+
+Private Sub PlanifierProchainHeartbeat()
+
+    On Error Resume Next
+
     ProchainHeartbeat = _
         Now + TimeSerial(0, 0, INTERVALLE_HEARTBEAT_SECONDES)
 
-    On Error Resume Next
+    HeartbeatPlanifie = True
+
+    Err.Clear
 
     Application.OnTime _
         EarliestTime:=ProchainHeartbeat, _
         Procedure:=NomProcedureHeartbeat(), _
         Schedule:=True
+
+    ' Rendez-vous refuse : le marquer comme absent pour que
+    ' le prochain controle retente.
+    If Err.Number <> 0 Then HeartbeatPlanifie = False
 
     On Error GoTo 0
 
@@ -59,10 +114,16 @@ Public Sub ArreterHeartbeatVideo()
 
     On Error Resume Next
 
-    Application.OnTime _
-        EarliestTime:=ProchainHeartbeat, _
-        Procedure:=NomProcedureHeartbeat(), _
-        Schedule:=False
+    If HeartbeatPlanifie Then
+
+        Application.OnTime _
+            EarliestTime:=ProchainHeartbeat, _
+            Procedure:=NomProcedureHeartbeat(), _
+            Schedule:=False
+
+    End If
+
+    HeartbeatPlanifie = False
 
     On Error GoTo 0
 

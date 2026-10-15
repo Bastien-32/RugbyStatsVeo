@@ -6,3 +6,9 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = True
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+
+    ClicPopupRetourCarton Target
+
+End Sub
+
