@@ -64,7 +64,11 @@ ELEMENTS = (
 )
 
 # Fichiers repris du dossier des installeurs, extension par extension.
-INSTALLEURS = ("logiciels à installer", (".dmg", ".exe"))
+# Les logiciels tiers ne sont plus fournis : le dossier ne porte
+# que les liens vers les sites de leurs editeurs, qui en distribuent
+# toujours la version a jour. Les installeurs pesaient 128 Mo, que
+# chaque clone du depot devait telecharger.
+INSTALLEURS = ("logiciels à installer", (".md", ".txt"))
 
 # Dossier vide a creer : le classeur y depose les fichiers de match.
 DOSSIERS_VIDES = ("Matchs",)

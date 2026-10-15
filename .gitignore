@@ -34,3 +34,9 @@ __pycache__/
 .venv-windows/
 **/.venv-windows/
 **/VeoVideoControlEngine-precedent/
+
+# Les installeurs des logiciels tiers ne sont pas versionnes :
+# le dossier "logiciels à installer" ne porte que des liens.
+logiciels à installer/*.dmg
+logiciels à installer/*.exe
+logiciels à installer/*.pkg
