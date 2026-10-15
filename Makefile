@@ -7,12 +7,18 @@ PYTHON = python3
 # oletools n'est installe que dans l'environnement du projet.
 PYTHON_VENV = .venv/bin/python
 
-# Ce qui passe de club a main : ni Matchs, ni .gitignore, ni le
-# classeur lui-meme. Celui de club porte l'effectif et les equipes
-# du club : il ne doit jamais atterrir sur main.
-ELEMENTS_REPORT = vba vba-recap outils \
-	VeoVideoControl INSTALLATION.md INSTALLATION.txt \
-	"logiciels à installer" Makefile
+# Ce qui passe de club a main : seulement ce qui se distribue.
+#
+# main est la branche des versions diffusables, pas un miroir du
+# projet : l'outillage de developpement - Makefile, outils/, vba/,
+# vba-recap/ - reste sur club, ou il sert.
+#
+# Ni Matchs, ni .gitignore, ni le classeur lui-meme : celui de club
+# porte l'effectif et les equipes du club, il ne doit jamais
+# atterrir sur main. Seule sa copie videe y va, plus bas.
+ELEMENTS_REPORT = VeoVideoControl \
+	INSTALLATION.md INSTALLATION.txt \
+	"logiciels à installer"
 
 # Copie videe par la macro ReinitialiserPourDistribution. Elle seule
 # peut devenir le "Createur de match.xlsm" de main, et seulement si
