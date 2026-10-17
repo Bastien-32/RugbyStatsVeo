@@ -26,3 +26,9 @@ __pycache__/
 Matchs/*
 # Marqueur garantissant que le dossier existe toujours.
 !Matchs/.gitkeep
+
+# Les installeurs des logiciels tiers ne sont pas versionnes :
+# le dossier "logiciels à installer" ne porte que des liens.
+logiciels à installer/*.dmg
+logiciels à installer/*.exe
+logiciels à installer/*.pkg
