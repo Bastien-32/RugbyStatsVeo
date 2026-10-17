@@ -13,8 +13,10 @@ Option Explicit
 ' libelles d'actions, lieux, phases, resultats, niveaux
 ' d'equipe, listes du journal, styles et dispositions.
 '
-' A executer sur une COPIE du classeur, jamais sur celui
-' de travail : l'effacement est definitif.
+' La macro commence par enregistrer le classeur sous un
+' autre nom : c'est cette copie qu'elle vide, et le
+' fichier de travail reste sur le disque avec toutes ses
+' donnees. Il n'y a donc plus a penser a dupliquer avant.
 ' =========================================================
 
 Private Const NOM_FEUILLE_LISTES As String = "Listes"
@@ -37,13 +39,26 @@ Private EtapeDistribution As String
 Public Sub ReinitialiserPourDistribution()
 
     Dim Reponse As VbMsgBoxResult
+    Dim Destination As String
 
     Dim EtatEvenements As Boolean
     Dim EtatAffichage As Boolean
 
+    ' Le fichier a produire est choisi avant tout : la
+    ' fenetre d'enregistrement vaut aussi autorisation
+    ' d'ecrire la ou macOS la demande.
+    Destination = ChoisirFichierADistribuer()
+
+    If Destination = "" Then
+        Exit Sub
+    End If
+
     Reponse = MsgBox( _
-        "Ce classeur va " & ChrW(234) & "tre vid" & ChrW(233) & _
-        " de toutes les donn" & ChrW(233) & "es du club :" & _
+        "La copie suivante va " & ChrW(234) & "tre cr" & _
+        ChrW(233) & ChrW(233) & "e, puis vid" & ChrW(233) & _
+        "e de toutes les donn" & ChrW(233) & "es du club :" & _
+        vbCrLf & vbCrLf & Destination & vbCrLf & vbCrLf & _
+        "Ce qui sera efface de la copie :" & _
         vbCrLf & vbCrLf & _
         "- l'effectif ;" & vbCrLf & _
         "- les " & ChrW(233) & "quipes de la poule ;" & vbCrLf & _
@@ -52,8 +67,8 @@ Public Sub ReinitialiserPourDistribution()
         "- le detail des touches et des melees ;" & vbCrLf & _
         "- les remplacements et le temps de jeu." & _
         vbCrLf & vbCrLf & _
-        "L'effacement est d" & ChrW(233) & "finitif." & vbCrLf & _
-        "N'utilise cette macro que sur une copie." & _
+        "Ton classeur de travail reste intact sur le " & _
+        "disque : c'est la copie qui est vid" & ChrW(233) & "e." & _
         vbCrLf & vbCrLf & _
         "Continuer ?", _
         vbExclamation + vbYesNo + vbDefaultButton2, _
@@ -71,6 +86,14 @@ Public Sub ReinitialiserPourDistribution()
 
     Application.EnableEvents = False
     Application.ScreenUpdating = False
+
+    ' A partir d'ici, ThisWorkbook designe la copie : le
+    ' fichier de travail est ferme, intact, sur le disque.
+    EtapeDistribution = "enregistrement de la copie"
+
+    ThisWorkbook.SaveAs _
+        Filename:=Destination, _
+        FileFormat:=xlOpenXMLWorkbookMacroEnabled
 
     EtapeDistribution = "effectif"
     ViderTableau NOM_FEUILLE_LISTES, "LstEffectif"
@@ -129,11 +152,17 @@ Public Sub ReinitialiserPourDistribution()
     Application.ScreenUpdating = EtatAffichage
     Application.EnableEvents = EtatEvenements
 
+    ThisWorkbook.Save
+
     MsgBox _
-        "Classeur r" & ChrW(233) & "initialis" & ChrW(233) & "." & _
+        "Copie " & ChrW(224) & " distribuer pr" & ChrW(234) & _
+        "te :" & vbCrLf & vbCrLf & Destination & _
         vbCrLf & vbCrLf & _
-        "Enregistre-le, puis fabrique le paquet avec " & _
-        "outils/preparer_distribution.py", _
+        "ATTENTION : le classeur ouvert est maintenant " & _
+        "cette copie vierge, pas ton classeur de travail." & _
+        vbCrLf & _
+        "Ferme-le et rouvre " & ChrW(171) & " Createur de " & _
+        "match.xlsm " & ChrW(187) & " pour reprendre ta saisie.", _
         vbInformation, _
         "R" & ChrW(233) & "initialisation termin" & ChrW(233) & "e"
 
@@ -180,6 +209,79 @@ End Sub
 ' feuille le masque avec un blanc uni. Une zone simplement
 ' effacee se verrait donc comme un rectangle quadrille.
 ' =========================================================
+
+' =========================================================
+' Le fichier a produire.
+'
+' Le dossier dist est impose, avec un nom propose que l'on
+' peut changer. Les fenetres d'enregistrement d'Excel pour
+' Mac rendent des chemins inexploitables - extension
+' doublee, caractere parasite - la ou une simple saisie
+' donne toujours ce qu'on attend.
+' =========================================================
+Private Function ChoisirFichierADistribuer() As String
+
+    Dim Dossier As String
+    Dim Nom As String
+    Dim Chemin As String
+
+    Dossier = ThisWorkbook.Path & _
+        Application.PathSeparator & "dist"
+
+    If Dir(Dossier, vbDirectory) = "" Then
+
+        On Error Resume Next
+        MkDir Dossier
+        On Error GoTo 0
+
+    End If
+
+    Nom = InputBox( _
+        "Nom du fichier " & ChrW(224) & " produire, dans le " & _
+        "dossier dist :" & vbCrLf & vbCrLf & Dossier, _
+        "Copie " & ChrW(224) & " distribuer", _
+        "Createur de match - vierge.xlsm")
+
+    Nom = Trim$(Nom)
+
+    ' Annulation, ou champ vide.
+    If Len(Nom) = 0 Then
+        Exit Function
+    End If
+
+    If LCase$(Right$(Nom, 5)) <> ".xlsm" Then
+        Nom = Nom & ".xlsm"
+    End If
+
+    Chemin = Dossier & Application.PathSeparator & Nom
+
+    ' Un fichier deja la serait ecrase sans bruit par
+    ' SaveAs : on demande.
+    If Dir(Chemin) <> "" Then
+
+        If MsgBox( _
+            Nom & " existe d" & ChrW(233) & "j" & ChrW(224) & _
+            " dans dist." & vbCrLf & vbCrLf & "Le remplacer ?", _
+            vbQuestion + vbYesNo + vbDefaultButton2, _
+            "Fichier existant") <> vbYes Then
+
+            Exit Function
+
+        End If
+
+        ' DisplayAlerts est deja a False plus loin, mais
+        ' SaveAs refuserait d'ecraser un fichier ouvert
+        ' ailleurs : on le supprime d'abord.
+        On Error Resume Next
+        Kill Chemin
+        On Error GoTo 0
+
+    End If
+
+    ChoisirFichierADistribuer = Chemin
+
+End Function
+
 
 Private Sub ViderTableau( _
     ByVal NomFeuille As String, _
