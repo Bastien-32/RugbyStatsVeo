@@ -22,6 +22,10 @@ __pycache__/
 ~$*.xls
 ~$*.xlsx
 ~$*.xlsm
+# Reglages d'editeur propres a cette machine.
+.vscode/
+**/.vscode/
+
 # Fichiers de match : données de production, jamais versionnées.
 Matchs/*
 # Marqueur garantissant que le dossier existe toujours.
