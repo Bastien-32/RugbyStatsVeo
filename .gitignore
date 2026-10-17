@@ -23,6 +23,10 @@ __pycache__/
 ~$*.xlsx
 ~$*.xlsm
 
+# Reglages d'editeur propres a cette machine.
+.vscode/
+**/.vscode/
+
 # Reglages Claude Code propres a cette machine. settings.json, lui,
 # est partage : il porte les autorisations utiles au projet.
 .claude/settings.local.json

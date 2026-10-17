@@ -28,16 +28,16 @@ DOSSIER_A_UTILISER
 ├── Matchs
 │
 └── VeoVideoControl
-    ├── .venv
     ├── Documentation
     ├── Engine
     ├── Extension
     │   └── veo-sync-extension
+    ├── VeoVideoControlEngine   (moteur Windows)
     ├── VeoVideoControl.app
     └── Arreter VeoVideoControl.app
 ```
 
-Le dossier **VeoVideoControl** peut être placé où vous le souhaitez, à condition de ne **pas modifier son contenu interne**.
+Le dossier qui contient l'ensemble (ici `DOSSIER_A_UTILISER`) peut être placé où vous le souhaitez sur votre machine. En revanche, le dossier **VeoVideoControl** doit rester **à côté du classeur**, sans que son contenu interne soit modifié : le classeur va le chercher à cet emplacement.
 
 ## Installation de l'extension Chrome
 
@@ -62,7 +62,7 @@ Dans ce cas :
 3. Sélectionner le dossier **VeoVideoControl**.
 4. Cliquer sur **Accorder l'accès**.
 
-Cette autorisation ne devrait être demandée qu'une seule fois pour cet emplacement. Si le dossier `VeoVideoControl` est déplacé, macOS peut redemander l'autorisation.
+Cette autorisation ne devrait être demandée qu'une seule fois pour cet emplacement. Si le projet est déplacé, macOS peut redemander l'autorisation.
 
 ## Utilisation
 
@@ -77,7 +77,19 @@ Cette autorisation ne devrait être demandée qu'une seule fois pour cet emplace
 
 ## Tutoriel de prise en main
 
-### 1. Créer le fichier du match
+### 1. Créer les listes du club
+
+À faire une seule fois, en début de saison, dans **Createur de match.xlsm**.
+
+Dans l'onglet **Listes** :
+
+- ajouter chaque joueur de l'effectif avec le bouton **Ajouter un joueur** (nom et prénom) ;
+- indiquer `oui` dans la colonne **1ère ligne** pour les joueurs concernés ;
+- saisir les équipes de la poule dans la colonne **EQUIPES_A_AFFRONTER**.
+
+> Ces deux listes alimentent les listes déroulantes de l'onglet **Compo** : l'équipe adverse et les noms de la composition. Elles sont recopiées dans chaque fichier de match créé ensuite, elles doivent donc être renseignées **avant** de créer un match.
+
+### 2. Créer le fichier du match
 
 1. Ouvrir **Createur de match.xlsm**.
 2. Renseigner les informations du match dans l'onglet **Compo**.
@@ -86,15 +98,16 @@ Cette autorisation ne devrait être demandée qu'une seule fois pour cet emplace
 
 > Une fois le fichier créé, travaillez uniquement sur ce fichier de match. Le classeur **Createur de match.xlsm** ne sert qu'à générer de nouveaux matchs.
 
-### 2. Préparer le match
+### 3. Préparer le match
 
-Dans l'onglet **Compo** :
+Dans l'onglet **Compo**, pour chacun des 23 postes :
 
-- compléter la composition de l'équipe ;
-- renseigner le groupe de chaque joueur ;
-- renseigner l'état de jeu de chaque joueur.
+- choisir le joueur dans la colonne **Nom du joueur** ;
+- indiquer **Avant** ou **Trois-quarts** dans la colonne **Avant ou 3/4**.
 
-### 3. Lancer la saisie vidéo
+> La colonne **temps de jeu** se remplit toute seule : elle est calculée à partir des remplacements saisis pendant la vidéo.
+
+### 4. Lancer la saisie vidéo
 
 1. Ouvrir l'onglet **Saisie vidéo**.
 2. Vérifier que le lecteur vidéo est connecté.
@@ -103,7 +116,7 @@ Dans l'onglet **Compo** :
 
 > **Important (macOS)** : ne lancez pas VLC manuellement avant d'ouvrir Excel. Utilisez toujours **Connecter lecteur vidéo** pour que VeoVideoControl lance VLC avec la bonne configuration.
 
-### 4. Afficher le Journal d'action
+### 5. Afficher le Journal d'action
 
 Pour suivre la saisie en direct :
 
@@ -112,7 +125,7 @@ Pour suivre la saisie en direct :
 3. Afficher **Saisie vidéo** dans une fenêtre.
 4. Afficher **Journal d'action** dans l'autre.
 
-### 5. Consulter les statistiques
+### 6. Consulter les statistiques
 
 L'onglet **Stat** est entièrement automatique. Aucune saisie n'y est nécessaire.
 
