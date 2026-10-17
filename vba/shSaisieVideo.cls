@@ -588,11 +588,28 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 Exit Sub
             End If
 
-            FermerActionEnAttente
+            ' Le ballon est a nous : on designe le joueur
+            ' qui tape. A l'adversaire, il n'y a personne a
+            ' nommer dans notre composition.
+            If CurrentTeam = "Nous" Then
 
-            AjouterAction "", ActionTexte, TempsVideo
+                InitialiserActionEnAttente _
+                    ActionTexte, _
+                    TempsVideo, _
+                    False, _
+                    "", _
+                    False
 
-            ReleaseButton
+            Else
+
+                FermerActionEnAttente
+
+                AjouterAction "", ActionTexte, TempsVideo
+
+                ReleaseButton
+
+            End If
+
             Exit Sub
 
         End If
@@ -601,14 +618,22 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ' RECEPTIONS
         ' =====================================================
 
-        If Not Intersect(Target, Range("BTN_RECEPTION_NOUS")) Is Nothing Then
+            If Not Intersect(Target, Range("BTN_RECEPTION_NOUS")) Is Nothing Then
 
             FermerActionEnAttente
 
+            ' La possession revient a nous des le clic :
+            ' l'attente du joueur ne doit pas laisser la
+            ' palette sur l'autre camp.
             SetCurrentTeam "Nous"
-            AjouterAction "", ActionTexte, TempsVideo
 
-            ReleaseButton
+            InitialiserActionEnAttente _
+                ActionTexte, _
+                TempsVideo, _
+                False, _
+                "", _
+                False
+
             Exit Sub
 
         End If
@@ -624,6 +649,7 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             Exit Sub
 
         End If
+
 
         ' =====================================================
         ' TOUCHES
@@ -802,25 +828,18 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
                 Exit Sub
             End If
 
-            If CurrentTeam = "Adv" Then
+            ' Le joueur est demande dans les deux sens :
+            ' celui qui gratte vaut celui qui se fait
+            ' gratter, et le libelle dit deja lequel des
+            ' deux s'est produit. La possession bascule
+            ' une fois le joueur designe.
+            InitialiserActionEnAttente _
+                ActionTexte, _
+                TempsVideo, _
+                True, _
+                "", _
+                False
 
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "", _
-                    False
-
-            Else
-
-                FermerActionEnAttente
-
-                AjouterAction "", ActionTexte, TempsVideo
-                ToggleCurrentTeam
-
-                ReleaseButton
-
-            End If
 
             Exit Sub
 
@@ -894,33 +913,18 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         
             End If
         
-            If CurrentTeam = "Nous" Then
-        
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Nous", _
-                    False
-        
-            Else
-        
-                FermerActionEnAttente
-        
-                SetCurrentTeam "Adv"
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-        
-                SetCurrentTeam "Nous"
-        
-                ReleaseButton
-        
-            End If
-        
+            ' Meme regle que le grattage : le joueur est
+            ' demande que le ballon nous revienne ou nous
+            ' echappe.
+            InitialiserActionEnAttente _
+                ActionTexte, _
+                TempsVideo, _
+                True, _
+                "", _
+                False
+
             Exit Sub
-        
+
         End If
 
         ' =====================================================
@@ -1389,7 +1393,6 @@ Private Function PosteDuBouton(ByVal Target As Range) As String
     PosteDuBouton = Trim(Texte)
 
 End Function
-
 
 Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
 

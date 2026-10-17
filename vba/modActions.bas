@@ -248,12 +248,14 @@ Public Function GetAction( _
     End If
 
     If Not Intersect(Target, Range("BTN_GRATTAGE")) Is Nothing Then
-        GetAction = Range("ACT_GRATTAGE").Value
+        GetAction = ActionSelonPossession( _
+            "ACT_GRATTAGE_NS", "ACT_GRATTAGE_ADV")
         Exit Function
     End If
 
     If Not Intersect(Target, Range("BTN_CONTRE_RUCK")) Is Nothing Then
-        GetAction = Range("ACT_CONTRE_RUCK").Value
+        GetAction = ActionSelonPossession( _
+            "ACT_CONTRE_RUCK_NS", "ACT_CONTRE_RUCK_ADV")
         Exit Function
     End If
     
@@ -278,7 +280,8 @@ Public Function GetAction( _
     End If
 
     If Not Intersect(Target, Range("BTN_ARRACHAGE")) Is Nothing Then
-        GetAction = Range("ACT_ARRACHAGE").Value
+        GetAction = ActionSelonPossession( _
+            "ACT_ARRACHAGE_NS", "ACT_ARRACHAGE_ADV")
         Exit Function
     End If
 
@@ -601,6 +604,33 @@ Public Function EstActionSuivieDunRenvoi( _
     Next Element
 
 End Function
+
+' =========================================================
+' Grattage, contre-ruck et arrachage : le meme geste fait
+' recuperer le ballon ou le perdre, selon qui l'avait. Le
+' journal doit dire lequel, comme il le fait deja pour le
+' turn-over et pour les touches.
+' =========================================================
+Private Function ActionSelonPossession( _
+    ByVal NomRecuperation As String, _
+    ByVal NomPerte As String) As String
+
+    Select Case CurrentTeam
+
+        Case "Nous"
+
+            ' Nous avions le ballon : nous le perdons.
+            ActionSelonPossession = Range(NomPerte).Value
+
+        Case "Adv"
+
+            ' Ils avaient le ballon : nous le recuperons.
+            ActionSelonPossession = Range(NomRecuperation).Value
+
+    End Select
+
+End Function
+
 
 Public Sub InitialiserActionEnAttente( _
     ByVal ActionTexte As String, _
