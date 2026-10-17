@@ -45,7 +45,16 @@ SortiePropre:
 
     TraitementSelectionEnCours = False
 
+    If Err.Number <> 0 Then
+        MsgBox _
+            "Erreur " & Err.Number & " : " & Err.Description, _
+            vbCritical, _
+            "Clic non traite"
+        Err.Clear
+    End If
+
 End Sub
+
 
 Private Sub TraiterSelectionChange(ByVal Target As Range)
 
@@ -983,7 +992,8 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             FermerActionEnAttente
         
             AjouterArretJeuAutomatique _
-                TempsVideo
+                TempsVideo, _
+                False
         
             ReleaseButton
             Exit Sub

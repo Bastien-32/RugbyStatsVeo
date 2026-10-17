@@ -5,13 +5,34 @@ Public Sub ApplyFormat( _
     ByVal TargetCell As Range, _
     ByVal ModelCell As Range)
 
+    ' =====================================================
+    ' Le format est recopie propriete par propriete, et
+    ' seulement la ou il differe du modele.
+    '
+    ' La premiere version defusionnait le bouton, collait
+    ' le modele par le presse-papiers sur chaque cellule,
+    ' refusionnait, puis remettait le contenu en place.
+    ' Chaque UnMerge / Merge oblige Excel a refaire la mise
+    ' en page de toute la feuille : repeindre les quarante
+    ' boutons coutait 1,1 seconde a chaque clic.
+    '
+    ' Comparer avant d'ecrire fait le reste du travail :
+    ' lors d'une remise a zero, trente-neuf boutons sur
+    ' quarante portent deja leur style passif, et les douze
+    ' styles partagent les memes bordures, le meme
+    ' alignement et le meme format de nombre. Il ne reste
+    ' alors presque rien a ecrire.
+    '
+    ' La comparaison se fait sur la cellule d'ancrage : sur
+    ' une zone fusionnee, c'est elle qui porte le format
+    ' qu'Excel affiche.
+    ' =====================================================
+
     Dim EtatEvenements As Boolean
     Dim ZoneCible As Range
-    Dim Cellule As Range
-
-    Dim ValeurCible As Variant
-    Dim FormuleCible As Variant
-    Dim ContientFormule As Boolean
+    Dim Ancre As Range
+    Dim Cotes As Variant
+    Dim i As Long
 
     EtatEvenements = Application.EnableEvents
 
@@ -19,76 +40,128 @@ Public Sub ApplyFormat( _
 
     Application.EnableEvents = False
 
-    ' =====================================================
-    ' CAS D'UN BOUTON FUSIONNE
-    ' =====================================================
-
     If TargetCell.MergeCells Then
-
         Set ZoneCible = TargetCell.MergeArea
-
-        ContientFormule = _
-            ZoneCible.Cells(1, 1).HasFormula
-
-        If ContientFormule Then
-
-            FormuleCible = _
-                ZoneCible.Cells(1, 1).Formula
-
-        Else
-
-            ValeurCible = _
-                ZoneCible.Cells(1, 1).Value
-
-        End If
-
-        ' On d_fusionne temporairement.
-        ZoneCible.UnMerge
-
-        ' On copie le modele une seule fois.
-        ModelCell.Copy
-
-        ' Puis on applique r_ellement le format
-        ' A CHAQUE cellule de l'ancienne fusion.
-        For Each Cellule In ZoneCible.Cells
-
-            Cellule.PasteSpecial _
-                Paste:=xlPasteFormats
-
-        Next Cellule
-
-        ' On recr_e la fusion.
-        ZoneCible.Merge
-
-        ' On restaure le contenu.
-        If ContientFormule Then
-
-            ZoneCible.Cells(1, 1).Formula = _
-                FormuleCible
-
-        Else
-
-            ZoneCible.Cells(1, 1).Value = _
-                ValeurCible
-
-        End If
-
-    ' =====================================================
-    ' CAS NORMAL
-    ' =====================================================
-
     Else
+        Set ZoneCible = TargetCell
+    End If
 
-        ModelCell.Copy
+    Set Ancre = ZoneCible.Cells(1, 1)
 
-        TargetCell.PasteSpecial _
-            Paste:=xlPasteFormats
+    ' -----------------------------------------------------
+    ' Fond
+    ' -----------------------------------------------------
+
+    If Ancre.Interior.Pattern <> _
+        ModelCell.Interior.Pattern Then
+
+        ZoneCible.Interior.Pattern = _
+            ModelCell.Interior.Pattern
 
     End If
 
+    If Ancre.Interior.Color <> _
+        ModelCell.Interior.Color Then
+
+        ZoneCible.Interior.Color = _
+            ModelCell.Interior.Color
+
+    End If
+
+    ' -----------------------------------------------------
+    ' Police
+    ' -----------------------------------------------------
+
+    If Ancre.Font.Name <> ModelCell.Font.Name Then
+        ZoneCible.Font.Name = ModelCell.Font.Name
+    End If
+
+    If Ancre.Font.Size <> ModelCell.Font.Size Then
+        ZoneCible.Font.Size = ModelCell.Font.Size
+    End If
+
+    If Ancre.Font.Bold <> ModelCell.Font.Bold Then
+        ZoneCible.Font.Bold = ModelCell.Font.Bold
+    End If
+
+    If Ancre.Font.Italic <> ModelCell.Font.Italic Then
+        ZoneCible.Font.Italic = ModelCell.Font.Italic
+    End If
+
+    If Ancre.Font.Color <> ModelCell.Font.Color Then
+        ZoneCible.Font.Color = ModelCell.Font.Color
+    End If
+
+    ' -----------------------------------------------------
+    ' Alignement et format
+    ' -----------------------------------------------------
+
+    If Ancre.HorizontalAlignment <> _
+        ModelCell.HorizontalAlignment Then
+
+        ZoneCible.HorizontalAlignment = _
+            ModelCell.HorizontalAlignment
+
+    End If
+
+    If Ancre.VerticalAlignment <> _
+        ModelCell.VerticalAlignment Then
+
+        ZoneCible.VerticalAlignment = _
+            ModelCell.VerticalAlignment
+
+    End If
+
+    If Ancre.WrapText <> ModelCell.WrapText Then
+        ZoneCible.WrapText = ModelCell.WrapText
+    End If
+
+    If Ancre.NumberFormat <> ModelCell.NumberFormat Then
+        ZoneCible.NumberFormat = ModelCell.NumberFormat
+    End If
+
+    ' -----------------------------------------------------
+    ' Bordures
+    ' -----------------------------------------------------
+
+    Cotes = Array( _
+        xlEdgeLeft, xlEdgeRight, xlEdgeTop, xlEdgeBottom)
+
+    For i = LBound(Cotes) To UBound(Cotes)
+
+        If Ancre.Borders(Cotes(i)).LineStyle <> _
+            ModelCell.Borders(Cotes(i)).LineStyle Then
+
+            ZoneCible.Borders(Cotes(i)).LineStyle = _
+                ModelCell.Borders(Cotes(i)).LineStyle
+
+        End If
+
+        If ModelCell.Borders(Cotes(i)).LineStyle <> _
+            xlLineStyleNone Then
+
+            If Ancre.Borders(Cotes(i)).Color <> _
+                ModelCell.Borders(Cotes(i)).Color Then
+
+                ZoneCible.Borders(Cotes(i)).Color = _
+                    ModelCell.Borders(Cotes(i)).Color
+
+            End If
+
+            If Ancre.Borders(Cotes(i)).Weight <> _
+                ModelCell.Borders(Cotes(i)).Weight Then
+
+                ZoneCible.Borders(Cotes(i)).Weight = _
+                    ModelCell.Borders(Cotes(i)).Weight
+
+            End If
+
+        End If
+
+    Next i
+
 Fin:
 
-    Application.CutCopyMode = False
     Application.EnableEvents = EtatEvenements
 
 End Sub

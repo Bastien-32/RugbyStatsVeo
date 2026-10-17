@@ -924,7 +924,8 @@ Public Sub ActiverBoutonArretDuJeu()
 End Sub
 
 Public Sub AjouterArretJeuAutomatique( _
-    ByVal TempsArret As Double _
+    ByVal TempsArret As Double, _
+    Optional ByVal ReactiverBouton As Boolean = True _
 )
 
     If Not JeuActuellementArrete Then
@@ -936,10 +937,21 @@ Public Sub AjouterArretJeuAutomatique( _
 
     End If
 
-    ActiverBoutonArretDuJeu
-    RecalculerTempsJeuEffectif
+    ' Un clic direct sur le bouton d'arret a deja repeint
+    ' les quarante boutons et active celui-ci : le refaire
+    ' ici doublait le travail et faisait clignoter l'ecran.
+    ' Les arrets declenches par une autre action, eux, ont
+    ' besoin de cette bascule.
+    If ReactiverBouton Then
+        ActiverBoutonArretDuJeu
+    End If
+
+    ' Le temps de jeu effectif n'alimente aucune formule :
+    ' il se recalcule a l'ouverture de l'onglet Stats match
+    ' et sur son bouton, plus a chaque arret.
 
 End Sub
+
 
 Private Function ArretExisteDejaAuMemeTemps( _
     ByVal TempsRecherche As Double _

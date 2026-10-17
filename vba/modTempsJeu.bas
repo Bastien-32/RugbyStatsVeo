@@ -1,230 +1,27 @@
 Attribute VB_Name = "modTempsJeu"
 Option Explicit
 
-Public Function CalculerTempsJeuEffectif( _
-    ByVal MiTempsRecherchee As String _
-) As Double
-
-    Dim wsJournal As Worksheet
-    Dim loJournal As ListObject
-
-    Dim ColTemps As Long
-    Dim ColMiTemps As Long
-    Dim ColAction As Long
-
-    Dim i As Long
-
-    Dim TempsAction As Double
-    Dim ActionTexte As String
-    Dim MiTempsLigne As String
-
-    Dim JeuDemarre As Boolean
-    Dim JeuEnCours As Boolean
-
-    Dim DebutPeriodeJeu As Double
-    Dim TempsJeuCumule As Double
-
-    Dim ActionArret As String
-    Dim ActionRepriseTouche As String
-    Dim ActionRepriseMelee As String
-    Dim ActionRepriseRenvoi As String
-    Dim ActionRepriseMain As String
-
-    Application.Volatile True
-
-    On Error GoTo GestionErreur
-
-    Set wsJournal = ThisWorkbook.Worksheets("Journal actions")
-    Set loJournal = wsJournal.ListObjects("JournalActions")
-
-    If loJournal.DataBodyRange Is Nothing Then
-        CalculerTempsJeuEffectif = 0
-        Exit Function
-    End If
-
-    ColTemps = _
-        loJournal.ListColumns("Temps vid_o").Index
-
-    ColMiTemps = _
-        loJournal.ListColumns("Mi-temps").Index
-
-    ColAction = _
-        loJournal.ListColumns("Action").Index
-
-    ActionArret = _
-        CStr(ThisWorkbook.Names("ACT_ARRET_DU_JEU") _
-            .RefersToRange.Value)
-
-    ActionRepriseTouche = _
-        CStr(ThisWorkbook.Names("ACT_REPRISE_TOUCHE") _
-            .RefersToRange.Value)
-
-    ActionRepriseMelee = _
-        CStr(ThisWorkbook.Names("ACT_REPRISE_MELEE") _
-            .RefersToRange.Value)
-
-    ActionRepriseRenvoi = _
-        CStr(ThisWorkbook.Names("ACT_REPRISE_RENVOI") _
-            .RefersToRange.Value)
-
-    ActionRepriseMain = _
-        CStr(ThisWorkbook.Names("ACT_REPRISE_A_LA_MAIN") _
-            .RefersToRange.Value)
-
-    ' Les actions les plus r_centes sont ajout_es en haut
-    ' du journal. On parcourt donc le tableau de bas en haut
-    ' afin de traiter les _v_nements dans l'ordre chronologique.
-    For i = loJournal.ListRows.Count To 1 Step -1
-
-        MiTempsLigne = _
-            Trim(CStr( _
-                loJournal.DataBodyRange.Cells( _
-                    i, _
-                    ColMiTemps _
-                ).Value _
-            ))
-
-        If StrComp( _
-            MiTempsLigne, _
-            MiTempsRecherchee, _
-            vbTextCompare _
-        ) = 0 Then
-
-            ActionTexte = _
-                Trim(CStr( _
-                    loJournal.DataBodyRange.Cells( _
-                        i, _
-                        ColAction _
-                    ).Value _
-                ))
-
-            If IsNumeric( _
-                loJournal.DataBodyRange.Cells( _
-                    i, _
-                    ColTemps _
-                ).Value _
-            ) Then
-
-                TempsAction = _
-                    CDbl( _
-                        loJournal.DataBodyRange.Cells( _
-                            i, _
-                            ColTemps _
-                        ).Value _
-                    )
-
-                ' Le premier renvoi d_marre la mi-temps.
-                If Not JeuDemarre Then
-
-                    If StrComp( _
-                        ActionTexte, _
-                        ActionRepriseRenvoi, _
-                        vbTextCompare _
-                    ) = 0 Then
-
-                        JeuDemarre = True
-                        JeuEnCours = True
-                        DebutPeriodeJeu = TempsAction
-
-                    End If
-
-                ElseIf JeuEnCours Then
-
-                    ' Un arr_t clªt la p_riode de jeu en cours.
-                    If StrComp( _
-                        ActionTexte, _
-                        ActionArret, _
-                        vbTextCompare _
-                    ) = 0 Then
-
-                        If TempsAction >= DebutPeriodeJeu Then
-
-                            TempsJeuCumule = _
-                                TempsJeuCumule + _
-                                TempsAction - DebutPeriodeJeu
-
-                        End If
-
-                        JeuEnCours = False
-
-                    End If
-
-                Else
-
-                    ' Le jeu _tait arr_t_ :
-                    ' une action de reprise lance une nouvelle p_riode.
-                    If EstActionReprise( _
-                        ActionTexte, _
-                        ActionRepriseTouche, _
-                        ActionRepriseMelee, _
-                        ActionRepriseRenvoi, _
-                        ActionRepriseMain _
-                    ) Then
-
-                        DebutPeriodeJeu = TempsAction
-                        JeuEnCours = True
-
-                    End If
-
-                End If
-
-            End If
-
-        End If
-
-    Next i
-
-    CalculerTempsJeuEffectif = TempsJeuCumule
-    Exit Function
-
-GestionErreur:
-
-    CalculerTempsJeuEffectif = 0
-
-End Function
-
-
-Private Function EstActionReprise( _
-    ByVal ActionTexte As String, _
-    ByVal ActionTouche As String, _
-    ByVal ActionMelee As String, _
-    ByVal ActionRenvoi As String, _
-    ByVal ActionMain As String _
-) As Boolean
-
-    EstActionReprise = _
-        StrComp( _
-            ActionTexte, _
-            ActionTouche, _
-            vbTextCompare _
-        ) = 0 _
-        Or _
-        StrComp( _
-            ActionTexte, _
-            ActionMelee, _
-            vbTextCompare _
-        ) = 0 _
-        Or _
-        StrComp( _
-            ActionTexte, _
-            ActionRenvoi, _
-            vbTextCompare _
-        ) = 0 _
-        Or _
-        StrComp( _
-            ActionTexte, _
-            ActionMain, _
-            vbTextCompare _
-        ) = 0
-
-End Function
-
 Public Sub RecalculerTempsJeuEffectif()
 
     Dim TempsMT1 As Double
     Dim TempsMT2 As Double
 
-    On Error GoTo 0
+    Dim EtatAffichage As Boolean
+    Dim EtatCalcul As Long
+
+    ' Les trois cellules de resultat alimentent les 1600
+    ' NB.SI.ENS de la feuille Stats match. Sans cette
+    ' suspension, Excel recalcule la feuille entiere une
+    ' deuxieme fois et repeint l'ecran : c'est le temps
+    ' mort et le clignotement blanc ressentis a chaque
+    ' arret du jeu.
+    EtatAffichage = Application.ScreenUpdating
+    EtatCalcul = Application.Calculation
+
+    On Error GoTo GestionErreur
+
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
 
     TempsMT1 = CalculerTempsJeuEffectifMiTemps("MT1")
     TempsMT2 = CalculerTempsJeuEffectifMiTemps("MT2")
@@ -242,9 +39,15 @@ Public Sub RecalculerTempsJeuEffectif()
 
     End With
 
+    Application.Calculation = EtatCalcul
+    Application.ScreenUpdating = EtatAffichage
+
     Exit Sub
 
 GestionErreur:
+
+    Application.Calculation = EtatCalcul
+    Application.ScreenUpdating = EtatAffichage
 
     MsgBox _
         "Le temps de jeu effectif n'a pas pu etre recalcule." & _
@@ -269,6 +72,9 @@ Private Function CalculerTempsJeuEffectifMiTemps( _
 
     Dim i As Long
     Dim NbEvenements As Long
+    Dim NbLignes As Long
+
+    Dim Donnees As Variant
 
     Dim TempsEvenements() As Double
     Dim ActionsEvenements() As String
@@ -329,17 +135,31 @@ Private Function CalculerTempsJeuEffectifMiTemps( _
 
     ' =====================================================
     ' 1. RECUPERATION DES EVENEMENTS DE LA MI-TEMPS
+    '
+    ' Le journal est lu d'un seul coup dans un tableau en
+    ' memoire. Lire cellule par cellule coutait quatre
+    ' allers-retours vers Excel par ligne, soit plus d'un
+    ' millier a chaque arret du jeu : c'est ce qui se
+    ' voyait a l'ecran.
+    '
+    ' Les trois tableaux sont dimensionnes une fois pour
+    ' toutes, le journal entier servant de borne : un
+    ' ReDim Preserve par evenement recopiait tout le
+    ' tableau a chaque ajout.
     ' =====================================================
 
-    For i = 1 To loJournal.ListRows.Count
+    NbLignes = loJournal.ListRows.Count
+
+    Donnees = loJournal.DataBodyRange.Value
+
+    ReDim TempsEvenements(1 To NbLignes)
+    ReDim ActionsEvenements(1 To NbLignes)
+    ReDim LignesSource(1 To NbLignes)
+
+    For i = 1 To NbLignes
 
         MiTempsLigne = _
-            Trim(CStr( _
-                loJournal.DataBodyRange.Cells( _
-                    i, _
-                    ColMiTemps _
-                ).Value _
-            ))
+            Trim(CStr(Donnees(i, ColMiTemps)))
 
         If StrComp( _
             MiTempsLigne, _
@@ -347,41 +167,17 @@ Private Function CalculerTempsJeuEffectifMiTemps( _
             vbTextCompare _
         ) = 0 Then
 
-            If IsNumeric( _
-                loJournal.DataBodyRange.Cells( _
-                    i, _
-                    ColTemps _
-                ).Value _
-            ) Then
+            If IsNumeric(Donnees(i, ColTemps)) Then
 
                 ActionTexte = _
-                    Trim(CStr( _
-                        loJournal.DataBodyRange.Cells( _
-                            i, _
-                            ColAction _
-                        ).Value _
-                    ))
+                    Trim(CStr(Donnees(i, ColAction)))
 
                 If ActionTexte <> "" Then
 
                     NbEvenements = NbEvenements + 1
 
-                    ReDim Preserve _
-                        TempsEvenements(1 To NbEvenements)
-
-                    ReDim Preserve _
-                        ActionsEvenements(1 To NbEvenements)
-
-                    ReDim Preserve _
-                        LignesSource(1 To NbEvenements)
-
                     TempsEvenements(NbEvenements) = _
-                        CDbl( _
-                            loJournal.DataBodyRange.Cells( _
-                                i, _
-                                ColTemps _
-                            ).Value _
-                        )
+                        CDbl(Donnees(i, ColTemps))
 
                     ActionsEvenements(NbEvenements) = _
                         ActionTexte
