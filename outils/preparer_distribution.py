@@ -50,6 +50,15 @@ TABLEAUX_A_CONTROLER = (
     ("LstEquipesPoule", None, "les equipes de la poule"),
     ("JournalActions", None, "le journal d'actions"),
     ("COMPO", "Nom du joueur", "la composition"),
+    ("DetailTouches", None, "le detail des touches"),
+    ("DetailMelees", None, "le detail des melees"),
+    # Recapitulatif de saison. Un tableau absent du classeur
+    # est ignore : le meme controle sert donc aux deux
+    # fichiers distribues. RECAP_STATS reste en place, c'est
+    # le parametrage des statistiques, commun a tous.
+    ("RECAP_MATCHS", None, "les matchs integres"),
+    ("RECAP_JOURNAL", None, "le journal de la saison"),
+    ("RECAP_COMPOSITIONS", None, "les compositions"),
 )
 
 # Elements recopies tels quels, dans l'ordre d'affichage.

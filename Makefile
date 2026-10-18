@@ -25,6 +25,14 @@ ELEMENTS_REPORT = VeoVideoControl \
 # le controle la declare vierge. Absente, main garde son classeur.
 VIERGE = dist/Createur de match - vierge.xlsm
 
+# Meme principe pour le recapitulatif de saison, vide par
+# ReinitialiserRecapPourDistribution. Il se range dans Matchs, ou il
+# lit les fichiers de match poses a cote de lui : le .gitignore de
+# main l'y autorise nommement.
+VIERGE_RECAP = dist/Recapitulatif saison - vierge.xlsm
+
+RECAP_MAIN = Matchs/Recapitulatif saison.xlsm
+
 MESSAGE = chore: report des évolutions depuis club
 
 
@@ -74,6 +82,10 @@ report: ## reporte les evolutions de club vers main
 		$(PYTHON) outils/preparer_distribution.py --controler \
 			--classeur "$(VIERGE)"; \
 	fi; \
+	if [ -f "$(VIERGE_RECAP)" ]; then \
+		$(PYTHON) outils/preparer_distribution.py --controler \
+			--classeur "$(VIERGE_RECAP)"; \
+	fi; \
 	git checkout main; \
 	git checkout club -- $(ELEMENTS_REPORT); \
 	if [ -f "$(VIERGE)" ]; then \
@@ -82,6 +94,13 @@ report: ## reporte les evolutions de club vers main
 	else \
 		echo "Pas de classeur vierge dans dist/ :"; \
 		echo "  main conserve le classeur qu'il a deja."; \
+	fi; \
+	if [ -f "$(VIERGE_RECAP)" ]; then \
+		cp "$(VIERGE_RECAP)" "$(RECAP_MAIN)"; \
+		git add "$(RECAP_MAIN)"; \
+	else \
+		echo "Pas de recapitulatif vierge dans dist/ :"; \
+		echo "  main conserve celui qu'il a deja."; \
 	fi; \
 	if git diff --cached --quiet; then \
 		echo "main est deja a jour."; \
