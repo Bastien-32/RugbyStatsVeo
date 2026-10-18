@@ -204,6 +204,79 @@ def compter_cellules_remplies(archive, feuille, colonne1, colonne2, ligne1, lign
     return total
 
 
+def retirer_chemin_absolu(chemin_classeur):
+    """Retire du classeur le chemin du disque qu'Excel y inscrit.
+
+    Excel note dans workbook.xml le dossier d'ou le fichier a ete
+    enregistre. Il ne sert qu'a resoudre des liens vers d'autres
+    classeurs - ceux-ci n'en ont aucun - mais il voyage avec le
+    fichier remis aux utilisateurs et devoile l'arborescence du
+    Mac, nom de compte compris.
+
+    La macro de reinitialisation enregistre sous un nouveau nom :
+    Excel le reecrit donc a chaque distribution, et il faut le
+    retirer a chaque fois.
+
+    Renvoie True si le classeur a ete modifie.
+    """
+
+    with zipfile.ZipFile(chemin_classeur) as archive:
+
+        membres = archive.infolist()
+
+        contenus = {
+            membre.filename: archive.read(membre.filename)
+            for membre in membres
+        }
+
+    workbook = contenus.get("xl/workbook.xml")
+
+    if workbook is None:
+        return False
+
+    texte = workbook.decode("utf-8")
+
+    # Le bloc AlternateContent ne porte que ce chemin : il part
+    # en entier, sans quoi Excel verrait un choix vide.
+    nettoye = re.sub(
+        r"<mc:AlternateContent\b(?:(?!</mc:AlternateContent>).)*?"
+        r"<x15ac:absPath\b.*?</mc:AlternateContent>",
+        "",
+        texte,
+        flags=re.S,
+    )
+
+    if nettoye == texte:
+        return False
+
+    contenus["xl/workbook.xml"] = nettoye.encode("utf-8")
+
+    temporaire = chemin_classeur + ".nettoyage"
+
+    # Chaque membre est recopie avec sa compression et ses
+    # attributs : le projet VBA ne survivrait pas a une archive
+    # reconstruite autrement.
+    with zipfile.ZipFile(temporaire, "w", zipfile.ZIP_DEFLATED) as sortie:
+
+        for membre in membres:
+
+            info = zipfile.ZipInfo(
+                membre.filename,
+                date_time=membre.date_time,
+            )
+
+            info.compress_type = membre.compress_type
+            info.external_attr = membre.external_attr
+            info.internal_attr = membre.internal_attr
+            info.create_system = membre.create_system
+
+            sortie.writestr(info, contenus[membre.filename])
+
+    os.replace(temporaire, chemin_classeur)
+
+    return True
+
+
 def donnees_restantes(chemin_classeur):
     """Renvoie la liste des donnees de club encore presentes."""
 
@@ -387,6 +460,7 @@ def preparer(
     classeur=None,
     forcer=False,
     controler_seulement=False,
+    nettoyer_chemin=False,
 ):
 
     racine = racine_projet()
@@ -395,6 +469,17 @@ def preparer(
 
     if not os.path.isfile(chemin_classeur):
         raise ErreurPreparation(f"Classeur introuvable : {chemin_classeur}")
+
+    if nettoyer_chemin:
+
+        nom = os.path.basename(chemin_classeur)
+
+        if retirer_chemin_absolu(chemin_classeur):
+            print(f"{nom} : chemin du disque retire.")
+        else:
+            print(f"{nom} : aucun chemin du disque a retirer.")
+
+        return 0
 
     restes = donnees_restantes(chemin_classeur)
 
@@ -493,6 +578,16 @@ def analyser_arguments(arguments):
     )
 
     analyseur.add_argument(
+        "--nettoyer-chemin",
+        action="store_true",
+        dest="nettoyer_chemin",
+        help=(
+            "retire du classeur le chemin du disque inscrit par "
+            "Excel, sans fabriquer le paquet"
+        ),
+    )
+
+    analyseur.add_argument(
         "--forcer",
         action="store_true",
         help="prepare le paquet malgre des donnees de club restantes",
@@ -520,6 +615,7 @@ def main(arguments=None):
             classeur=options.classeur,
             forcer=options.forcer,
             controler_seulement=options.controler_seulement,
+            nettoyer_chemin=options.nettoyer_chemin,
         )
 
     except ErreurPreparation as erreur:

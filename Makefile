@@ -81,9 +81,13 @@ report: ## reporte les evolutions de club vers main
 	if [ -f "$(VIERGE)" ]; then \
 		$(PYTHON) outils/preparer_distribution.py --controler \
 			--classeur "$(VIERGE)"; \
+		$(PYTHON) outils/preparer_distribution.py --nettoyer-chemin \
+			--classeur "$(VIERGE)"; \
 	fi; \
 	if [ -f "$(VIERGE_RECAP)" ]; then \
 		$(PYTHON) outils/preparer_distribution.py --controler \
+			--classeur "$(VIERGE_RECAP)"; \
+		$(PYTHON) outils/preparer_distribution.py --nettoyer-chemin \
 			--classeur "$(VIERGE_RECAP)"; \
 	fi; \
 	git checkout main; \
