@@ -1117,6 +1117,45 @@ Private Sub AjouterMatchEnBase( _
         1, _
         NB_COLONNES_MATCHS
 
+    FormaterColonnesJournal
+
+End Sub
+
+
+' =========================================================
+' Les lignes sont posees par Tableau.Resize, qui etend la
+' plage sur des cellules vierges de la feuille : elles
+' arrivent au format Standard, contrairement a un
+' ListRows.Add qui recopierait la ligne du dessus. Un
+' format pose a la main sur la colonne ne survit donc pas
+' a l'import suivant, et il faut le remettre ici.
+'
+' Les crochets de "[m]:ss" empechent les minutes de
+' reboucler a soixante : une mi-temps depasse l'heure, et
+' "mm:ss" afficherait 96 minutes comme 36:12.
+' =========================================================
+Private Sub FormaterColonnesJournal()
+
+    Dim Tableau As ListObject
+
+    On Error Resume Next
+
+    Set Tableau = TableauRecap(FEUILLE_JOURNAL, TBL_JOURNAL)
+
+    If Tableau Is Nothing Then
+        Exit Sub
+    End If
+
+    If Tableau.DataBodyRange Is Nothing Then
+        Exit Sub
+    End If
+
+    Tableau.ListColumns(JRN_TEMPS).DataBodyRange _
+        .NumberFormat = "[m]:ss"
+
+    Tableau.ListColumns(JRN_DATE).DataBodyRange _
+        .NumberFormat = "dd/mm/yyyy"
+
 End Sub
 
 

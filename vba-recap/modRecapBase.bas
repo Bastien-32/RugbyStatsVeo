@@ -95,11 +95,18 @@ Public Const JRN_ID As Long = 1
 
 Public Const JRN_FICHIER As Long = 2
 
+' La date du match et le temps video sont des nombres :
+' sans format, la colonne affiche 46014 et 0,0632 au lieu
+' d'une date et d'un chrono. Voir FormaterColonnesJournal.
+Public Const JRN_DATE As Long = 4
+
 Public Const JRN_JOUEUR As Long = 12
 
 Public Const JRN_ACTION As Long = 14
 
 Public Const JRN_MOTIF As Long = 15
+
+Public Const JRN_TEMPS As Long = 17
 
 Public Const NB_COLONNES_JOURNAL As Long = 17
 

@@ -39,14 +39,25 @@ Public Sub ConnecterVideo()
 
         DemarrerVeoVideoControl
 
+        ' Le moteur met quelques secondes a ouvrir son port.
+        ' Un seul essai le declarait indisponible et la
+        ' connexion etait abandonnee pour de bon : plus rien
+        ' ne repilotait la video jusqu'au clic sur le bouton.
+        AttendreMoteurVideo
+
         If Not MoteurVideoDisponible() Then
             AfficherEtatMoteurIndisponible
             GoTo Fin
         End If
 
-        AttendreLecteurNavigateur
-
     End If
+
+    ' Quand aucune page Veo ne s'est annoncee, le moteur
+    ' lance VLC et se declare connecte. Demander la
+    ' connexion trop tot ne rate donc pas : cela demarre le
+    ' mauvais lecteur. On laisse d'abord a l'extension
+    ' Chrome le temps de se presenter.
+    AttendreLecteurNavigateur
 
     ReponseJSON = AppelerConnexionVideo()
 
@@ -278,6 +289,31 @@ End Sub
 ' intervalle retient VLC alors qu'une video Veo est
 ' ouverte. On laisse donc au navigateur le temps de se
 ' presenter, et on repart des qu'il l'a fait.
+' Le moteur vient d'etre lance : il lui faut un instant
+' avant de repondre sur son port. On le sollicite jusqu'a
+' dix secondes plutot que de conclure a l'echec au premier
+' essai manque.
+Private Sub AttendreMoteurVideo()
+
+    Dim HeureDebut As Double
+
+    On Error GoTo Sortie
+
+    HeureDebut = Timer
+
+    Do
+
+        If MoteurVideoDisponible() Then Exit Sub
+
+        DoEvents
+
+    Loop While Timer >= HeureDebut And Timer - HeureDebut < 10
+
+Sortie:
+
+End Sub
+
+
 Private Sub AttendreLecteurNavigateur()
 
     Dim HeureDebut As Double
