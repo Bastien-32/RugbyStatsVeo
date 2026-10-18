@@ -10,8 +10,10 @@
 
 ### Prérequis
 
-Avant la première utilisation, installer les logiciels suivants.
+Avant la première utilisation, vérifier la machine et installer les logiciels suivants.
 
+- **Sur Mac : un processeur Apple Silicon** (M1 ou plus récent). Le moteur n'existe pas pour les Mac à processeur Intel, sur lesquels l'application refusera de démarrer.
+- **Sur Windows : une version 64 bits.**
 - Microsoft Excel 2019, 2021 ou Microsoft 365 avec prise en charge des macros VBA.
 - VLC media player (dernière version stable), à télécharger : voir **logiciels à installer/LIENS.md**.
 - Google Chrome (uniquement pour utiliser les vidéos Veo).
