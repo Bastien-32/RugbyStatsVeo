@@ -30,6 +30,10 @@ __pycache__/
 Matchs/*
 # Marqueur garantissant que le dossier existe toujours.
 !Matchs/.gitkeep
+# Le récapitulatif de saison se distribue, vidé de toute donnée par
+# ReinitialiserRecapPourDistribution. Il vit ici parce qu'il lit les
+# fichiers de match posés à côté de lui.
+!Matchs/Recapitulatif saison.xlsm
 
 # Les installeurs des logiciels tiers ne sont pas versionnes :
 # le dossier "logiciels à installer" ne porte que des liens.
