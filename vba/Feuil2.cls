@@ -36,7 +36,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                 Is Nothing Then
 
                 ReposerMFCTouchesMelees
-                AjusterColonneObservations
+                AjusterColonnesTexte
                 Exit For
 
             End If

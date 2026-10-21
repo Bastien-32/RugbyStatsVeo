@@ -433,6 +433,8 @@ Sortie:
     ' plus tot : elles sont reposees sur le tableau tel
     ' qu'il est maintenant.
     ReposerMFCTouchesMelees
+    ReposerValidationsTouchesMelees
+    ReparerMiseEnPageTouchesMelees
 
 End Sub
 
@@ -502,6 +504,8 @@ Sortie:
     ' plus tot : elles sont reposees sur le tableau tel
     ' qu'il est maintenant.
     ReposerMFCTouchesMelees
+    ReposerValidationsTouchesMelees
+    ReparerMiseEnPageTouchesMelees
 
 End Sub
 
@@ -553,18 +557,18 @@ Private Sub InsererLigneSousTableau(ByVal lo As ListObject)
 
     Dim ws As Worksheet
     Dim Ligne As Long
-    Dim PREMIERE As Long
+    Dim Premiere As Long
     Dim Derniere As Long
 
     Set ws = lo.Parent
 
     Ligne = lo.Range.Row + lo.Range.Rows.Count
 
-    PREMIERE = lo.Range.Column
-    Derniere = PREMIERE + lo.ListColumns.Count - 1
+    Premiere = lo.Range.Column
+    Derniere = Premiere + lo.ListColumns.Count - 1
 
     ws.Range( _
-        ws.Cells(Ligne, PREMIERE), _
+        ws.Cells(Ligne, Premiere), _
         ws.Cells(Ligne, Derniere) _
     ).Insert Shift:=xlDown
 

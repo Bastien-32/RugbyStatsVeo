@@ -1157,6 +1157,29 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         End If
 
         ' =====================================================
+        ' REPRISE SUR TOUCHE
+        '
+        ' Qui jouera la touche ne se deduit d'aucune regle :
+        ' un 50:22 la rend a l'equipe qui a tape, une touche
+        ' rapide peut revenir a celle qui vient de la
+        ' conceder. La popup pose la question, puis ecrit
+        ' l'action elle-meme.
+        ' =====================================================
+
+        If Not Intersect( _
+            Target, _
+            Range("BTN_REPRISE_TOUCHE") _
+        ) Is Nothing Then
+
+            FermerActionEnAttente
+
+            OuvrirPopupPossession ActionTexte, TempsVideo
+
+            Exit Sub
+
+        End If
+
+        ' =====================================================
         ' AUTRES ACTIONS IMMEDIATES
         ' =====================================================
 

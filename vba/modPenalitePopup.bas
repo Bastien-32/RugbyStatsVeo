@@ -1453,7 +1453,7 @@ End Function
 Public Sub ActualiserListeMotifsJournal()
 
     Const Colonne As Long = 20          ' Parametres!T
-    Const PREMIERE As Long = 2
+    Const Premiere As Long = 2
 
     Dim ws As Worksheet
     Dim Vues As String
@@ -1476,10 +1476,10 @@ Public Sub ActualiserListeMotifsJournal()
     ' La colonne est videe large : une liste raccourcie ne
     ' doit pas laisser trainer ses anciennes valeurs.
     ws.Range( _
-        ws.Cells(PREMIERE, Colonne), _
+        ws.Cells(Premiere, Colonne), _
         ws.Cells(200, Colonne)).ClearContents
 
-    Ligne = PREMIERE
+    Ligne = Premiere
 
     For Source = 1 To 2
 
@@ -1512,13 +1512,13 @@ Public Sub ActualiserListeMotifsJournal()
 
     Next Source
 
-    If Ligne > PREMIERE Then
+    If Ligne > Premiere Then
 
         ThisWorkbook.Names.Add _
             Name:="LISTE_MOTIFS_PENALITE", _
             RefersTo:="=" & ws.Name & "!" & _
                 ws.Range( _
-                    ws.Cells(PREMIERE, Colonne), _
+                    ws.Cells(Premiere, Colonne), _
                     ws.Cells(Ligne - 1, Colonne)) _
                     .Address(True, True)
 

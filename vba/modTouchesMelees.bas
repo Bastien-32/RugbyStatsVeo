@@ -277,19 +277,25 @@ Private Function PlageListe( _
     ByVal Decalage As Long) As Range
 
     Dim Colonne As Long
+    Dim Premiere As Long
     Dim Derniere As Long
 
     Colonne = COL_LISTES + Decalage
 
+    ' La liste se repere sur son titre, pas sur une ligne
+    ' figee : supprimer des lignes au-dessus la ferait
+    ' remonter, et la plage pointerait alors du vide.
+    Premiere = ws.Cells(1, Colonne).End(xlDown).Row + 1
+
     Derniere = ws.Cells(ws.Rows.Count, Colonne) _
         .End(xlUp).Row
 
-    If Derniere < LIGNE_LISTES + 1 Then
-        Derniere = LIGNE_LISTES + 1
+    If Derniere < Premiere Then
+        Derniere = Premiere
     End If
 
     Set PlageListe = ws.Range( _
-        ws.Cells(LIGNE_LISTES + 1, Colonne), _
+        ws.Cells(Premiere, Colonne), _
         ws.Cells(Derniere, Colonne))
 
 End Function
@@ -952,6 +958,26 @@ Private Sub EcrireComptages( _
 
 End Sub
 
+' Les validations ne suivent pas les mouvements du
+' tableau : une ligne ajoutee, un recalage de la mise en
+' page, et elles restent sur les cellules d'avant. Elles
+' sont donc reposees apres chaque ecriture, comme les
+' mises en forme conditionnelles juste a cote.
+Public Sub ReposerValidationsTouchesMelees()
+
+    Dim ws As Worksheet
+
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(FEUILLE_TM)
+    On Error GoTo 0
+
+    If ws Is Nothing Then
+        Exit Sub
+    End If
+
+    ReposerValidations ws
+
+End Sub
 
 ' ---------------------------------------------------------
 ' Les listes deroulantes de la copie
@@ -1387,7 +1413,7 @@ Public Sub ReparerMiseEnPageTouchesMelees()
     Set ws = ThisWorkbook.Worksheets(FEUILLE_TM)
 
     NormaliserEcartEntreBlocs ws
-    AjusterColonneObservations
+    AjusterColonnesTexte
 
 End Sub
 
@@ -1427,26 +1453,35 @@ Private Sub NormaliserEcartEntreBlocs(ByVal ws As Worksheet)
 
     If LigneReelle > LigneVoulue Then
 
-        ' La ligne entiere est regardee, et la ligne
-        ' entiere est supprimee : les listes deroulantes
-        ' vivent desormais ligne 200 et plus, loin des deux
-        ' blocs. Rien ne traine plus a droite de ce que
-        ' l'on voit.
+        ' Seules les colonnes des tableaux sont regardees,
+        ' et seules elles sont decalees. Supprimer les
+        ' lignes entieres ferait remonter les listes
+        ' deroulantes qui vivent a droite, et leurs plages
+        ' pointeraient alors du vide.
         For i = LigneVoulue To LigneReelle - 1
 
-            If Application.CountA(ws.Rows(i)) > 0 Then
+            If Application.CountA( _
+                ws.Range( _
+                    ws.Cells(i, 1), _
+                    ws.Cells(i, 10))) > 0 Then
+
                 Exit Sub
+
             End If
 
         Next i
 
-        ws.Rows(LigneVoulue & ":" & _
-            LigneReelle - 1).Delete
+        ws.Range( _
+            ws.Cells(LigneVoulue, 1), _
+            ws.Cells(LigneReelle - 1, 10)) _
+            .Delete Shift:=xlUp
 
     Else
 
-        ws.Rows(LigneReelle & ":" & _
-            LigneVoulue - 1).Insert
+        ws.Range( _
+            ws.Cells(LigneReelle, 1), _
+            ws.Cells(LigneVoulue - 1, 10)) _
+            .Insert Shift:=xlDown
 
     End If
 
@@ -1472,19 +1507,18 @@ End Sub
 
 
 ' =========================================================
-' LARGEUR DE LA COLONNE DES OBSERVATIONS
+' LARGEUR DES COLONNES A CONTENU VARIABLE
 '
-' Elle etait figee a trente : une observation un peu
-' longue debordait du tableau et demandait un reglage a la
-' main. Elle suit maintenant son contenu, entre un
-' plancher - pour que la colonne reste lisible quand elle
-' est vide - et un plafond, pour que le tableau tienne a
-' l'ecran.
+' Deux colonnes ne tiennent pas dans une largeur fixe :
+' les observations, longues et inegales, et le nom du
+' sauteur, qui depend de l'effectif.
+'
+' Chacune suit son contenu, sans plafond : une
+' observation doit se lire en entier, quitte a faire
+' defiler. Le plancher, lui, evite une colonne etriquee
+' quand elle est encore vide.
 ' =========================================================
-Public Sub AjusterColonneObservations()
-
-    Const LARGEUR_MINI As Double = 30
-    Const LARGEUR_MAXI As Double = 90
+Public Sub AjusterColonnesTexte()
 
     Dim ws As Worksheet
 
@@ -1492,28 +1526,69 @@ Public Sub AjusterColonneObservations()
 
     Set ws = ThisWorkbook.Worksheets(FEUILLE_TM)
 
-    ws.Columns("J").AutoFit
-
-    If ws.Columns("J").ColumnWidth < LARGEUR_MINI Then
-
-        ws.Columns("J").ColumnWidth = LARGEUR_MINI
-
-    ElseIf ws.Columns("J").ColumnWidth > LARGEUR_MAXI Then
-
-        ws.Columns("J").ColumnWidth = LARGEUR_MAXI
-
-    End If
+    AjusterUneColonne ws, "E", 14
+    AjusterUneColonne ws, "J", 30
 
     Exit Sub
 
 GestionErreur:
 
     MsgBox _
-        "La colonne des observations n'a pas pu etre " & _
-        "ajustee." & vbCrLf & vbCrLf & _
+        "Les colonnes n'ont pas pu etre ajustees." & _
+        vbCrLf & vbCrLf & _
         "Erreur " & Err.Number & " : " & Err.Description, _
         vbExclamation, _
         "Touches et melees"
+
+End Sub
+
+
+Private Sub AjusterUneColonne( _
+    ByVal ws As Worksheet, _
+    ByVal Colonne As String, _
+    ByVal LargeurMini As Double)
+
+    ws.Columns(Colonne).AutoFit
+
+    If ws.Columns(Colonne).ColumnWidth < LargeurMini Then
+        ws.Columns(Colonne).ColumnWidth = LargeurMini
+    End If
+
+End Sub
+
+
+' =========================================================
+' FOND BLANC
+'
+' Hors des tableaux, la feuille est unie : le quadrillage
+' d'Excel y ferait desordre.
+'
+' Les deux tableaux retrouvent ensuite un remplissage
+' vide : le fond d'une cellule passe par-dessus le style
+' de tableau, et les peindre en blanc effacerait leurs
+' couleurs. Les recapitulatifs, eux, sont repeints par
+' leur propre procedure.
+' =========================================================
+Private Sub PeindreFondBlanc(ByVal ws As Worksheet)
+
+    Dim Nom As Variant
+
+    On Error GoTo Sortie
+
+    ws.Range("A1:T300").Interior.Color = RGB(255, 255, 255)
+
+    For Each Nom In Array(TAB_TOUCHES, TAB_MELEES)
+
+        On Error Resume Next
+        ws.ListObjects(CStr(Nom)).Range _
+            .Interior.Pattern = xlNone
+        On Error GoTo Sortie
+
+    Next Nom
+
+    ConstruireRecapitulatifs
+
+Sortie:
 
 End Sub
 
@@ -1538,14 +1613,26 @@ Private Sub MettreEnFormeFeuille(ByVal ws As Worksheet)
 
     ws.Columns("A:J").ColumnWidth = 12
 
-    AjusterColonneObservations
+    PeindreFondBlanc ws
 
-    ' Les deux tableaux commencent ligne 3 : les volets
-    ' gardent titres et en-tetes visibles au defilement.
+    AjusterColonnesTexte
+
     ws.Activate
-    ws.Range("A3").Select
+
+    ' Pas de volets figes : ils emportaient des colonnes
+    ' selon la cellule selectionnee, et l'on ne pouvait
+    ' plus revenir au debut de la feuille.
     ActiveWindow.FreezePanes = False
-    ActiveWindow.FreezePanes = True
+    ActiveWindow.ScrollRow = 1
+    ActiveWindow.ScrollColumn = 1
+
+    ' Hors des tableaux, la feuille est unie. Le fond
+    ' blanc y pourvoit, mais les recapitulatifs retirent
+    ' le remplissage autour d'eux : sans quadrillage, ces
+    ' cellules restent invisibles malgre tout.
+    ActiveWindow.DisplayGridlines = False
+
+    ws.Range("A1").Select
 
 End Sub
 

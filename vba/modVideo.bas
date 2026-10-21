@@ -139,6 +139,9 @@ Public Sub ActiverRaccourcisVideo()
     Application.OnKey "{DOWN}", "ActionSuivanteVideo"
     Application.OnKey "r", "BasculerRewindVideo"
     Application.OnKey "R", "BasculerRewindVideo"
+    Application.OnKey "~"
+    Application.OnKey "{ENTER}"
+    Application.OnKey "{ESC}"
 
     
 End Sub
@@ -153,6 +156,9 @@ Public Sub DesactiverRaccourcisVideo()
     Application.OnKey "{DOWN}"
     Application.OnKey "r"
     Application.OnKey "R"
+    Application.OnKey "~"
+    Application.OnKey "{ENTER}"
+    Application.OnKey "{ESC}"
 
 End Sub
 
