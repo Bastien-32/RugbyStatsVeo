@@ -173,6 +173,8 @@ Public Sub OuvrirPopupTouche( _
     AfficherPopup FEUILLE_POPUP_TO, _
         "POPUP_TO_CONTEXTE", "POPUP_TO_CHAMPS"
 
+    OrienterPopupTouche
+    
     PoserListeSauteur
 
 End Sub
@@ -193,6 +195,8 @@ Public Sub OuvrirPopupMelee( _
 
     AfficherPopup FEUILLE_POPUP_ME, _
         "POPUP_ME_CONTEXTE", "POPUP_ME_CHAMPS"
+        
+    OrienterPopupMelee
 
 End Sub
 

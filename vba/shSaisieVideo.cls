@@ -248,22 +248,31 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
         ReleaseButton
         Exit Sub
     End If
-
+    
+    If Not Intersect(Target, Range("BTN_SENS_JEU")) Is Nothing Then
+        BasculerSensJeu
+        ReleaseButton
+        Exit Sub
+    End If
+    
     If Not Intersect(Target, Range("BTN_MT1")) Is Nothing Then
         ResetHalfButtons
         SetActiveButton Range("BTN_MT1")
         CurrentHalf = "MT1"
+        AppliquerSensJeuMiTemps "MT1"
         ReleaseButton
         Exit Sub
     End If
-
+    
     If Not Intersect(Target, Range("BTN_MT2")) Is Nothing Then
         ResetHalfButtons
         SetActiveButton Range("BTN_MT2")
         CurrentHalf = "MT2"
+        AppliquerSensJeuMiTemps "MT2"
         ReleaseButton
         Exit Sub
     End If
+
 
     If Not Intersect(Target, Range("BTN_CHRONO_PLAY_PAUSE")) Is Nothing Then
         PlayPauseChronoVideo

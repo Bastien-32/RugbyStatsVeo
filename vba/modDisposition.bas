@@ -143,6 +143,11 @@ Private Sub ConstruireDisposition(ByVal Mode As String)
     ' Les quinze presents, et le titre du match.
     RafraichirPalettePresents
 
+    ' La disposition vient de reecrire le bouton avec son
+    ' libelle de table : la fleche y reprend sa taille et
+    ' son sens.
+    AfficherSensJeu
+
     ' Select exige une feuille active : la bascule peut
     ' etre lancee depuis un autre onglet.
     ws.Activate
@@ -538,6 +543,11 @@ Private Function StyleDe(ByVal Nom As String) As String
     Select Case Nom
 
         Case "BTN_ADV"
+            StyleDe = "STYLE_BTN_POSSESSION"
+
+        ' Un indicateur, pas une action : il porte les
+        ' memes couleurs que les boutons de possession.
+        Case "BTN_SENS_JEU"
             StyleDe = "STYLE_BTN_POSSESSION"
 
         Case "BTN_ARRACHAGE"
@@ -1091,7 +1101,7 @@ Private Function ComposantsPleinEcran() As Variant
         "BTN_PTS_TRANSFO|BH4||" & "transfo" & vbTab & _
         "BTN_PTS_PENALITE|BJ4||" & "penalit" & ChrW(233) & vbTab & _
         "BTN_PTS_DROP|BL4||" & "drop" & vbTab & _
-        "BTN_REMPLACEMENT|BO7|BO7:BQ9|" & "Remplacement" & vbTab & _
+        "BTN_REMPLACEMENT|BO7|BO7:BR9|" & "Remplacement" & vbTab & _
         "LBL_POSSESSION|C4|C4:J4|" & "Possession en faveur de : " & vbTab & _
         "BTN_NOUS|L4|L4:R4|" & "Nous "
 
@@ -1100,6 +1110,8 @@ Private Function ComposantsPleinEcran() As Variant
         "LBL_MI_TEMPS|AB4|AB4:AH4|" & "Mi-temps :" & vbTab & _
         "BTN_MT1|AJ4|AJ4:AP4|" & "MT 1" & vbTab & _
         "BTN_MT2|AR4|AR4:AX4|" & "MT2" & vbTab & _
+        "BTN_SENS_JEU|BO4|BO4:BR4|" & _
+            LibelleSensJeu() & vbTab & _
         "LBL_CARTONS|C8|C8:I8|" & "Cartons" & vbTab & _
         "BTN_CARTON_ROUGE|K8|K8:Q8|" & vbTab & _
         "BTN_CARTON_JAUNE|S8|S8:Y8|" & vbTab & _
@@ -1176,6 +1188,8 @@ Private Function ComposantsBandeau() As Variant
         "BTN_TO_G|J18|J18:N18|" & "gagn" & ChrW(233) & "e" & vbTab & _
         "BTN_TO_P|P18|P18:T18|" & "perdue" & vbTab & _
         "BTN_TO_PAS_DROIT|V18|V18:Z18|" & "pas droit" & vbTab & _
+        "BTN_SENS_JEU|AB18|AB18:AL18|" & _
+            LibelleSensJeu() & vbTab & _
         "LBL_ATTITUDES|C22|C22:H22|" & "Attitudes au contact" & vbTab & _
         "BTN_FRANCHISSEMENT|J22|J22:N22|" & "franchissement" & vbTab & _
         "BTN_AVANCEE|P22|P22:T22|" & "avanc" & ChrW(233) & "e" & vbTab & _

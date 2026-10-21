@@ -52,6 +52,8 @@ Private Const LARGEUR_BOUTON As Long = 2
 ' Colonne masquee ou atterrissent les valeurs choisies.
 Private Const COL_VALEURS As Long = 30
 
+Private Const CELLULE_SENS As String = "J5:L6"
+
 Private EtapeEnCours As String
 
 
@@ -151,18 +153,50 @@ End Function
 
 ' Ce que la case ecrit dans le tableau : notre camp a
 ' gauche, le milieu neutre, celui d'en face a droite.
+'
+' Quand nous jouons dans l'autre sens, la bande se lit a
+' l'envers : la case de gauche appartient alors au camp
+' adverse. Les distances affichees, elles, ne changent
+' pas - elles sont symetriques.
 Private Function ValeurTerrain(ByVal Rang As Long) As String
 
     Dim Distances As Variant
+    Dim r As Long
 
     Distances = DistancesTerrain
 
-    If Rang = 5 Then
-        ValeurTerrain = "50m"
-    ElseIf Rang < 5 Then
-        ValeurTerrain = "N " & Distances(Rang)
+    If SensJeuInverse() Then
+        r = UBound(Distances) - Rang
     Else
-        ValeurTerrain = "E " & Distances(Rang)
+        r = Rang
+    End If
+
+    If r = 5 Then
+        ValeurTerrain = "50m"
+    ElseIf r < 5 Then
+        ValeurTerrain = "N " & Distances(r)
+    Else
+        ValeurTerrain = "E " & Distances(r)
+    End If
+
+End Function
+
+
+' Le couloir, vu depuis notre equipe. Inverser le sens de
+' jeu fait pivoter le terrain d'un demi-tour : ce qui est
+' en haut de l'ecran passe a droite pour nous. Les
+' libelles affiches ne bougent pas, seule la valeur
+' enregistree suit.
+Private Function ValeurLargeur(ByVal Rang As Long) As String
+
+    Dim Couloirs As Variant
+
+    Couloirs = Array("Gauche", "Milieu", "Droit")
+
+    If SensJeuInverse() Then
+        ValeurLargeur = Couloirs(UBound(Couloirs) - Rang)
+    Else
+        ValeurLargeur = Couloirs(Rang)
     End If
 
 End Function
@@ -216,7 +250,7 @@ Private Function GrilleTerrain( _
             T = T & NomLongueur & "|" & (PremiereLigne + j) & _
                 "|" & i & "|" & Distances(i) & "|" & _
                 ValeurTerrain(i) & "|1|" & NomLargeur & "|" & _
-                Couloirs(j) & vbTab
+                ValeurLargeur(j) & vbTab
 
         Next i
 
@@ -225,6 +259,118 @@ Private Function GrilleTerrain( _
     GrilleTerrain = Left$(T, Len(T) - 1)
 
 End Function
+
+
+' ---------------------------------------------------------
+' Bouton du sens de jeu
+'
+' Le meme que celui de la feuille de saisie, repris ici :
+' on s'apercoit souvent qu'on est dans le mauvais sens en
+' voyant le terrain, et il serait penible de fermer la
+' popup pour le corriger.
+' ---------------------------------------------------------
+
+
+Private Sub EcrireBoutonSensJeu( _
+    ByVal ws As Worksheet, _
+    ByVal NomPlage As String)
+
+    With ws.Range(CELLULE_SENS)
+
+        .Merge
+        .Interior.Color = GRIS
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+        .Font.Size = 9
+        .Borders.LineStyle = xlContinuous
+        .Borders.Color = RGB(150, 150, 150)
+
+    End With
+
+    NommerPlage ws, CELLULE_SENS, NomPlage
+
+    AfficherSensJeuPopup ws
+
+End Sub
+
+
+' La fleche est agrandie, le libelle garde sa taille.
+Private Sub AfficherSensJeuPopup(ByVal ws As Worksheet)
+
+    Dim Texte As String
+
+    On Error GoTo Sortie
+
+    Texte = LibelleSensJeu()
+
+    ws.Range(CELLULE_SENS).Cells(1, 1).Value = Texte
+
+    ws.Range(CELLULE_SENS).Cells(1, 1) _
+        .Characters(Len(Texte), 1).Font.Size = 18
+
+Sortie:
+
+End Sub
+
+
+' Apres bascule : le terrain garde ses cases, mais elles
+' ne valent plus la meme chose, et les deux camps ont
+' change de cote.
+Private Sub RafraichirTerrainPopup( _
+    ByVal ws As Worksheet, _
+    ByVal Options As Variant, _
+    ByVal LigneEnTetes As Long)
+
+    PoserValeurs ws, Options
+    EcrireEnTetesTerrain ws, LigneEnTetes
+    AfficherSensJeuPopup ws
+    LibererSelectionPopup ws
+
+End Sub
+
+' Le terrain est dessine une fois a la construction : il
+' faut le reorienter a chaque ouverture, le sens ayant pu
+' changer depuis la feuille de saisie ou l'autre popup.
+Public Sub OrienterPopupTouche()
+
+    RafraichirTerrainPopup _
+        ThisWorkbook.Sheets(FEUILLE_POPUP_TO), _
+        OptionsTouche, 17
+
+End Sub
+
+Public Sub OrienterPopupMelee()
+
+    RafraichirTerrainPopup _
+        ThisWorkbook.Sheets(FEUILLE_POPUP_ME), _
+        OptionsMelee, 9
+
+End Sub
+
+' Excel ne redeclenche rien si la selection ne bouge pas :
+' sans ce deplacement, un second clic sur le meme bouton
+' resterait sans effet. Les evenements sont coupes pendant
+' le saut, sans quoi A1 serait traitee comme un clic.
+Private Sub LibererSelectionPopup(ByVal ws As Worksheet)
+
+    Dim EtatEvenements As Boolean
+
+    EtatEvenements = Application.EnableEvents
+
+    On Error GoTo Sortie
+
+    Application.EnableEvents = False
+
+    If ActiveSheet Is ws Then
+        ws.Range("A1").Select
+    End If
+
+Sortie:
+
+    Application.EnableEvents = EtatEvenements
+
+End Sub
 
 
 ' ---------------------------------------------------------
@@ -317,6 +463,8 @@ Private Sub ConstruirePopupTouche()
     EcrireBoutons ws, 23, "POPUP_TO_VALIDER", _
         "POPUP_TO_ANNULER"
 
+    EcrireBoutonSensJeu ws, "POPUP_TO_SENS_JEU"
+
     NommerPlage ws, "E4", "POPUP_TO_PLAY_PAUSE"
     NommerPlage ws, "C4:C7", "POPUP_TO_CONTEXTE"
 
@@ -361,6 +509,8 @@ Private Sub ConstruirePopupMelee()
 
     EcrireBoutons ws, 19, "POPUP_ME_VALIDER", _
         "POPUP_ME_ANNULER"
+
+    EcrireBoutonSensJeu ws, "POPUP_ME_SENS_JEU"
 
     NommerPlage ws, "E4", "POPUP_ME_PLAY_PAUSE"
     NommerPlage ws, "C4:C7", "POPUP_ME_CONTEXTE"
@@ -622,6 +772,12 @@ Public Sub ClicPopupTouche(ByVal Target As Range)
         Exit Sub
     End If
 
+    If Touche(ws, Cellule, "POPUP_TO_SENS_JEU") Then
+        BasculerSensJeu
+        RafraichirTerrainPopup ws, OptionsTouche, 17
+        Exit Sub
+    End If
+
     If Touche(ws, Cellule, "POPUP_TO_VALIDER") Then
         ValiderPopupTouche
         Exit Sub
@@ -649,6 +805,12 @@ Public Sub ClicPopupMelee(ByVal Target As Range)
 
     If Touche(ws, Cellule, "POPUP_ME_PLAY_PAUSE") Then
         BasculerLectureDepuisPopup
+        Exit Sub
+    End If
+
+    If Touche(ws, Cellule, "POPUP_ME_SENS_JEU") Then
+        BasculerSensJeu
+        RafraichirTerrainPopup ws, OptionsMelee, 9
         Exit Sub
     End If
 
@@ -927,7 +1089,8 @@ Private Sub EcrireEnTetesTerrain( _
     ' a decouvert entre les deux.
     With ws.Cells(Ligne, COL_PREMIER_BOUTON).Resize(1, 5)
         .Merge
-        .Value = "NOTRE CAMP"
+        .Value = IIf(SensJeuInverse(), _
+            "CAMP ADVERSE", "NOTRE CAMP")
         .HorizontalAlignment = xlCenter
         .Font.Bold = True
         .Font.Size = 9
@@ -936,7 +1099,8 @@ Private Sub EcrireEnTetesTerrain( _
 
     With ws.Cells(Ligne, COL_PREMIER_BOUTON + 6).Resize(1, 5)
         .Merge
-        .Value = "CAMP ADVERSE"
+        .Value = IIf(SensJeuInverse(), _
+            "NOTRE CAMP", "CAMP ADVERSE")
         .HorizontalAlignment = xlCenter
         .Font.Bold = True
         .Font.Size = 9
