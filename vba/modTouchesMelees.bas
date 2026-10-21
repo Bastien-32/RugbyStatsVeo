@@ -28,6 +28,13 @@ Private Const TAB_MELEES As String = "DetailMelees"
 
 ' Colonne ou commence la reserve de listes, masquee.
 Private Const COL_LISTES As Long = 23
+
+' Les listes deroulantes vivaient lignes 1 a 12, dans des
+' colonnes masquees : supprimer une ligne entre les deux
+' tableaux les emportait, et la mise en page ne pouvait
+' donc pas se recaler. Elles sont reculees hors de vue,
+' bien au-dela de ce que les deux blocs occuperont jamais.
+Private Const LIGNE_LISTES As Long = 200
 Private Const NB_LISTES As Long = 10
 
 ' Couleurs des mises en forme conditionnelles. Const
@@ -90,6 +97,12 @@ Public Sub ConstruireFeuilleTouchesMelees()
 
     EtapeEnCours = "tableau des melees"
     ConstruireTableauMelees ws
+
+    ' Les tableaux existants ne sont pas reconstruits :
+    ' leurs validations, elles, se perdent au vidage d'un
+    ' tableau, qui emporte les cellules qui les portaient.
+    EtapeEnCours = "listes deroulantes"
+    ReposerValidations ws
 
     EtapeEnCours = "mise en forme"
     MettreEnFormeFeuille ws
@@ -233,10 +246,17 @@ Private Sub EcrireUneListe( _
     Colonne = COL_LISTES + Decalage
     Nombre = UBound(Valeurs) - LBound(Valeurs) + 1
 
-    ws.Cells(1, Colonne).Value = NomPlage
+    ' L'ancien emplacement est efface : sans quoi les
+    ' valeurs resteraient en haut de la feuille, invisibles
+    ' mais bloquantes.
+    ws.Range( _
+        ws.Cells(1, Colonne), _
+        ws.Cells(LIGNE_LISTES - 1, Colonne)).ClearContents
+
+    ws.Cells(LIGNE_LISTES, Colonne).Value = NomPlage
 
     For i = 0 To Nombre - 1
-        ws.Cells(2 + i, Colonne).Value = _
+        ws.Cells(LIGNE_LISTES + 1 + i, Colonne).Value = _
             Valeurs(LBound(Valeurs) + i)
     Next i
 
@@ -264,10 +284,12 @@ Private Function PlageListe( _
     Derniere = ws.Cells(ws.Rows.Count, Colonne) _
         .End(xlUp).Row
 
-    If Derniere < 2 Then Derniere = 2
+    If Derniere < LIGNE_LISTES + 1 Then
+        Derniere = LIGNE_LISTES + 1
+    End If
 
     Set PlageListe = ws.Range( _
-        ws.Cells(2, Colonne), _
+        ws.Cells(LIGNE_LISTES + 1, Colonne), _
         ws.Cells(Derniere, Colonne))
 
 End Function
@@ -996,11 +1018,15 @@ Private Sub CopierListeSauteur( _
 
     If Derniere < 1 Then Exit Sub
 
-    ws.Cells(1, Colonne).Value = "LST_SAUTEURS"
+    ws.Range( _
+        ws.Cells(1, Colonne), _
+        ws.Cells(LIGNE_LISTES - 1, Colonne)).ClearContents
+
+    ws.Cells(LIGNE_LISTES, Colonne).Value = "LST_SAUTEURS"
 
     ws.Range( _
-        ws.Cells(2, Colonne), _
-        ws.Cells(Derniere + 1, Colonne) _
+        ws.Cells(LIGNE_LISTES + 1, Colonne), _
+        ws.Cells(LIGNE_LISTES + Derniere, Colonne) _
     ).Value = shParametres.Range( _
         "AA1:AA" & Derniere).Value
 
@@ -1017,8 +1043,8 @@ Private Sub CopierListeSauteur( _
             AlertStyle:=xlValidAlertStop, _
             Operator:=xlBetween, _
             Formula1:="=" & ws.Range( _
-                ws.Cells(2, Colonne), _
-                ws.Cells(Derniere + 1, Colonne) _
+                ws.Cells(LIGNE_LISTES + 1, Colonne), _
+                ws.Cells(LIGNE_LISTES + Derniere, Colonne) _
             ).Address(True, True)
 
     End With
@@ -1346,9 +1372,160 @@ End Sub
 ' Presentation
 ' ---------------------------------------------------------
 
+' =========================================================
+' REPARATION DE LA MISE EN PAGE
+'
+' Les deux reglages qui se dereglent au fil d'une analyse,
+' sans toucher au reste de la feuille : reconstruire
+' entierement remettrait toutes les colonnes a douze et
+' ferait perdre les largeurs choisies.
+' =========================================================
+Public Sub ReparerMiseEnPageTouchesMelees()
+
+    Dim ws As Worksheet
+
+    Set ws = ThisWorkbook.Worksheets(FEUILLE_TM)
+
+    NormaliserEcartEntreBlocs ws
+    AjusterColonneObservations
+
+End Sub
+
+
+' =========================================================
+' ECART ENTRE LES DEUX BLOCS
+'
+' Chaque touche ajoutee insere une ligne et pousse le bloc
+' des melees vers le bas. Les retraits, eux, ne le
+' remontent pas toujours : des lignes vides s'accumulent
+' alors entre le recapitulatif des touches et le titre
+' MELEES, jusqu'a une dizaine au fil d'une analyse.
+'
+' La position attendue est celle que calcule
+' LigneTitreMelees. On ne supprime que des lignes vides :
+' au moindre contenu, la mise en page est laissee en
+' l'etat plutot que de risquer une perte.
+' =========================================================
+Private Sub NormaliserEcartEntreBlocs(ByVal ws As Worksheet)
+
+    Dim LigneVoulue As Long
+    Dim LigneReelle As Long
+    Dim i As Long
+
+    On Error GoTo GestionErreur
+
+    LigneVoulue = LigneTitreMelees(ws)
+
+    ' Le titre tient la ligne au-dessus de l'en-tete du
+    ' tableau : le chercher par son texte confondrait
+    ' "MELEES" avec le "Melees" du recapitulatif.
+    LigneReelle = ws.ListObjects(TAB_MELEES).Range.Row - 1
+
+    If LigneReelle = LigneVoulue Then
+        Exit Sub
+    End If
+
+    If LigneReelle > LigneVoulue Then
+
+        ' La ligne entiere est regardee, et la ligne
+        ' entiere est supprimee : les listes deroulantes
+        ' vivent desormais ligne 200 et plus, loin des deux
+        ' blocs. Rien ne traine plus a droite de ce que
+        ' l'on voit.
+        For i = LigneVoulue To LigneReelle - 1
+
+            If Application.CountA(ws.Rows(i)) > 0 Then
+                Exit Sub
+            End If
+
+        Next i
+
+        ws.Rows(LigneVoulue & ":" & _
+            LigneReelle - 1).Delete
+
+    Else
+
+        ws.Rows(LigneReelle & ":" & _
+            LigneVoulue - 1).Insert
+
+    End If
+
+    ' Le bouton d'export ne suit pas le decalage des
+    ' cellules : les recapitulatifs le reposent.
+    ConstruireRecapitulatifs
+
+    Exit Sub
+
+GestionErreur:
+
+    MsgBox _
+        "La mise en page n'a pas pu etre recalee." & _
+        vbCrLf & vbCrLf & _
+        "Titre attendu ligne " & LigneVoulue & _
+        ", trouve ligne " & LigneReelle & "." & _
+        vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
+' =========================================================
+' LARGEUR DE LA COLONNE DES OBSERVATIONS
+'
+' Elle etait figee a trente : une observation un peu
+' longue debordait du tableau et demandait un reglage a la
+' main. Elle suit maintenant son contenu, entre un
+' plancher - pour que la colonne reste lisible quand elle
+' est vide - et un plafond, pour que le tableau tienne a
+' l'ecran.
+' =========================================================
+Public Sub AjusterColonneObservations()
+
+    Const LARGEUR_MINI As Double = 30
+    Const LARGEUR_MAXI As Double = 90
+
+    Dim ws As Worksheet
+
+    On Error GoTo GestionErreur
+
+    Set ws = ThisWorkbook.Worksheets(FEUILLE_TM)
+
+    ws.Columns("J").AutoFit
+
+    If ws.Columns("J").ColumnWidth < LARGEUR_MINI Then
+
+        ws.Columns("J").ColumnWidth = LARGEUR_MINI
+
+    ElseIf ws.Columns("J").ColumnWidth > LARGEUR_MAXI Then
+
+        ws.Columns("J").ColumnWidth = LARGEUR_MAXI
+
+    End If
+
+    Exit Sub
+
+GestionErreur:
+
+    MsgBox _
+        "La colonne des observations n'a pas pu etre " & _
+        "ajustee." & vbCrLf & vbCrLf & _
+        "Erreur " & Err.Number & " : " & Err.Description, _
+        vbExclamation, _
+        "Touches et melees"
+
+End Sub
+
+
 Private Sub MettreEnFormeFeuille(ByVal ws As Worksheet)
 
     Dim Titre As Range
+
+    ' Avant tout le reste : le titre des melees doit etre
+    ' la ou on l'attend, sans quoi la mise en gras tombe
+    ' sur une cellule vide.
+    NormaliserEcartEntreBlocs ws
 
     ws.Range("A1").Font.Bold = True
     ws.Range("A1").Font.Size = 14
@@ -1360,7 +1537,8 @@ Private Sub MettreEnFormeFeuille(ByVal ws As Worksheet)
     Titre.Font.Size = 14
 
     ws.Columns("A:J").ColumnWidth = 12
-    ws.Columns("J").ColumnWidth = 30
+
+    AjusterColonneObservations
 
     ' Les deux tableaux commencent ligne 3 : les volets
     ' gardent titres et en-tetes visibles au defilement.

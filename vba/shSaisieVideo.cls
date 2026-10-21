@@ -493,35 +493,31 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         ' =====================================================
         ' CARTONS
+        '
+        ' Le carton attend toujours qu'on designe le joueur,
+        ' quelle que soit la possession : apres un essai de
+        ' penalite contre nous, elle est deja repassee a
+        ' nous alors que le fautif est de notre camp.
+        '
+        ' Si aucun joueur n'est donne avant l'action
+        ' suivante, la ligne part avec "?" : c'est un
+        ' adversaire, que nous ne nommons pas.
         ' =====================================================
 
         If IsCartonAction(Target) Then
 
-            If CurrentTeam = "Nous" Then
-
-                FermerActionEnAttente
-
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-
-                ReleaseButton
-
-            Else
-
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    False, _
-                    "Adv", _
-                    False
-
-            End If
+            InitialiserActionEnAttente _
+                ActionTexte, _
+                TempsVideo, _
+                False, _
+                CurrentTeam, _
+                False, _
+                True
 
             Exit Sub
 
         End If
+
 
         ' =====================================================
         ' EN-AVANT
@@ -952,29 +948,17 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
             Range("BTN_TURNOVER") _
         ) Is Nothing Then
 
-            If CurrentTeam = "Nous" Then
-
-                InitialiserActionEnAttente _
-                    ActionTexte, _
-                    TempsVideo, _
-                    True, _
-                    "Nous", _
-                    False
-
-            Else
-
-                FermerActionEnAttente
-
-                AjouterAction _
-                    "", _
-                    ActionTexte, _
-                    TempsVideo
-
-                ToggleCurrentTeam
-
-                ReleaseButton
-
-            End If
+            ' Dans les deux sens, un joueur de chez nous est
+            ' attendu : celui qui perd le ballon quand nous
+            ' l'avions, celui qui le recupere quand c'est
+            ' l'adversaire qui l'avait. La possession bascule
+            ' une fois le joueur designe.
+            InitialiserActionEnAttente _
+                ActionTexte, _
+                TempsVideo, _
+                True, _
+                CurrentTeam, _
+                False
 
             Exit Sub
 

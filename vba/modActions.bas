@@ -637,7 +637,8 @@ Public Sub InitialiserActionEnAttente( _
     ByVal TempsVideo As Double, _
     ByVal ChangePossession As Boolean, _
     ByVal EquipeImposee As String, _
-    ByVal AutoriserPlusieursJoueurs As Boolean)
+    ByVal AutoriserPlusieursJoueurs As Boolean, _
+    Optional ByVal JoueurFacultatif As Boolean = False)
 
     PendingAction = ActionTexte
     WaitingForPlayer = True
@@ -653,6 +654,7 @@ Public Sub InitialiserActionEnAttente( _
     
     PendingMotifPenalite = ""
     PendingGroupeFautifRequired = False
+    PendingJoueurFacultatif = JoueurFacultatif
 
 End Sub
 
@@ -673,6 +675,7 @@ Public Sub FermerActionEnAttente()
     
     PendingMotifPenalite = ""
     PendingGroupeFautifRequired = False
+    PendingJoueurFacultatif = False
 
 End Sub
 
@@ -725,7 +728,7 @@ Public Sub FinaliserActionEnAttente()
             End If
 
             AjouterAction _
-                "?", _
+                IIf(PendingJoueurFacultatif, "", "?"), _
                 ActionFinalisee, _
                 TempsVideo, _
                 PendingMotifPenalite, _

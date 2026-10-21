@@ -1437,3 +1437,91 @@ Private Function FeuillePopup() As Worksheet
     Set FeuillePopup = ws
 
 End Function
+
+' =========================================================
+' LISTE DES MOTIFS POUR LE JOURNAL
+'
+' La colonne Motif du journal se corrige a la main : sa
+' liste deroulante doit proposer les memes motifs que la
+' popup, penalites et coups francs reunis.
+'
+' Elle est ecrite ici plutot que saisie dans Parametres :
+' les motifs n'ont ainsi qu'une seule source, et ajouter
+' un bouton a la popup suffit a enrichir la liste, a
+' condition de relancer cette procedure.
+' =========================================================
+Public Sub ActualiserListeMotifsJournal()
+
+    Const Colonne As Long = 20          ' Parametres!T
+    Const PREMIERE As Long = 2
+
+    Dim ws As Worksheet
+    Dim Vues As String
+    Dim Entrees As Variant
+    Dim Libelle As String
+    Dim Ligne As Long
+    Dim i As Long
+    Dim Source As Long
+
+    Set ws = shParametres
+
+    ' Les motifs deja retenus sont gardes dans une chaine
+    ' bornee par des barres verticales. Scripting.Dictionary
+    ' ferait l'affaire sur Windows, mais ce composant
+    ' n'existe pas sur Mac : il leve l'erreur 429.
+    Vues = "|"
+
+    ws.Cells(1, Colonne).Value = "LISTE_MOTIFS_PENALITE"
+
+    ' La colonne est videe large : une liste raccourcie ne
+    ' doit pas laisser trainer ses anciennes valeurs.
+    ws.Range( _
+        ws.Cells(PREMIERE, Colonne), _
+        ws.Cells(200, Colonne)).ClearContents
+
+    Ligne = PREMIERE
+
+    For Source = 1 To 2
+
+        If Source = 1 Then
+            Entrees = MotifsPenalite
+        Else
+            Entrees = MotifsCoupFranc
+        End If
+
+        For i = 0 To UBound(Entrees)
+
+            Libelle = Champ(CStr(Entrees(i)), 2)
+
+            ' "Autre", "?" et quelques motifs figurent dans
+            ' les deux grilles : une seule entree suffit.
+            If Len(Libelle) > 0 Then
+
+                If InStr(1, Vues, "|" & Libelle & "|", _
+                    vbTextCompare) = 0 Then
+
+                    Vues = Vues & Libelle & "|"
+                    ws.Cells(Ligne, Colonne).Value = Libelle
+                    Ligne = Ligne + 1
+
+                End If
+
+            End If
+
+        Next i
+
+    Next Source
+
+    If Ligne > PREMIERE Then
+
+        ThisWorkbook.Names.Add _
+            Name:="LISTE_MOTIFS_PENALITE", _
+            RefersTo:="=" & ws.Name & "!" & _
+                ws.Range( _
+                    ws.Cells(PREMIERE, Colonne), _
+                    ws.Cells(Ligne - 1, Colonne)) _
+                    .Address(True, True)
+
+    End If
+
+End Sub

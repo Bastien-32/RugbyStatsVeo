@@ -22,6 +22,13 @@ Public PendingForcedTeam As String
 Public PendingMotifPenalite As String
 Public PendingGroupeFautifRequired As Boolean
 
+' Vrai quand l'action peut se passer de joueur : la colonne
+' reste alors vide au lieu de porter "?". Un carton pris par
+' un adversaire est dans ce cas - nous ne nommons pas ses
+' joueurs - alors qu'une de nos actions sans joueur designe
+' garde le "?", qui signale une saisie a completer.
+Public PendingJoueurFacultatif As Boolean
+
 Public ChronoRunning As Boolean
 Public ChronoStart As Date
 Public ChronoOffset As Double
