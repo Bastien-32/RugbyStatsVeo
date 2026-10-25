@@ -7,6 +7,15 @@ Private PossessionNous(1 To 2) As Double
 
 Private PossessionAdv(1 To 2) As Double
 
+' Tranches du tableau des durees de possession :
+' 0-20, 20-40, 40-60, 60-90, >90. Celles des durees
+' d'actions sont plus fines et vivent dans modDureesJeu.
+Private Const NB_TRANCHES_POSSESSION As Long = 5
+
+' Le graphique se place sous le tableau, a cette distance
+' de son en-tete.
+Private Const DECALAGE_GRAPHIQUE As Long = 18
+
 Public Sub RecalculerStatsMatch()
 
     RecalculerTempsJeuEffectif
@@ -626,35 +635,45 @@ Private Sub EcrireTableauSequencesPossession( _
     ByRef CompteursNous() As Long, _
     ByRef CompteursAdv() As Long)
 
+    Dim L As Long
+    Dim i As Long
+
+    ' Le tableau se place sous une ancre nommee plutot qu'a
+    ' une ligne ecrite en dur : ajouter une ligne dans les
+    ' tableaux de joueurs, plus haut dans la feuille, le
+    ' decalait sans que rien ne le sache. modDureesJeu se
+    ' repere sur cet en-tete : les deux tableaux glissaient
+    ' ensemble et laissaient derriere eux leurs anciennes
+    ' lignes, reecrites deux lignes plus haut.
+    L = LigneDurees(wsStats)
+
     With wsStats
 
-        .Range("B94").Value = "Dur" & ChrW(233) & "es possessions"
-        .Range("C94").Value = "Nous"
-        .Range("D94").Value = "Adv"
+        .Cells(L, "B").Value = _
+            "Dur" & ChrW(233) & "es possessions"
+        .Cells(L, "C").Value = "Nous"
+        .Cells(L, "D").Value = "Adv"
 
-        .Range("B95").Value = "0-20 s"
-        .Range("B96").Value = "20-40 s"
-        .Range("B97").Value = "40-60 s"
-        .Range("B98").Value = "60-90 s"
-        .Range("B99").Value = ">90 s"
+        .Cells(L + 1, "B").Value = "0-20 s"
+        .Cells(L + 2, "B").Value = "20-40 s"
+        .Cells(L + 3, "B").Value = "40-60 s"
+        .Cells(L + 4, "B").Value = "60-90 s"
+        .Cells(L + 5, "B").Value = ">90 s"
 
-        .Range("C95").Value = CompteursNous(1)
-        .Range("C96").Value = CompteursNous(2)
-        .Range("C97").Value = CompteursNous(3)
-        .Range("C98").Value = CompteursNous(4)
-        .Range("C99").Value = CompteursNous(5)
+        For i = 1 To NB_TRANCHES_POSSESSION
 
-        .Range("D95").Value = CompteursAdv(1)
-        .Range("D96").Value = CompteursAdv(2)
-        .Range("D97").Value = CompteursAdv(3)
-        .Range("D98").Value = CompteursAdv(4)
-        .Range("D99").Value = CompteursAdv(5)
+            .Cells(L + i, "C").Value = CompteursNous(i)
+            .Cells(L + i, "D").Value = CompteursAdv(i)
+
+        Next i
 
         ' =====================================================
         ' MISE EN FORME
         ' =====================================================
 
-        With .Range("B94:D99")
+        With .Range( _
+            .Cells(L, "B"), _
+            .Cells(L + NB_TRANCHES_POSSESSION, "D"))
 
             .Font.Name = "Calibri"
             .Font.Size = 12
@@ -669,10 +688,12 @@ Private Sub EcrireTableauSequencesPossession( _
         End With
 
         ' En-tetes un peu plus gros
-        .Range("B94:D94").Font.Size = 13
+        .Range(.Cells(L, "B"), .Cells(L, "D")).Font.Size = 13
 
         ' Colonne Duree
-        With .Range("B94:B99")
+        With .Range( _
+            .Cells(L, "B"), _
+            .Cells(L + NB_TRANCHES_POSSESSION, "B"))
 
             .Interior.Color = RGB(78, 167, 46)
             .Font.Color = RGB(255, 255, 255)
@@ -680,7 +701,9 @@ Private Sub EcrireTableauSequencesPossession( _
         End With
 
         ' Colonne Nous
-        With .Range("C94:C99")
+        With .Range( _
+            .Cells(L, "C"), _
+            .Cells(L + NB_TRANCHES_POSSESSION, "C"))
 
             .Interior.Color = RGB(226, 239, 218)
             .Font.Color = RGB(0, 0, 0)
@@ -688,15 +711,19 @@ Private Sub EcrireTableauSequencesPossession( _
         End With
 
         ' Colonne Adv
-        With .Range("D94:D99")
+        With .Range( _
+            .Cells(L, "D"), _
+            .Cells(L + NB_TRANCHES_POSSESSION, "D"))
 
             .Interior.Color = RGB(255, 255, 255)
             .Font.Color = RGB(0, 0, 0)
 
         End With
 
-        ' Bordure ext_rieure _paisse
-        With .Range("B94:D99")
+        ' Bordure exterieure epaisse
+        With .Range( _
+            .Cells(L, "B"), _
+            .Cells(L + NB_TRANCHES_POSSESSION, "D"))
 
             .BorderAround _
                 LineStyle:=xlContinuous, _
@@ -713,9 +740,14 @@ Public Sub ActualiserGraphiqueSequencesPossession()
 
     Dim wsStats As Worksheet
     Dim Graphique As ChartObject
+    Dim LigneAncre As Long
+    Dim LigneGraphique As Long
 
     Set wsStats = _
         ThisWorkbook.Worksheets("Stats match")
+
+    LigneAncre = LigneDurees(wsStats)
+    LigneGraphique = LigneAncre + DECALAGE_GRAPHIQUE
 
     On Error Resume Next
 
@@ -730,8 +762,8 @@ Public Sub ActualiserGraphiqueSequencesPossession()
 
         Set Graphique = _
             wsStats.ChartObjects.Add( _
-                Left:=wsStats.Range("B112").Left, _
-                Top:=wsStats.Range("B112").Top, _
+                Left:=wsStats.Cells(LigneGraphique, "B").Left, _
+                Top:=wsStats.Cells(LigneGraphique, "B").Top, _
                 Width:=520, _
                 Height:=300 _
             )
@@ -746,7 +778,10 @@ Public Sub ActualiserGraphiqueSequencesPossession()
         .ChartType = xlColumnClustered
 
         .SetSourceData _
-            Source:=wsStats.Range("B94:D99")
+            Source:=wsStats.Range( _
+                wsStats.Cells(LigneAncre, "B"), _
+                wsStats.Cells( _
+                    LigneAncre + NB_TRANCHES_POSSESSION, "D"))
 
         .HasTitle = True
 
@@ -806,65 +841,151 @@ Private Sub EcrireTableauPossession( _
 )
 
     Dim i As Long
+    Dim L As Long
+
+    ' Le tableau se place sous une ancre nommee plutot
+    ' qu'a une ligne ecrite en dur : ajouter une ligne
+    ' plus haut dans la feuille le decalait sans que rien
+    ' ne le sache, et les durees s'ecrivaient par-dessus
+    ' les melees.
+    L = LignePossession(wsStats)
 
     With wsStats
 
-        .Range("H44").Value = "Nous"
-        .Range("I44").Value = "Eux"
-        .Range("J44").Value = "Total"
+        .Cells(L, "H").Value = "Nous"
+        .Cells(L, "I").Value = "Eux"
+        .Cells(L, "J").Value = "Total"
 
         For i = 1 To 2
 
-            .Cells(44 + i, "H").Value = PossessionNous(i)
-            .Cells(44 + i, "I").Value = PossessionAdv(i)
+            .Cells(L + i, "H").Value = PossessionNous(i)
+            .Cells(L + i, "I").Value = PossessionAdv(i)
 
         Next i
 
-        .Range("H47").Value = _
+        .Cells(L + 3, "H").Value = _
             PossessionNous(1) + PossessionNous(2)
 
-        .Range("I47").Value = _
+        .Cells(L + 3, "I").Value = _
             PossessionAdv(1) + PossessionAdv(2)
 
         ' Les formats sont repris des colonnes voisines :
         ' en-tete vert, lignes de donnees, ligne de total.
-        .Range("G44").Copy
-        .Range("H44:J44").PasteSpecial Paste:=xlPasteFormats
+        .Cells(L, "G").Copy
+        .Range(.Cells(L, "H"), .Cells(L, "J")) _
+            .PasteSpecial Paste:=xlPasteFormats
 
-        .Range("J45").Copy
-        .Range("H45:I45").PasteSpecial Paste:=xlPasteFormats
+        For i = 1 To 3
 
-        .Range("J46").Copy
-        .Range("H46:I46").PasteSpecial Paste:=xlPasteFormats
+            .Cells(L + i, "J").Copy
+            .Range(.Cells(L + i, "H"), .Cells(L + i, "I")) _
+                .PasteSpecial Paste:=xlPasteFormats
 
-        .Range("J47").Copy
-        .Range("H47:I47").PasteSpecial Paste:=xlPasteFormats
+        Next i
 
         Application.CutCopyMode = False
 
         ' Trait de separation entre le jeu effectif et la
         ' possession.
-        With .Range("H44:H47").Borders(xlEdgeLeft)
+        With .Range(.Cells(L, "H"), .Cells(L + 3, "H")) _
+            .Borders(xlEdgeLeft)
             .LineStyle = xlContinuous
             .Weight = xlThin
             .Color = RGB(0, 0, 0)
         End With
 
-        .Range("G44:J44").HorizontalAlignment = xlCenter
+        .Range(.Cells(L, "G"), .Cells(L, "J")) _
+            .HorizontalAlignment = xlCenter
 
-        .Range("G47").HorizontalAlignment = xlRight
-        
-        ' Le format d'en-tete repris de G44 n'a pas de bord
+        .Cells(L + 3, "G").HorizontalAlignment = xlRight
+
+        ' Le format d'en-tete repris de G n'a pas de bord
         ' droit : le cadre resterait ouvert sur le titre.
-        With .Range("J44").Borders(xlEdgeRight)
+        With .Cells(L, "J").Borders(xlEdgeRight)
             .LineStyle = xlContinuous
             .Weight = xlThin
             .Color = RGB(0, 0, 0)
         End With
-
 
     End With
 
 End Sub
 
 
+' =========================================================
+' Ou commence le tableau des durees de possession.
+'
+' L'ancre est une plage nommee : elle suit les lignes
+' ajoutees ou retirees au-dessus d'elle, ce qu'une adresse
+' ecrite dans le code ne sait pas faire. Absente, elle est
+' creee a sa place d'origine.
+' =========================================================
+Private Function LignePossession( _
+    ByVal wsStats As Worksheet) As Long
+
+    Const NOM_ANCRE As String = "STAT_POSSESSION_ANCRE"
+    Const LIGNE_ORIGINE As Long = 44
+
+    On Error GoTo Defaut
+
+    LignePossession = ThisWorkbook.Names(NOM_ANCRE) _
+        .RefersToRange.Row
+
+    If LignePossession > 0 Then
+        Exit Function
+    End If
+
+Defaut:
+
+    On Error Resume Next
+
+    ThisWorkbook.Names.Add _
+        Name:=NOM_ANCRE, _
+        RefersTo:=wsStats.Cells(LIGNE_ORIGINE, "H")
+
+    On Error GoTo 0
+
+    LignePossession = LIGNE_ORIGINE
+
+End Function
+
+
+' =========================================================
+' Ou commence le tableau des durees de possession.
+'
+' Meme principe que LignePossession : une plage nommee suit
+' les lignes ajoutees au-dessus d'elle, une adresse ecrite
+' dans le code ne le sait pas. Absente, elle est creee a sa
+' place d'origine.
+'
+' modDureesJeu cherche cet en-tete pour poser le tableau des
+' durees d'actions a cote : les deux restent alignes.
+' =========================================================
+Private Function LigneDurees( _
+    ByVal wsStats As Worksheet) As Long
+
+    Const NOM_ANCRE As String = "STAT_DUREES_ANCRE"
+    Const LIGNE_ORIGINE As Long = 94
+
+    On Error GoTo Defaut
+
+    LigneDurees = ThisWorkbook.Names(NOM_ANCRE) _
+        .RefersToRange.Row
+
+    If LigneDurees > 0 Then
+        Exit Function
+    End If
+
+Defaut:
+
+    On Error Resume Next
+
+    ThisWorkbook.Names.Add _
+        Name:=NOM_ANCRE, _
+        RefersTo:=wsStats.Cells(LIGNE_ORIGINE, "B")
+
+    On Error GoTo 0
+
+    LigneDurees = LIGNE_ORIGINE
+
+End Function

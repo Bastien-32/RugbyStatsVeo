@@ -731,6 +731,20 @@ Public Function EstJoueur( _
         Exit Function
     End If
 
+    ' Avant et Trois-quarts occupent la colonne Joueur
+    ' quand l'action n'est pas attribuee a quelqu'un :
+    ' sans ce filtre, ils figureraient au classement entre
+    ' deux vrais joueurs, avec leurs plaquages cumules.
+    If Normaliser(Nom) = "avant" Then
+        Exit Function
+    End If
+
+    ' Normaliser ne garde que lettres et chiffres : le
+    ' trait d'union de "Trois-quarts" disparait.
+    If Normaliser(Nom) = "troisquarts" Then
+        Exit Function
+    End If
+
     EstJoueur = True
 
 End Function

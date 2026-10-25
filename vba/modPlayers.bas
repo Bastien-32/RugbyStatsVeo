@@ -36,10 +36,12 @@ Public Function GetPlayerName( _
 
     End If
 
-    ' Avant ou Trois-quarts : le joueur reste inconnu, et
-    ' c'est le groupe fautif qui portera l'information.
+    ' Avant ou Trois-quarts prennent place dans la colonne
+    ' Joueur, comme Collectif et l'inconnu : la colonne y
+    ' accueille deja ce qui n'est pas un nom. Le groupe
+    ' fautif, lui, reste reserve aux penalites.
     If EstBoutonGroupe(Numero) Then
-        GetPlayerName = "?"
+        GetPlayerName = Numero
         Exit Function
     End If
 
@@ -213,13 +215,17 @@ Public Sub ActualiserJoueursJournal()
         ligneDest = ligneDest + 1
     Next i
 
-    rngListe.Cells(ligneDest, 1).Value = "Collectif"
-    rngListe.Cells(ligneDest + 1, 1).Value = "?"
+    ' Les quatre valeurs qui ne sont pas des noms, dans
+    ' l'ordre ou on les cherche en corrigeant une ligne.
+    rngListe.Cells(ligneDest, 1).Value = GROUPE_AVANT
+    rngListe.Cells(ligneDest + 1, 1).Value = GROUPE_TROIS_QUARTS
+    rngListe.Cells(ligneDest + 2, 1).Value = "Collectif"
+    rngListe.Cells(ligneDest + 3, 1).Value = "?"
 
     wsListe.Columns("AA").Hidden = True
 
     formuleListe = "='" & wsListe.Name & "'!" & _
-        wsListe.Range("AA1:AA" & ligneDest + 1).Address
+        wsListe.Range("AA1:AA" & ligneDest + 3).Address
 
     ' Un journal entierement vide n'a plus de ligne de
     ' donnees : il n'y aurait aucune cellule ou poser la
