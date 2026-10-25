@@ -92,6 +92,36 @@ Private Const MINUTES_REFERENCE As Double = 80
 
 
 ' =========================================================
+' LE TABLEAU DES ACTIONS NON ATTRIBUEES
+'
+' Pose sous le classement, il reprend les memes colonnes de
+' statistiques et compte les actions dont la colonne Joueur
+' ne porte pas un nom, mais l'un de ces quatre labels. Le
+' classement les ecarte, faute de savoir a qui les mettre ;
+' elles disparaissaient donc du recapitulatif alors qu'elles
+' renseignent sur le jeu.
+'
+' Memes libelles et meme ordre que le tableau de la feuille
+' Stats match d'un fichier de match.
+' =========================================================
+Private Const NA_AVANT As Long = 1
+Private Const NA_TROIS_QUARTS As Long = 2
+Private Const NA_COLLECTIF As Long = 3
+Private Const NA_NON_IDENTIFIE As Long = 4
+
+Private Const NB_NON_ATTRIBUE As Long = 4
+
+' Lignes laissees entre le bas du classement et ce tableau.
+Private Const ECART_NON_ATTRIBUE As Long = 3
+
+' Lignes laissees entre le bas de ce tableau et la ligne de
+' total : deux vides, la troisieme porte le total.
+Private Const ECART_TOTAL As Long = 3
+
+Private Const TBL_NON_ATTRIBUE As String = "RECAP_NON_ATTRIBUE"
+
+
+' =========================================================
 ' Point d'entree, appele par les boutons des feuilles
 ' Filtres, Classement, Temps de jeu et Compositions, et a
 ' la fin de chaque ajout de matchs.
@@ -118,6 +148,7 @@ Public Sub AppliquerFiltres()
     Dim NbStats As Long
 
     Dim Compteurs() As Double
+    Dim CompteursNA() As Double
     Dim MinutesCat() As Double
     Dim MatchsCat() As Long
     Dim Feuilles() As Long
@@ -167,12 +198,21 @@ Public Sub AppliquerFiltres()
 
     End If
 
+    ' Hors du test sur NbJoueurs : un journal peut n'avoir
+    ' ete saisi qu'avec ces labels, sans qu'aucun joueur n'y
+    ' soit jamais nomme.
+    ReDim CompteursNA(1 To NB_NON_ATTRIBUE, 1 To Maxi(NbStats, 1))
+
+    CompterActionsNonAttribuees _
+        Matchs, IndexAction, IndexActionMotif, CompteursNA
+
     EcrireClassement _
         Filtres, NbMatchsRetenus, _
         NomsJoueurs, LignesJoueurs, NbJoueurs, _
         NomsCategories, NbCategories, _
         NomsStats, NbStats, _
-        Compteurs, MinutesCat, Feuilles, Joues
+        Compteurs, MinutesCat, Feuilles, Joues, _
+        CompteursNA
 
     EcrireTempsDeJeu _
         Filtres, NbMatchsRetenus, _
@@ -950,6 +990,129 @@ End Sub
 
 
 ' =========================================================
+' Le meme comptage que CompterActions, pour les seules
+' actions que personne n'a pu endosser : celles dont la
+' colonne Joueur porte Avant, Trois-quarts, Collectif ou le
+' point d'interrogation.
+'
+' Les joueurs nommes n'entrent pas ici : ils ont deja leur
+' ligne au classement, et les compter une seconde fois
+' doublerait les totaux.
+'
+' Une case Joueur vide n'est comptee nulle part : c'est une
+' action portee a l'adversaire.
+' =========================================================
+Private Sub CompterActionsNonAttribuees( _
+    ByVal Matchs As Collection, _
+    ByVal IndexAction As Collection, _
+    ByVal IndexActionMotif As Collection, _
+    ByRef CompteursNA() As Double _
+)
+
+    Dim Actions As Variant
+    Dim Ligne As Long
+    Dim Bloc As Long
+    Dim Stat As Long
+    Dim CleAction As String
+    Dim CleMotif As String
+
+    Actions = DonneesTableau(FEUILLE_JOURNAL, TBL_JOURNAL)
+
+    If IsEmpty(Actions) Then
+        Exit Sub
+    End If
+
+    For Ligne = 1 To UBound(Actions, 1)
+
+        If MatchRetenu(Matchs, Actions(Ligne, JRN_FICHIER)) Then
+
+            Bloc = _
+                BlocNonAttribue( _
+                    TexteCellule(Actions(Ligne, JRN_JOUEUR)) _
+                )
+
+            If Bloc > 0 Then
+
+                CleAction = _
+                    Normaliser( _
+                        TexteCellule(Actions(Ligne, JRN_ACTION)) _
+                    )
+
+                If CleExiste(IndexAction, CleAction) Then
+
+                    Stat = CLng(IndexAction.Item(CleAction))
+
+                    CompteursNA(Bloc, Stat) = _
+                        CompteursNA(Bloc, Stat) + 1
+
+                End If
+
+                CleMotif = _
+                    Normaliser( _
+                        TexteCellule(Actions(Ligne, JRN_MOTIF)) _
+                    )
+
+                If Len(CleMotif) > 0 Then
+
+                    CleMotif = CleAction & "|" & CleMotif
+
+                    If CleExiste(IndexActionMotif, CleMotif) Then
+
+                        Stat = _
+                            CLng(IndexActionMotif.Item(CleMotif))
+
+                        CompteursNA(Bloc, Stat) = _
+                            CompteursNA(Bloc, Stat) + 1
+
+                    End If
+
+                End If
+
+            End If
+
+        End If
+
+    Next Ligne
+
+End Sub
+
+
+' =========================================================
+' A quel bloc du tableau revient une action, d'apres le
+' contenu de sa colonne Joueur. Rend zero des qu'un nom de
+' joueur y figure : le classement s'en charge.
+' =========================================================
+Private Function BlocNonAttribue( _
+    ByVal Nom As String _
+) As Long
+
+    ' Avant toute normalisation : celle-ci ne garde que les
+    ' lettres et les chiffres, le point d'interrogation s'y
+    ' reduirait a rien et passerait pour une case vide.
+    If Trim(Nom) = "?" Then
+        BlocNonAttribue = NA_NON_IDENTIFIE
+        Exit Function
+    End If
+
+    Select Case Normaliser(Nom)
+
+        Case "avant"
+            BlocNonAttribue = NA_AVANT
+
+        Case "troisquarts"
+            ' Le trait d'union de "Trois-quarts" a disparu
+            ' a la normalisation.
+            BlocNonAttribue = NA_TROIS_QUARTS
+
+        Case "collectif"
+            BlocNonAttribue = NA_COLLECTIF
+
+    End Select
+
+End Function
+
+
+' =========================================================
 ' Une ligne de composition vaut une feuille de match. Elle
 ' ne compte comme match joue que si un temps de jeu y a ete
 ' saisi : un remplacant reste sur le banc.
@@ -1101,7 +1264,8 @@ Private Sub EcrireClassement( _
     ByRef Compteurs() As Double, _
     ByRef MinutesCat() As Double, _
     ByRef Feuilles() As Long, _
-    ByRef Joues() As Long _
+    ByRef Joues() As Long, _
+    ByRef CompteursNA() As Double _
 )
 
     Dim ws As Worksheet
@@ -1112,9 +1276,12 @@ Private Sub EcrireClassement( _
     Dim Retenu() As Boolean
     Dim MinutesTotal() As Double
 
+    Dim TotauxClassement() As Double
+
     Dim i As Long
     Dim c As Long
     Dim s As Long
+    Dim r As Long
     Dim Ligne As Long
     Dim Colonne As Long
 
@@ -1124,7 +1291,19 @@ Private Sub EcrireClassement( _
         Exit Sub
     End If
 
+    ' Le tableau des actions non attribuees vit sous le
+    ' classement, dont la pose efface tout ce qui suit. On le
+    ' delie d'abord, sinon il subsisterait comme tableau vide
+    ' au milieu de la zone nettoyee.
+    DelierTableau ws, TBL_NON_ATTRIBUE
+
     NbColonnes = COLONNES_FIXES + NbStats
+
+    ' Les totaux de la ligne finale se prennent sur ce qui
+    ' est affiche, et non sur les totaux bruts : ainsi la
+    ' somme se verifie a la main, colonne par colonne, quel
+    ' que soit le mode d'affichage.
+    ReDim TotauxClassement(1 To Maxi(NbStats, 1))
 
     ReDim Entetes(1 To 1, 1 To NbColonnes)
 
@@ -1163,6 +1342,12 @@ Private Sub EcrireClassement( _
         PoserTableauSortie _
             ws, "RECAP_CLASSEMENT", Entetes, Sortie, 0, NbColonnes
 
+        EcrireTableauNonAttribue _
+            ws, LIGNE_ENTETE + 1 + ECART_NON_ATTRIBUE, _
+            NomsStats, NbStats, NbColonnes, _
+            CompteursNA, NbMatchsRetenus, Filtres.Mode, _
+            TotauxClassement
+
         Exit Sub
 
     End If
@@ -1197,11 +1382,265 @@ Private Sub EcrireClassement( _
 
     Next i
 
+    For r = 1 To NbRetenus
+
+        For s = 1 To NbStats
+
+            Colonne = COLONNES_FIXES + s
+
+            If IsNumeric(Sortie(r, Colonne)) Then
+
+                TotauxClassement(s) = _
+                    TotauxClassement(s) + CDbl(Sortie(r, Colonne))
+
+            End If
+
+        Next s
+
+    Next r
+
     PoserTableauSortie _
         ws, "RECAP_CLASSEMENT", Entetes, Sortie, NbRetenus, NbColonnes
 
     MettreEnFormeClassement _
         ws, NbRetenus, NbColonnes, NbCategories, Filtres.Mode
+
+    EcrireTableauNonAttribue _
+        ws, LIGNE_ENTETE + NbRetenus + ECART_NON_ATTRIBUE, _
+        NomsStats, NbStats, NbColonnes, _
+        CompteursNA, NbMatchsRetenus, Filtres.Mode, _
+        TotauxClassement
+
+End Sub
+
+
+' =========================================================
+' Le tableau des actions non attribuees, sous le classement.
+'
+' Quatre lignes toujours presentes, meme a zero : leur
+' absence se lirait comme un oubli alors qu'un zero est une
+' information.
+'
+' Le total ne figure pas dans le tableau : il porte sur les
+' deux a la fois, et se pose a part, plus bas.
+' =========================================================
+Private Sub EcrireTableauNonAttribue( _
+    ByVal ws As Worksheet, _
+    ByVal Entete As Long, _
+    ByRef NomsStats() As String, _
+    ByVal NbStats As Long, _
+    ByVal NbColonnes As Long, _
+    ByRef CompteursNA() As Double, _
+    ByVal NbMatchsRetenus As Long, _
+    ByVal Mode As String, _
+    ByRef TotauxClassement() As Double _
+)
+
+    Dim Libelles As Variant
+    Dim Entetes As Variant
+    Dim Sortie As Variant
+    Dim Totaux() As Double
+
+    Dim Minutes As Double
+    Dim Valeur As Variant
+    Dim i As Long
+    Dim s As Long
+
+    If NbStats <= 0 Then
+        Exit Sub
+    End If
+
+    Libelles = Array( _
+        "Avant", _
+        "Trois-quarts", _
+        "Collectif", _
+        "?" _
+    )
+
+    ReDim Entetes(1 To 1, 1 To NbColonnes)
+
+    Entetes(1, 1) = "Sans joueur nomm" & ChrW(233)
+
+    For s = 1 To NbStats
+        Entetes(1, COLONNES_FIXES + s) = NomsStats(s)
+    Next s
+
+    ' Les totaux du classement, auxquels s'ajoutent ceux de
+    ' ce tableau : la ligne finale couvre les deux.
+    ReDim Totaux(1 To NbStats)
+
+    For s = 1 To NbStats
+        Totaux(s) = TotauxClassement(s)
+    Next s
+
+    ReDim Sortie(1 To NB_NON_ATTRIBUE, 1 To NbColonnes)
+
+    ' Ces actions n'appartiennent a personne : leur
+    ' denominateur n'est pas un temps de jeu individuel mais
+    ' le nombre de matchs retenus, et les quatre-vingts
+    ' minutes qui vont avec.
+    Minutes = NbMatchsRetenus * MINUTES_REFERENCE
+
+    For i = 1 To NB_NON_ATTRIBUE
+
+        Sortie(i, 1) = Libelles(i - 1)
+
+        For s = 1 To NbStats
+
+            Valeur = _
+                ValeurAffichee( _
+                    CompteursNA(i, s), _
+                    NbMatchsRetenus, _
+                    Minutes, _
+                    Mode _
+                )
+
+            Sortie(i, COLONNES_FIXES + s) = Valeur
+
+            If IsNumeric(Valeur) Then
+                Totaux(s) = Totaux(s) + CDbl(Valeur)
+            End If
+
+        Next s
+
+    Next i
+
+    PoserTableauSortie _
+        ws, TBL_NON_ATTRIBUE, Entetes, Sortie, _
+        NB_NON_ATTRIBUE, NbColonnes, Entete
+
+    MettreEnFormeNonAttribue _
+        ws, Entete, NB_NON_ATTRIBUE, NbColonnes, Mode
+
+    EcrireTotalGeneral _
+        ws, Entete + NB_NON_ATTRIBUE + ECART_TOTAL, _
+        NbStats, NbColonnes, Totaux, Mode
+
+End Sub
+
+
+' =========================================================
+' La ligne de total, seule sous les deux tableaux.
+'
+' Elle n'appartient a aucun d'eux : elle additionne la
+' colonne du classement et celle des actions non
+' attribuees, pour donner enfin le compte complet de la
+' saison. Hors tableau Excel, donc, sinon un tri la
+' deplacerait parmi les donnees.
+' =========================================================
+Private Sub EcrireTotalGeneral( _
+    ByVal ws As Worksheet, _
+    ByVal Ligne As Long, _
+    ByVal NbStats As Long, _
+    ByVal NbColonnes As Long, _
+    ByRef Totaux() As Double, _
+    ByVal Mode As String _
+)
+
+    Dim Valeurs As Variant
+    Dim Corps As Range
+    Dim s As Long
+
+    ReDim Valeurs(1 To 1, 1 To NbColonnes)
+
+    Valeurs(1, 1) = "Total"
+
+    For s = 1 To NbStats
+        Valeurs(1, COLONNES_FIXES + s) = Totaux(s)
+    Next s
+
+    Set Corps = _
+        ws.Cells(Ligne, PREMIERE_COLONNE).Resize(1, NbColonnes)
+
+    Corps.Value = Valeurs
+
+    With Corps
+
+        .Font.Bold = True
+        .Font.Color = BLANC
+        .Interior.Color = VERT_ENTETE
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+
+        .Borders.LineStyle = xlContinuous
+        .Borders.Weight = xlThin
+
+    End With
+
+    ws.Cells(Ligne, PREMIERE_COLONNE).HorizontalAlignment = xlLeft
+
+    ' Meme regle que les deux tableaux pour les decimales,
+    ' mais le zero reste affiche : sur une ligne unique, une
+    ' case vide ne se lit plus comme un zero.
+    If Mode = MODE_TOTAUX Then
+        Corps.Offset(0, COLONNES_FIXES) _
+            .Resize(1, NbColonnes - COLONNES_FIXES) _
+            .NumberFormat = "0"
+    Else
+        Corps.Offset(0, COLONNES_FIXES) _
+            .Resize(1, NbColonnes - COLONNES_FIXES) _
+            .NumberFormat = "0.00"
+    End If
+
+End Sub
+
+
+' =========================================================
+' Delie un tableau sans toucher a son contenu. Rien a
+' signaler s'il n'existe pas.
+' =========================================================
+Private Sub DelierTableau( _
+    ByVal ws As Worksheet, _
+    ByVal NomTableau As String _
+)
+
+    Dim Tableau As ListObject
+
+    On Error Resume Next
+    Set Tableau = ws.ListObjects(NomTableau)
+    On Error GoTo 0
+
+    If Not Tableau Is Nothing Then
+        Tableau.Unlist
+    End If
+
+End Sub
+
+
+Private Sub MettreEnFormeNonAttribue( _
+    ByVal ws As Worksheet, _
+    ByVal Entete As Long, _
+    ByVal NbLignes As Long, _
+    ByVal NbColonnes As Long, _
+    ByVal Mode As String _
+)
+
+    Dim PremiereStat As Long
+    Dim FormatNombre As String
+
+    PremiereStat = PREMIERE_COLONNE + COLONNES_FIXES
+
+    ' Meme regle que le classement : les zeros restent
+    ' masques pour que le tableau se lise d'un coup d'oeil.
+    If Mode = MODE_TOTAUX Then
+        FormatNombre = "0;;"
+    Else
+        FormatNombre = "0.00;;"
+    End If
+
+    If NbLignes > 0 Then
+
+        ws.Range( _
+            ws.Cells(Entete + 1, PremiereStat), _
+            ws.Cells( _
+                Entete + NbLignes, _
+                PREMIERE_COLONNE + NbColonnes - 1 _
+            ) _
+        ).NumberFormat = FormatNombre
+
+    End If
+
+    ws.Rows(Entete).RowHeight = 46
 
 End Sub
 
