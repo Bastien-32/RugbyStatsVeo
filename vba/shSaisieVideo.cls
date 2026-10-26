@@ -1313,7 +1313,12 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
             End If
 
-            ActionJoueurFinalisee = PendingAction
+            ' Un joueur a ete designe : si l'action est un
+            ' carton, il est pour notre camp, la palette ne
+            ' portant que nos joueurs. La possession, elle,
+            ' a pu basculer juste avant sur un essai adverse.
+            ActionJoueurFinalisee = _
+                CartonVersCamp(PendingAction, True)
             
             AjouterArretApresJoueur = _
                 ActionDeclencheArretAutomatique( _
@@ -1451,6 +1456,8 @@ Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
     EstBoutonJoueur = (Trim(CStr(Target.Value)) <> "")
 
 End Function
+
+
 
 
 

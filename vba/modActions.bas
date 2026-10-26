@@ -705,6 +705,11 @@ Public Sub FinaliserActionEnAttente()
 
     If PendingPlayerCount = 0 Then
 
+        ' Personne n'a ete designe : s'il s'agit d'un
+        ' carton, il est pour l'adversaire.
+        ActionFinalisee = _
+            CartonVersCamp(ActionFinalisee, False)
+
         If PendingActionTimeAvailable Then
 
             TempsVideo = PendingActionTime
@@ -757,6 +762,34 @@ Public Sub FinaliserActionEnAttente()
 
 End Sub
 
+Public Function EstActionCoupFrancContreNousOuAdv( _
+    ByVal ActionTexte As String _
+) As Boolean
+
+    If StrComp( _
+        ActionTexte, _
+        CStr(Range("ACT_CF_CONTRE_ADV").Value), _
+        vbTextCompare _
+    ) = 0 Then
+
+        EstActionCoupFrancContreNousOuAdv = True
+        Exit Function
+
+    End If
+
+    If StrComp( _
+        ActionTexte, _
+        CStr(Range("ACT_CF_CONTRE_NOUS").Value), _
+        vbTextCompare _
+    ) = 0 Then
+
+        EstActionCoupFrancContreNousOuAdv = True
+
+    End If
+
+End Function
+
+
 Public Function EstActionPenaliteContreNousOuAdv( _
     ByVal ActionTexte As String _
 ) As Boolean
@@ -784,11 +817,76 @@ Public Function EstActionPenaliteContreNousOuAdv( _
 
 End Function
 
+' =========================================================
+' Le camp d'un carton, selon qu'un joueur est designe.
+'
+' La possession ne dit rien du camp fautif : apres un essai
+' adverse, le ballon est deja revenu a nous alors que le
+' carton est pour notre camp. Seule la palette tranche, et
+' elle ne porte que nos joueurs : un joueur clique vaut
+' carton contre nous, personne vaut carton adverse, que
+' nous ne nommons pas.
+'
+' Rend le texte inchange si ce n'est pas un carton.
+' =========================================================
+Public Function CartonVersCamp( _
+    ByVal ActionTexte As String, _
+    ByVal PourNous As Boolean _
+) As String
+
+    Dim Couleurs As Variant
+    Dim Couleur As Variant
+    Dim Adverse As String
+    Dim Notre As String
+
+    CartonVersCamp = ActionTexte
+
+    If Len(ActionTexte) = 0 Then
+        Exit Function
+    End If
+
+    Couleurs = Array("ROUGE", "JAUNE", "BLANC", "BLEU")
+
+    For Each Couleur In Couleurs
+
+        Adverse = CStr( _
+            Range("ACT_CARTON_" & Couleur & "_ADV").Value)
+
+        Notre = CStr( _
+            Range("ACT_CARTON_" & Couleur & "_NS").Value)
+
+        If StrComp(ActionTexte, Adverse, vbTextCompare) = 0 _
+            Or StrComp(ActionTexte, Notre, vbTextCompare) = 0 _
+        Then
+
+            If PourNous Then
+                CartonVersCamp = Notre
+            Else
+                CartonVersCamp = Adverse
+            End If
+
+            Exit Function
+
+        End If
+
+    Next Couleur
+
+End Function
+
+
 Public Function ActionDeclencheArretAutomatique( _
     ByVal ActionTexte As String _
 ) As Boolean
 
     If EstActionPenaliteContreNousOuAdv(ActionTexte) Then
+        ActionDeclencheArretAutomatique = True
+        Exit Function
+    End If
+
+    ' Le coup franc arrete le jeu comme la penalite : la
+    ' ligne d'arret manquait au journal, et le decompte des
+    ' temps de jeu effectifs s'en trouvait fausse.
+    If EstActionCoupFrancContreNousOuAdv(ActionTexte) Then
         ActionDeclencheArretAutomatique = True
         Exit Function
     End If

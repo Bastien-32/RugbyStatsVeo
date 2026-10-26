@@ -118,6 +118,7 @@ Private Function MotifsCoupFranc() As Variant
         "13:2:Melee - Pouss" & ChrW(233) & "e anticip" & ChrW(233) & "e" & vbTab & _
         "15:2:Melee - Introduction irreguliere" & vbTab & _
         "17:2:Melee - Talonnage irregulier" & vbTab & _
+        "19:2:Melee - Pouss" & ChrW(233) & "e apr" & ChrW(232) & "s talonnage" & vbTab & _
         "27:2:Autre" & vbTab & _
         "29:2:?"
 
