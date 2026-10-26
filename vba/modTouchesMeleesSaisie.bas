@@ -79,7 +79,7 @@ Public Sub OuvrirTouche( _
 
     End If
 
-    If Not RepriseFaite("ACT_REPRISE_TOUCHE") Then
+    If Not RepriseFaite("ACT_REPRISE_TOUCHE", TempsVideo) Then
 
         MessageRepriseAttendue "touche"
         Exit Sub
@@ -129,7 +129,7 @@ Public Sub OuvrirMelee( _
 
     End If
 
-    If Not RepriseFaite("ACT_REPRISE_MELEE") Then
+    If Not RepriseFaite("ACT_REPRISE_MELEE", TempsVideo) Then
 
         MessageRepriseAttendue "m" & ChrW(234) & "l" & ChrW(233) & "e"
         Exit Sub
@@ -701,9 +701,11 @@ End Function
 ' correspond : une touche gagnee sans touche jouee ne veut
 ' rien dire, et la ligne du tableau serait orpheline.
 '
-' L'action retenue est celle du temps le plus avance de la
-' mi-temps en cours, comme le fait JeuActuellementArrete :
-' la saisie peut etre reprise dans le desordre.
+' L'action retenue est la derniere qui precede la position
+' courante dans la video, comme le fait
+' JeuActuellementArrete : la saisie peut etre reprise dans
+' le desordre, et revenir en arriere doit rendre l'etat du
+' jeu de cet instant-la, pas celui de la fin du match.
 ' ---------------------------------------------------------
 
 ' Libelle d'une action, lu par son nom de plage.
@@ -722,14 +724,15 @@ End Function
 
 
 Private Function RepriseFaite( _
-    ByVal NomPlageAction As String) As Boolean
+    ByVal NomPlageAction As String, _
+    Optional ByVal TempsReference As Double = -1) As Boolean
 
     Dim Attendue As String
 
     Attendue = CStr(LibelleAction(NomPlageAction))
 
     RepriseFaite = (StrComp( _
-        DerniereRepriseOuArret, _
+        DerniereRepriseOuArret(TempsReference), _
         Attendue, _
         vbTextCompare) = 0)
 
@@ -739,11 +742,12 @@ End Function
 ' Vrai tant qu'une reprise n'a pas ouvert le jeu : c'est
 ' le cas apres un arret, mais aussi en debut de mi-temps,
 ' ou rien n'a encore ete saisi.
-Public Function JeuNonRepris() As Boolean
+Public Function JeuNonRepris( _
+    Optional ByVal TempsReference As Double = -1) As Boolean
 
     Dim Derniere As String
 
-    Derniere = DerniereRepriseOuArret
+    Derniere = DerniereRepriseOuArret(TempsReference)
 
     If Derniere = "" Then
         JeuNonRepris = True
@@ -758,10 +762,22 @@ Public Function JeuNonRepris() As Boolean
 End Function
 
 
-' Derniere action de reprise ou d'arret de la mi-temps, au
-' temps le plus avance. Les actions de jeu sont ignorees :
-' seules celles-ci decrivent l'etat du jeu.
-Private Function DerniereRepriseOuArret() As String
+' Derniere action de reprise ou d'arret de la mi-temps. Les
+' actions de jeu sont ignorees : seules celles-ci decrivent
+' l'etat du jeu.
+'
+' TempsReference est en secondes, comme tout ce que rend le
+' lecteur video, alors que le journal stocke des fractions
+' de jour : la conversion est faite ici.
+'
+' Il borne la recherche : on ne retient que ce
+' qui precede la position courante dans la video. Sans
+' cela, revenir en arriere pour completer une phase faisait
+' lire l'etat du jeu a la fin du match, et une reprise
+' saisie sur place n'ouvrait jamais le jeu. Absent, tout le
+' journal de la mi-temps est lu, comme avant.
+Private Function DerniereRepriseOuArret( _
+    Optional ByVal TempsReference As Double = -1) As String
 
     Dim lo As ListObject
     Dim ColTemps As Long
@@ -771,6 +787,16 @@ Private Function DerniereRepriseOuArret() As String
     Dim Temps As Double
     Dim Meilleur As Double
     Dim Action As String
+    Dim Borne As Double
+
+    ' Une demi-seconde de marge, comme ailleurs dans le
+    ' projet : deux lectures du lecteur video ne rendent
+    ' jamais exactement le meme nombre.
+    If TempsReference >= 0 Then
+        Borne = (TempsReference + 0.5) / 86400#
+    Else
+        Borne = -1
+    End If
 
     Set lo = ThisWorkbook _
         .Worksheets("Journal actions") _
@@ -799,6 +825,15 @@ Private Function DerniereRepriseOuArret() As String
 
                     Temps = CDbl(lo.ListRows(i).Range _
                         .Cells(1, ColTemps).Value)
+
+                    ' Au-dela de la position video : cette
+                    ' action n'a pas encore eu lieu du point
+                    ' de vue de la saisie en cours.
+                    If Borne >= 0 And Temps > Borne Then
+
+                        Temps = -1
+
+                    End If
 
                     ' Strictement superieur : le journal est
                     ' trie du plus recent au plus ancien, donc

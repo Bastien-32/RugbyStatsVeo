@@ -931,7 +931,7 @@ Public Sub AjouterArretJeuAutomatique( _
     Optional ByVal ReactiverBouton As Boolean = True _
 )
 
-    If Not JeuActuellementArrete Then
+    If Not JeuActuellementArrete(TempsArret) Then
 
         AjouterAction _
             "", _
@@ -1051,7 +1051,17 @@ Private Function ArretExisteDejaAuMemeTemps( _
 
 End Function
 
-Public Function JeuActuellementArrete() As Boolean
+' TempsReference est en secondes, comme tout ce que rend le
+' lecteur video, alors que le journal stocke des fractions
+' de jour : la conversion est faite ici.
+'
+' Il borne la recherche a ce qui precede la
+' position courante dans la video. Sans cela, revenir en
+' arriere pour completer une phase faisait lire l'etat du
+' jeu a la fin du match. Absent, tout le journal de la
+' mi-temps est lu, comme avant.
+Public Function JeuActuellementArrete( _
+    Optional ByVal TempsReference As Double = -1) As Boolean
 
     Dim loJournal As ListObject
 
@@ -1068,6 +1078,16 @@ Public Function JeuActuellementArrete() As Boolean
     Dim DerniereActionEtat As String
     Dim MiTempsLigne As String
     Dim ActionArret As String
+    Dim Borne As Double
+
+    ' Une demi-seconde de marge, comme ailleurs dans le
+    ' projet : deux lectures du lecteur video ne rendent
+    ' jamais exactement le meme nombre.
+    If TempsReference >= 0 Then
+        Borne = (TempsReference + 0.5) / 86400#
+    Else
+        Borne = -1
+    End If
 
     Set loJournal = _
         ThisWorkbook _
@@ -1132,7 +1152,16 @@ Public Function JeuActuellementArrete() As Boolean
                     ActionLigne _
                 ) Then
 
-                    If CDbl(TempsLigne) > DernierTemps Then
+                    ' Au-dela de la position video : cette
+                    ' action n'a pas encore eu lieu du point
+                    ' de vue de la saisie en cours.
+                    If Borne >= 0 _
+                        And CDbl(TempsLigne) > Borne Then
+
+                        ' Ecartee : DernierTemps vaut au
+                        ' moins -1, rien ne la retiendra.
+
+                    ElseIf CDbl(TempsLigne) > DernierTemps Then
 
                         DernierTemps = CDbl(TempsLigne)
 

@@ -421,7 +421,24 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
 
         End If
 
-        If JeuNonRepris Then
+        ' Le temps video se lit avant le controle de
+        ' l'etat du jeu : cet etat doit se juger la ou
+        ' l'on se trouve dans la video, et non a la fin du
+        ' match. Revenir en arriere pour completer une
+        ' phase declenchait sinon "Reprise du jeu
+        ' attendue" alors que la reprise venait d'etre
+        ' saisie sur place.
+        TempsVideo = GetTimeVideo()
+
+        If TempsVideo < 0 Then
+            MsgBox _
+                "Impossible de r" & ChrW(233) & "cup" & ChrW(233) & "rer le temps r" & ChrW(233) & "el de la vid" & ChrW(233) & "o.", _
+                vbExclamation, _
+                "VeoVideoControl"
+            Exit Sub
+        End If
+
+        If JeuNonRepris(TempsVideo) Then
     
             If Not EstActionAutoriseePendantArret(Target) Then
     
@@ -455,16 +472,6 @@ Private Sub TraiterSelectionChange(ByVal Target As Range)
     
         End If
     
-        TempsVideo = GetTimeVideo()
-
-        If TempsVideo < 0 Then
-            MsgBox _
-                "Impossible de r" & ChrW(233) & "cup" & ChrW(233) & "rer le temps r" & ChrW(233) & "el de la vid" & ChrW(233) & "o.", _
-                vbExclamation, _
-                "VeoVideoControl"
-            Exit Sub
-        End If
-
         ResetActionButtons
         SetActiveButton Target
 
@@ -1444,6 +1451,8 @@ Private Function EstBoutonJoueur(ByVal Target As Range) As Boolean
     EstBoutonJoueur = (Trim(CStr(Target.Value)) <> "")
 
 End Function
+
+
 
 
 
