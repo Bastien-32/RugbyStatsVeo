@@ -17,8 +17,18 @@ function Match({ matchId, surFermer }) {
   const [vue, setVue] = useState("saisie");
   const [miTemps, setMiTemps] = useState("MT1");
   const [possession, setPossession] = useState("Nous");
+  // La position arrondie a la seconde suffit aux regles et au
+  // chrono. Sans cet arrondi, chaque battement du lecteur
+  // redessinerait les palettes et le journal — ce qui rendait
+  // justement la saisie poussive dans le classeur.
   const [position, setPosition] = useState(0);
   const lecteur = useRef(null);
+
+  const majPosition = useCallback((t) => {
+    setPosition((ancienne) =>
+      Math.floor(t) === Math.floor(ancienne) ? ancienne : t
+    );
+  }, []);
 
   const donnees = useMatch(matchId);
   const etat = useEtatCourant(donnees, miTemps, position);
@@ -127,9 +137,10 @@ function Match({ matchId, surFermer }) {
             possession={possession}
             setPossession={setPossession}
             position={position}
-            setPosition={setPosition}
+            setPosition={majPosition}
             lecteur={lecteur}
             enregistrerLecteur={enregistrerLecteur}
+            surComposition={() => setVue("compo")}
           />
         )}
 

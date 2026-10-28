@@ -12,7 +12,33 @@ import { GROUPES } from "../etat/regles.js";
  * couleur et ne répond plus, tant que son retour n'est pas
  * déclaré.
  */
-export function PaletteJoueurs({ etat, attente, surJoueur, surRemplacement, surAnnuler }) {
+export function PaletteJoueurs({ etat, attente, surJoueur, surRemplacement,
+  surAnnuler, surComposition }) {
+
+  // Sans feuille de match, la palette n'a personne à proposer :
+  // mieux vaut le dire et y conduire que montrer un cadre vide.
+  if (etat.presents.length === 0) {
+    return (
+      <div className="carte">
+        <h2>Sur le terrain</h2>
+        <div className="corps-carte">
+          <p className="vide">
+            La feuille de match n'est pas encore posée.
+            <br />
+            <button
+              type="button"
+              className="btn-vide"
+              style={{ marginTop: 10 }}
+              onClick={surComposition}
+            >
+              Composer l'équipe
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="carte">
       <h2>

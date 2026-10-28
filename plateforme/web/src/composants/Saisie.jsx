@@ -12,7 +12,7 @@ import { codeCarton, codeRetourCarton, inverse } from "../etat/regles.js";
  * droite sur toute la hauteur. Trois poignées pour ajuster.
  */
 export function Saisie({ donnees, etat, miTemps, possession, setPossession,
-  position, setPosition, lecteur, enregistrerLecteur }) {
+  position, setPosition, lecteur, enregistrerLecteur, surComposition }) {
 
   const { actions, feuille, referentiels, types,
           ajouterAction, supprimerAction, ajouterRemplacement } = donnees;
@@ -28,6 +28,14 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
   // Les statistiques du bas se rafraîchissent après chaque
   // écriture : elles viennent du serveur.
   const toucher = useCallback(() => setVersion((v) => v + 1), []);
+
+  // Le temps exact au moment du clic : la position affichee est
+  // arrondie a la seconde pour la fluidite, elle ne doit pas
+  // servir d'horodatage.
+  const temps = useCallback(
+    () => lecteur.current?.currentTime ?? position,
+    [lecteur, position]
+  );
 
   const sauter = useCallback(
     (t) => {
@@ -46,7 +54,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
   const ecrire = useCallback(
     async (champs, suites = {}) => {
       const creee = await ajouterAction({
-        temps: position,
+        temps: temps(),
         mt: miTemps,
         possession,
         numero: null,
@@ -62,7 +70,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
       // tard.
       if (suites.arret) {
         await ajouterAction({
-          temps: position, mt: miTemps,
+          temps: champs.temps ?? temps(), mt: miTemps,
           possession: suites.possessionApres ?? possession,
           type_code: "ARRET", numero: null, groupe: null,
           motif_code: null, commentaire: "",
@@ -72,7 +80,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
       toucher();
       return creee;
     },
-    [ajouterAction, position, miTemps, possession, setPossession, toucher]
+    [ajouterAction, temps, miTemps, possession, setPossession, toucher]
   );
 
   // ------------------------------------------------------
@@ -85,7 +93,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
     if (item.rec) {
       const code = possession === "Adv" ? item.rec : item.perte;
       setAttente({
-        libelle: item.libelle, type_code: code, temps: position,
+        libelle: item.libelle, type_code: code, temps: temps(),
         bascule: true,
       });
       return;
@@ -93,18 +101,18 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
 
     const t = item;
     if (t.famille === "PENALITE" || t.famille === "COUP_FRANC") {
-      setPopup({ sorte: "faute", type: t, temps: position });
+      setPopup({ sorte: "faute", type: t, temps: temps() });
       return;
     }
     if (t.attend_joueur) {
       setAttente({
-        libelle: t.libelle, type_code: t.code, temps: position,
+        libelle: t.libelle, type_code: t.code, temps: temps(),
         bascule: t.bascule, arret: t.arret_auto,
       });
       return;
     }
     ecrire(
-      { type_code: t.code, temps: position },
+      { type_code: t.code, temps: temps() },
       {
         arret: t.arret_auto,
         possessionApres: t.bascule ? inverse(possession) : null,
@@ -116,7 +124,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
   // jamais à la possession.
   function clicCarton(couleur) {
     setAttente({
-      libelle: `Carton ${couleur}`, carton: couleur, temps: position,
+      libelle: `Carton ${couleur}`, carton: couleur, temps: temps(),
     });
   }
 
@@ -242,7 +250,8 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
             attente={attente}
             surJoueur={clicJoueur}
             surAnnuler={() => setAttente(null)}
-            surRemplacement={() => setPopup({ sorte: "remplacement", temps: position })}
+            surRemplacement={() => setPopup({ sorte: "remplacement", temps: temps() })}
+            surComposition={surComposition}
           />
         </div>
 
@@ -260,10 +269,10 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
           etat={etat}
           surAction={clicAction}
           surPhase={(famille, issue) =>
-            setPopup({ sorte: "phase", famille, issue, temps: position })
+            setPopup({ sorte: "phase", famille, issue, temps: temps() })
           }
           surCarton={clicCarton}
-          surRetourCarton={() => setPopup({ sorte: "retour", temps: position })}
+          surRetourCarton={() => setPopup({ sorte: "retour", temps: temps() })}
         />
       </div>
 

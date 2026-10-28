@@ -11,6 +11,7 @@ export function Video({ surPosition, enregistrerLecteur }) {
   const video = useRef(null);
   const [charge, setCharge] = useState(false);
   const [enLecture, setEnLecture] = useState(false);
+  const [recule, setRecule] = useState(false);
   const arriere = useRef(null);
 
   useEffect(() => {
@@ -31,9 +32,11 @@ export function Video({ surPosition, enregistrerLecteur }) {
     if (arriere.current) {
       clearInterval(arriere.current);
       arriere.current = null;
+      setRecule(false);
       return;
     }
     video.current.pause();
+    setRecule(true);
     // Aucun navigateur ne lit une vidéo à l'envers : on recule
     // par petits pas, ce qui donne un défilement continu.
     arriere.current = setInterval(() => {
@@ -43,6 +46,7 @@ export function Video({ surPosition, enregistrerLecteur }) {
       if (v.currentTime <= 0) {
         clearInterval(arriere.current);
         arriere.current = null;
+        setRecule(false);
       }
     }, 100);
   }
@@ -116,7 +120,7 @@ export function Video({ surPosition, enregistrerLecteur }) {
           +5 s
         </button>
         <button type="button" className="cmd" onClick={reculer}>
-          {arriere.current ? "■ Stop" : "◀ Arrière"}
+          {recule ? "■ Stop" : "◀ Arrière"}
         </button>
         <span className="vitesse">
           <label htmlFor="vitesse">Vitesse</label>

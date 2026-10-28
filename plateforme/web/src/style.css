@@ -322,3 +322,7 @@ form.ligne button { background: var(--vert); color: #fff;
   .pan { width: auto !important; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.compte-feuille { margin-left: auto; font-family: var(--corps); font-size: 11px;
+  letter-spacing: 0; text-transform: none; color: var(--fg-soft); font-weight: 500; }
+.carte > h2 .compte-feuille + .remp { margin-left: 8px; }

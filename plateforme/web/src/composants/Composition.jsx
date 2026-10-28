@@ -59,6 +59,10 @@ export function Composition({ feuille, joueurs, surEnregistrer, erreur }) {
     setEnregistre(true);
   }
 
+  // Un nom tapé qui ne correspond à aucun joueur du club ne
+  // peut pas être enregistré : on le dit avant de valider.
+  const retenues = Object.values(lignes).filter((v) => v?.joueur_id).length;
+
   const compteBanc = BANC.reduce(
     (acc, n) => {
       const l = lignes[n];
@@ -74,6 +78,10 @@ export function Composition({ feuille, joueurs, surEnregistrer, erreur }) {
       <div className="carte" style={{ flex: 1 }}>
         <h2>
           Feuille de match
+          <span className="compte-feuille">
+            {retenues} joueur{retenues > 1 ? "s" : ""} retenu
+            {retenues > 1 ? "s" : ""}
+          </span>
           <button type="button" className="remp" onClick={enregistrer}>
             {enregistre ? "Enregistré" : "Enregistrer"}
           </button>
