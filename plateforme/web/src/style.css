@@ -326,3 +326,7 @@ form.ligne button { background: var(--vert); color: #fff;
 .compte-feuille { margin-left: auto; font-family: var(--corps); font-size: 11px;
   letter-spacing: 0; text-transform: none; color: var(--fg-soft); font-weight: 500; }
 .carte > h2 .compte-feuille + .remp { margin-left: 8px; }
+
+/* Une zone dont la hauteur est reglee a la poignee : elle ne se
+   laisse ni comprimer ni etirer par ses voisines. */
+.zone-fixe { display: flex; flex: none; min-height: 0; }

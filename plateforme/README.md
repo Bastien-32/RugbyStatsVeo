@@ -101,12 +101,43 @@ donc `/api` comme en production.
 Pour l'API, `cd api && go run .` avec `BASE_URL` pointant sur la base
 exposée en 5434.
 
+## L'interface
+
+Trois vues, reliées entre elles.
+
+**Saisie** — la vidéo et le journal à gauche, les palettes à droite sur
+toute la hauteur. Trois poignées pour ajuster les zones : largeur des
+palettes, hauteur de la vidéo, hauteur de la palette joueurs. Au
+clavier, `Espace` pour lire, `←` `→` pour ±5 s.
+
+La palette joueurs montre qui est sur le terrain à cet instant de la
+vidéo, remplaçants compris, et le numéro porté est celui du maillot :
+un remplaçant entre avec le sien. Un joueur sous carton garde sa
+couleur et ne répond plus jusqu'à son retour.
+
+La palette d'actions se construit depuis la base. Tant que le jeu n'a
+pas repris, seules les reprises et l'arrêt répondent.
+
+Cinq popups : touche, mêlée, pénalité, coup franc, remplacement, retour
+de carton. Rien n'y est présélectionné — une valeur ne part au journal
+que si elle a été choisie.
+
+**Composition** — la feuille de match, puisée dans l'effectif du club
+par saisie assistée. La ligne d'un titulaire découle de son poste ;
+celle d'un remplaçant se déclare, un banc pouvant compter trois avants
+et quatre trois-quarts comme l'inverse. C'est cette ligne qui décide
+qui la popup touche propose comme sauteur.
+
+**Statistiques** — possession par tranches, production par joueur,
+détail des touches et mêlées. Un clic sur l'heure d'une ligne ramène la
+vidéo à cet instant.
+
 ## Ce qui reste à faire
 
-- Porter l'interface de saisie — palettes, vidéo, popups — depuis la
-  maquette de `webapp/`.
-- Les cartons et leur retour : la table existe, l'API ne les expose pas
-  encore.
-- Le récapitulatif multi-matchs.
+- Le récapitulatif multi-matchs, qui existe dans le classeur.
+- Le sens de jeu, qui oriente le terrain des popups.
 - L'authentification. Les requêtes sont déjà découpées par club ; il
   manque de savoir qui est connecté.
+- La vidéo est chargée depuis le poste. Chez un hébergeur, elle
+  viendrait du lecteur de la plateforme, et `match.video_ref` est là
+  pour ça.

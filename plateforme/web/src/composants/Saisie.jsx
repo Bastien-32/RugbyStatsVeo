@@ -183,7 +183,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
   return (
     <section className="vue saisie">
       <div className="pan" style={{ width: `${tailles.largeur}%` }}>
-        <div style={{ height: `${tailles.hauteurVideo}%`, display: "flex" }}>
+        <div className="zone-fixe" style={{ height: `${tailles.hauteurVideo}%` }}>
           <Video surPosition={setPosition} enregistrerLecteur={enregistrerLecteur} />
         </div>
 
@@ -244,7 +244,7 @@ export function Saisie({ donnees, etat, miTemps, possession, setPossession,
       />
 
       <div className="pan" style={{ width: `${100 - tailles.largeur}%` }}>
-        <div style={{ height: `${tailles.hauteurJoueurs}%`, display: "flex" }}>
+        <div className="zone-fixe" style={{ height: `${tailles.hauteurJoueurs}%` }}>
           <PaletteJoueurs
             etat={etat}
             attente={attente}
