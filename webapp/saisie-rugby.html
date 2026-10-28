@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--
+  Saisie video rugby — demonstration autonome.
+
+  Un seul fichier : style, code et vocabulaire metier. Il s'ouvre
+  dans un navigateur par un double-clic, sans serveur ni installation.
+  La video reste sur le poste, rien n'est envoye nulle part.
+-->
+<title>Saisie vidéo rugby</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Saisie : video et journal a gauche, palettes a droite sur toute la
+   hauteur. Trois zones redimensionnables a la souris. */
+:root {
+  --bg: #eef1ee;
+  --surface: #ffffff;
+  --surface-2: #f6f8f6;
+  --line: #d4dbd4;
+  --fg: #16201a;
+  --fg-soft: #5c6a60;
+  --vert: #3f8f28;
+  --vert-clair: #e4f2dd;
+  --vert-fonce: #2c6b1a;
+  --nous: #1f6f3f;
+  --adv: #2d3b44;
+  --alerte: #b4402a;
+  --jaune: #e3b012;
+  --rouge: #c4342a;
+  --blanc-c: #cfd6cf;
+  --bleu-c: #2f6fb0;
+  --titre: "Barlow Condensed", "Helvetica Neue", sans-serif;
+  --corps: Inter, system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1511; --surface: #18211b; --surface-2: #131b16; --line: #2c3a30;
+    --fg: #e8efe8; --fg-soft: #9aab9f; --vert: #5fb642; --vert-clair: #203320;
+    --vert-fonce: #7ccb5c; --nous: #3f9b63; --adv: #7e919c; --alerte: #e0705a;
+    --jaune: #f0c53c; --rouge: #e05a4e; --blanc-c: #8b9a8d; --bleu-c: #5a9ad8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1511; --surface: #18211b; --surface-2: #131b16; --line: #2c3a30;
+  --fg: #e8efe8; --fg-soft: #9aab9f; --vert: #5fb642; --vert-clair: #203320;
+  --vert-fonce: #7ccb5c; --nous: #3f9b63; --adv: #7e919c; --alerte: #e0705a;
+  --jaune: #f0c53c; --rouge: #e05a4e; --blanc-c: #8b9a8d; --bleu-c: #5a9ad8;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--corps); font-size: 14px; line-height: 1.45;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 12px;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--vert); outline-offset: 2px; }
+
+/* ---------- bandeau ---------- */
+.bandeau { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 12px; flex: none; }
+.titre-match { font-family: var(--titre); font-size: 19px; font-weight: 700; margin: 0; }
+.titre-match small { display: block; font-family: var(--corps); font-size: 10px;
+  font-weight: 500; color: var(--fg-soft); letter-spacing: .07em; text-transform: uppercase; }
+.vues { display: flex; gap: 2px; background: var(--surface-2); border-radius: 8px; padding: 2px; }
+.vues button { border: 0; background: transparent; border-radius: 6px; padding: 5px 12px;
+  font-size: 12.5px; font-weight: 600; color: var(--fg-soft); }
+.vues button[aria-selected="true"] { background: var(--surface); color: var(--fg);
+  box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.bandeau-droite { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.groupe { display: flex; align-items: center; gap: 5px; }
+.etiq { font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--fg-soft); font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface-2); padding: 5px 11px;
+  font-weight: 600; font-size: 12px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--vert); color: #fff; }
+.seg button.adv[aria-pressed="true"] { background: var(--adv); color: #fff; }
+.chrono { font-family: var(--titre); font-size: 24px; font-weight: 700;
+  font-variant-numeric: tabular-nums; min-width: 86px; text-align: center;
+  background: var(--vert-clair); color: var(--vert-fonce); border-radius: 7px; padding: 1px 10px; }
+.etat-jeu { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 20px;
+  letter-spacing: .04em; text-transform: uppercase; }
+.etat-jeu.ouvert { background: var(--vert-clair); color: var(--vert-fonce); }
+.etat-jeu.ferme { background: color-mix(in srgb, var(--alerte) 16%, transparent); color: var(--alerte); }
+
+/* ---------- vues ---------- */
+main { flex: 1; min-height: 0; display: flex; }
+section.vue { flex: 1; min-height: 0; display: flex; }
+section.vue[hidden] { display: none; }
+
+.pan { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.carte { background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.carte > h2 { font-family: var(--titre); font-size: 12px; font-weight: 600;
+  letter-spacing: .11em; text-transform: uppercase; color: var(--fg-soft);
+  margin: 0; padding: 8px 11px 0; display: flex; align-items: center; gap: 8px; flex: none; }
+.carte > h2 .remp { margin-left: auto; font-family: var(--corps); font-size: 11px;
+  letter-spacing: 0; text-transform: none; border: 1px solid var(--line);
+  background: var(--surface-2); border-radius: 6px; padding: 3px 9px; font-weight: 600;
+  color: var(--fg); }
+.carte > h2 .remp:hover { border-color: var(--vert); background: var(--vert-clair); }
+
+/* poignees de redimensionnement */
+.sep { flex: none; position: relative; background: transparent; }
+.sep-v { width: 8px; cursor: col-resize; }
+.sep-h { height: 8px; cursor: row-resize; }
+.sep::after { content: ""; position: absolute; background: var(--line);
+  border-radius: 3px; transition: background .12s; }
+.sep-v::after { inset: 50% auto auto 50%; transform: translate(-50%, -50%);
+  width: 3px; height: 38px; }
+.sep-h::after { inset: 50% 50% auto auto; transform: translate(50%, -50%);
+  height: 3px; width: 38px; }
+.sep:hover::after, .sep.actif::after { background: var(--vert); }
+
+/* ---------- video ---------- */
+.zone-video { position: relative; background: #000; border-radius: 10px 10px 0 0;
+  flex: 1; min-height: 0; overflow: hidden; display: flex;
+  align-items: center; justify-content: center; }
+.zone-video video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.accueil { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 11px; text-align: center;
+  padding: 18px; color: #cfe0cc;
+  background: radial-gradient(circle at 50% 38%, #1c3a1b, #0b140b 70%); }
+.accueil p { margin: 0; font-size: 12.5px; max-width: 34ch; color: #9fb79c; }
+.accueil strong { font-family: var(--titre); font-size: 18px; color: #e7f3e4; font-weight: 600; }
+.bouton-fichier { display: inline-flex; align-items: center; gap: 7px; background: var(--vert);
+  color: #fff; border: 0; border-radius: 7px; padding: 8px 15px; font-weight: 600; font-size: 13px;
+  cursor: pointer; }
+.bouton-fichier input { display: none; }
+.commandes { display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+  padding: 7px 10px; border-top: 1px solid var(--line); flex: none; }
+.cmd { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px;
+  padding: 6px 10px; font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
+.cmd:hover { border-color: var(--vert); }
+.cmd.primaire { background: var(--vert); border-color: var(--vert); color: #fff; min-width: 70px; }
+.vitesse { margin-left: auto; display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--fg-soft); }
+.vitesse select { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 12px; }
+
+/* ---------- palettes ---------- */
+.corps-carte { padding: 8px 11px 10px; overflow: auto; min-height: 0; }
+.joueurs { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 4px; }
+.joueur { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px;
+  padding: 5px 3px; text-align: center; line-height: 1.12; }
+.joueur:hover:not(:disabled) { border-color: var(--vert); background: var(--vert-clair); }
+.joueur .num { display: block; font-family: var(--titre); font-size: 16px; font-weight: 700; }
+.joueur .nom { display: block; font-size: 9px; color: var(--fg-soft); text-transform: uppercase;
+  letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.joueur.attente { border-color: var(--vert); box-shadow: 0 0 0 2px var(--vert-clair); }
+.joueur.entre { border-color: var(--vert); }
+.joueur.carton-jaune { background: var(--jaune); border-color: var(--jaune); color: #22190a; }
+.joueur.carton-rouge { background: var(--rouge); border-color: var(--rouge); color: #fff; }
+.joueur.carton-blanc { background: var(--blanc-c); border-color: var(--blanc-c); color: #1b2a1d; }
+.joueur.carton-bleu  { background: var(--bleu-c); border-color: var(--bleu-c); color: #fff; }
+.joueur.carton-jaune .nom, .joueur.carton-rouge .nom,
+.joueur.carton-blanc .nom, .joueur.carton-bleu .nom { color: inherit; opacity: .82; }
+.joueur.special { font-family: var(--titre); }
+.joueur.special .num { font-size: 11.5px; letter-spacing: .03em; padding: 2px 0; }
+
+.colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 12px; align-items: start; }
+.famille > h3 { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-soft); margin: 0 0 4px; }
+.famille + .famille { margin-top: 10px; }
+.actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.act { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px;
+  padding: 6px 9px; font-size: 11.5px; font-weight: 500; }
+.act:hover:not(:disabled) { border-color: var(--vert); background: var(--vert-clair); }
+.act:disabled { opacity: .32; cursor: not-allowed; }
+.act.pts { background: color-mix(in srgb, var(--vert) 14%, var(--surface-2)); }
+.act.arret { background: var(--adv); color: #fff; border-color: var(--adv); }
+.act.carton { width: 32px; height: 28px; padding: 0; border-radius: 5px; }
+.act.carton.j { background: var(--jaune); border-color: var(--jaune); }
+.act.carton.r { background: var(--rouge); border-color: var(--rouge); }
+.act.carton.b { background: var(--blanc-c); border-color: var(--blanc-c); }
+.act.carton.u { background: var(--bleu-c); border-color: var(--bleu-c); }
+
+.attente-barre { display: none; align-items: center; gap: 8px; margin-bottom: 8px;
+  padding: 6px 10px; border-radius: 7px; background: var(--vert-clair);
+  color: var(--vert-fonce); font-size: 11.5px; font-weight: 600; }
+.attente-barre.on { display: flex; }
+.attente-barre button { margin-left: auto; border: 0; background: transparent; color: inherit;
+  font-size: 11px; text-decoration: underline; padding: 0; }
+
+/* ---------- tableaux ---------- */
+.onglets { display: flex; gap: 2px; padding: 8px 11px 0; flex: none; }
+.onglets button { border: 1px solid transparent; background: transparent;
+  border-radius: 7px 7px 0 0; padding: 5px 11px; font-size: 12px; font-weight: 600;
+  color: var(--fg-soft); }
+.onglets button[aria-selected="true"] { background: var(--surface-2); border-color: var(--line);
+  border-bottom-color: var(--surface-2); color: var(--fg); }
+.onglets .compte { margin-left: auto; align-self: center; font-size: 11px;
+  color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+.panneau { overflow: auto; min-height: 0; padding: 0 11px 10px; flex: 1; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--fg-soft); font-weight: 600; padding: 6px 7px; position: sticky; top: 0;
+  background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
+td { padding: 5px 7px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+tbody tr:hover { background: var(--surface-2); }
+.t-temps { font-variant-numeric: tabular-nums; font-weight: 600; width: 1%; white-space: nowrap;
+  color: var(--vert-fonce); cursor: pointer; }
+.t-temps:hover { text-decoration: underline; }
+.t-num { text-align: right; font-variant-numeric: tabular-nums; }
+.puce { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10px;
+  font-weight: 700; }
+.puce.nous { background: color-mix(in srgb, var(--nous) 18%, transparent); color: var(--nous); }
+.puce.adv { background: color-mix(in srgb, var(--adv) 18%, transparent); color: var(--adv); }
+.vide { padding: 22px 8px; text-align: center; color: var(--fg-soft); font-size: 12.5px; }
+.sup { border: 0; background: transparent; color: var(--alerte); font-size: 15px;
+  line-height: 1; padding: 2px 5px; border-radius: 5px; }
+.sup:hover { background: color-mix(in srgb, var(--alerte) 12%, transparent); }
+.barre-jauge { height: 5px; border-radius: 3px; background: var(--vert);
+  min-width: 2px; display: block; }
+
+/* ---------- composition ---------- */
+.compo-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px; padding: 12px; overflow: auto; min-height: 0; }
+.compo-bloc h3 { font-family: var(--titre); font-size: 15px; margin: 0 0 4px;
+  letter-spacing: .04em; }
+.compo-ligne { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.compo-ligne .poste { font-family: var(--titre); font-size: 15px; font-weight: 700;
+  width: 24px; text-align: center; flex: none; color: var(--vert-fonce); }
+.compo-ligne input { flex: 1; min-width: 0; background: var(--surface-2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: inherit;
+  font-size: 12.5px; }
+.compo-ligne input:focus { border-color: var(--vert); outline: none; }
+.compo-ligne .ligne-fixe { font-size: 9.5px; color: var(--fg-soft); width: 74px; flex: none;
+  text-transform: uppercase; letter-spacing: .04em; text-align: right; }
+.compo-ligne select { width: 90px; flex: none; background: var(--surface-2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 5px 4px; font: inherit;
+  font-size: 11.5px; }
+.note { font-size: 11.5px; color: var(--fg-soft); margin: 0 0 8px; }
+.resume-banc { font-size: 11px; color: var(--fg-soft); margin: 6px 0 0;
+  padding-top: 6px; border-top: 1px solid var(--line); }
+
+/* ---------- dialogue ---------- */
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+  color: var(--fg); padding: 0; max-width: min(620px, 94vw); width: 100%; }
+dialog::backdrop { background: rgba(8, 14, 10, .62); }
+.dlg-tete { padding: 13px 17px 9px; border-bottom: 1px solid var(--line); }
+.dlg-tete h3 { font-family: var(--titre); font-size: 18px; margin: 0; font-weight: 700; }
+.dlg-tete p { margin: 2px 0 0; font-size: 12px; color: var(--fg-soft); }
+.dlg-corps { padding: 13px 17px; max-height: 58vh; overflow: auto; }
+.dlg-pied { display: flex; gap: 8px; justify-content: flex-end; padding: 11px 17px;
+  border-top: 1px solid var(--line); }
+.champ { margin-bottom: 11px; }
+.champ > label { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--fg-soft); margin-bottom: 5px; }
+.choix { display: flex; flex-wrap: wrap; gap: 4px; }
+.choix button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px;
+  padding: 5px 10px; font-size: 12px; font-weight: 500; }
+.choix button[aria-pressed="true"] { background: var(--vert); border-color: var(--vert); color: #fff; }
+.motifs-famille { margin-bottom: 9px; }
+.motifs-famille h4 { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--fg-soft); margin: 0 0 4px; font-weight: 700; }
+.btn-plein { background: var(--vert); color: #fff; border: 1px solid var(--vert);
+  border-radius: 7px; padding: 7px 15px; font-weight: 600; font-size: 13px; }
+.btn-vide { background: transparent; border: 1px solid var(--line); border-radius: 7px;
+  padding: 7px 15px; font-weight: 600; font-size: 13px; }
+
+.pied { font-size: 10.5px; color: var(--fg-soft); text-align: center; flex: none; }
+.pied kbd { font-family: var(--corps); font-size: 10px; border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 5px; background: var(--surface-2); }
+
+body.redimensionne { user-select: none; }
+@media (max-width: 900px) {
+  section.vue { flex-direction: column; }
+  .sep-v { display: none; }
+  .pan { width: auto !important; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+  :root { color-scheme: light dark; }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; }
+</style>
+</head>
+<body>
+
+
+<div class="bandeau">
+  <h1 class="titre-match">MXV · SA Condom<small>J5 · Première · Domicile</small></h1>
+  <div class="vues" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-vue="saisie">Saisie</button>
+    <button type="button" role="tab" aria-selected="false" data-vue="compo">Composition</button>
+    <button type="button" role="tab" aria-selected="false" data-vue="stats">Statistiques</button>
+  </div>
+  <div class="bandeau-droite">
+    <div class="groupe">
+      <span class="etiq">Possession</span>
+      <div class="seg" id="seg-poss">
+        <button type="button" data-poss="Nous" aria-pressed="true">Nous</button>
+        <button type="button" class="adv" data-poss="Adv" aria-pressed="false">Adversaire</button>
+      </div>
+    </div>
+    <div class="groupe">
+      <span class="etiq">Mi-temps</span>
+      <div class="seg" id="seg-mt">
+        <button type="button" data-mt="MT1" aria-pressed="true">MT1</button>
+        <button type="button" data-mt="MT2" aria-pressed="false">MT2</button>
+      </div>
+    </div>
+    <span class="etat-jeu ouvert" id="etat-jeu">Jeu ouvert</span>
+    <span class="chrono" id="chrono">0:00</span>
+  </div>
+</div>
+
+<main>
+  <!-- ============ VUE SAISIE ============ -->
+  <section class="vue" id="vue-saisie">
+    <div class="pan" id="pan-gauche">
+      <div class="carte" id="bloc-video">
+        <div class="zone-video" id="zone-video">
+          <video id="video" playsinline></video>
+          <div class="accueil" id="accueil">
+            <strong>Déposez la vidéo du match</strong>
+            <p>Un fichier local, ou l'export Veo. Chaque action est horodatée sur la vidéo et cliquable pour y revenir.</p>
+            <label class="bouton-fichier">Choisir un fichier
+              <input type="file" id="fichier" accept="video/*">
+            </label>
+          </div>
+        </div>
+        <div class="commandes">
+          <button type="button" class="cmd primaire" id="btn-play">Lecture</button>
+          <button type="button" class="cmd" id="btn-moins">−5 s</button>
+          <button type="button" class="cmd" id="btn-plus">+5 s</button>
+          <button type="button" class="cmd" id="btn-arriere">◀ Arrière</button>
+          <span class="vitesse">
+            <label for="vitesse">Vitesse</label>
+            <select id="vitesse">
+              <option value="0.5">0,5×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.5">1,5×</option>
+              <option value="2">2×</option>
+            </select>
+          </span>
+        </div>
+      </div>
+
+      <div class="sep sep-h" id="sep-h" role="separator" aria-orientation="horizontal"
+           tabindex="0" aria-label="Hauteur de la vidéo"></div>
+
+      <div class="carte" id="bloc-journal">
+        <div class="onglets" role="tablist">
+          <button type="button" role="tab" aria-selected="true" data-ong="journal">Journal d'actions</button>
+          <button type="button" role="tab" aria-selected="false" data-ong="tdj">Temps de jeu</button>
+          <span class="compte" id="compte">0 action</span>
+        </div>
+        <div class="panneau" id="panneau-journal"></div>
+        <div class="panneau" id="panneau-tdj" hidden></div>
+      </div>
+    </div>
+
+    <div class="sep sep-v" id="sep-v" role="separator" aria-orientation="vertical"
+         tabindex="0" aria-label="Largeur des palettes"></div>
+
+    <div class="pan" id="pan-droite">
+      <div class="carte" id="bloc-joueurs">
+        <h2>Sur le terrain
+          <button type="button" class="remp" id="btn-remp">Remplacement</button>
+        </h2>
+        <div class="corps-carte">
+          <div class="attente-barre" id="attente">
+            <span id="attente-txt"></span>
+            <button type="button" id="attente-annul">annuler</button>
+          </div>
+          <div class="joueurs" id="joueurs"></div>
+        </div>
+      </div>
+      <div class="sep sep-h" id="sep-h2" role="separator" aria-orientation="horizontal"
+           tabindex="0" aria-label="Hauteur de la palette joueurs"></div>
+      <div class="carte" id="bloc-actions" style="flex:1">
+        <h2>Palette actions</h2>
+        <div class="corps-carte"><div class="colonnes" id="actions"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VUE COMPOSITION ============ -->
+  <section class="vue" id="vue-compo" hidden>
+    <div class="carte" style="flex:1">
+      <h2>Feuille de match</h2>
+      <div class="compo-grille">
+        <div class="compo-bloc">
+          <h3>Avants</h3>
+          <p class="note">Postes 1 à 8. La ligne découle du poste.</p>
+          <div id="compo-avants"></div>
+        </div>
+        <div class="compo-bloc">
+          <h3>Trois-quarts</h3>
+          <p class="note">Postes 9 à 15. La ligne découle du poste.</p>
+          <div id="compo-arrieres"></div>
+        </div>
+        <div class="compo-bloc">
+          <h3>Remplaçants</h3>
+          <p class="note">Chacun garde son numéro en entrant. Sa ligne se choisit ici :
+            un banc peut compter trois avants et quatre trois-quarts, ou l'inverse.</p>
+          <div id="compo-banc"></div>
+          <p class="resume-banc" id="resume-banc"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VUE STATISTIQUES ============ -->
+  <section class="vue" id="vue-stats" hidden>
+    <div class="carte" style="flex:1">
+      <div class="onglets" role="tablist">
+        <button type="button" role="tab" aria-selected="true" data-stat="poss">Possession</button>
+        <button type="button" role="tab" aria-selected="false" data-stat="joueurs">Par joueur</button>
+        <button type="button" role="tab" aria-selected="false" data-stat="touches">Touches et mêlées</button>
+      </div>
+      <div class="panneau" id="stat-poss"></div>
+      <div class="panneau" id="stat-joueurs" hidden></div>
+      <div class="panneau" id="stat-touches" hidden></div>
+    </div>
+  </section>
+</main>
+
+<p class="pied">
+  Démo autonome — aucune donnée ne quitte votre navigateur.
+  <kbd>Espace</kbd> lecture · <kbd>←</kbd> <kbd>→</kbd> ±5 s · glissez les séparateurs pour redimensionner
+</p>
+
+<datalist id="liste-club"></datalist>
+<dialog id="dlg"></dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ==================================================================
+     Effectif du club.
+
+     Il vivra plus tard dans une page « Données du club », commune a
+     toutes les equipes : la feuille de match y puisera au lieu de
+     retaper les noms. Ici, la liste sert deja a la saisie assistee.
+  ================================================================== */
+
+  const CLUB = [
+    ["ABADIE Quentin","Avant"], ["ABADIE Emeric","Avant"],
+    ["BARATGIN Julian","Avant"], ["BAUP Nicolas","Avant"],
+    ["BIFFI Pierre","Avant"], ["BOURREC Anthony","Trois-quarts"],
+    ["CESCA Sacha","Avant"], ["CESCA Simon","Trois-quarts"],
+    ["COURREGES Romain","Trois-quarts"], ["DALLA ROSA Jonah","Avant"],
+    ["DUTREY Thomas","Avant"], ["GALLINARO Pierrick","Trois-quarts"],
+    ["JOUNAUX Joris","Trois-quarts"], ["KAPFER Bastien","Trois-quarts"],
+    ["LAUDET Jean Baptiste","Trois-quarts"], ["LOUREIRO LABAZUY Antonio","Avant"],
+    ["MOUDENS Alexis","Trois-quarts"], ["MULLIER Martin","Avant"],
+    ["MULLIER Victor","Avant"], ["POUJOLS Dylan","Trois-quarts"],
+    ["RICHIARDONNE Gregory","Avant"], ["ROBERT Jimmy","Trois-quarts"],
+    ["SALLES Dorian","Trois-quarts"], ["SALLES Fabien","Trois-quarts"],
+    ["SOUVILLE Quentin","Avant"], ["STEFANI Titouan","Avant"]
+  ];
+  const LIGNE_CLUB = {};
+  CLUB.forEach(([nom, ligne]) => LIGNE_CLUB[nom] = ligne);
+
+  /* Feuille de match : numero de maillot -> nom. Le numero suit le
+     joueur, il ne reste pas au poste : le 18 qui remplace le 4 entre
+     avec son 18. */
+  const FEUILLE = {
+    1: "ABADIE Quentin", 2: "RICHIARDONNE Gregory", 3: "BAUP Nicolas",
+    4: "DUTREY Thomas", 5: "ABADIE Emeric", 6: "MULLIER Victor",
+    7: "BIFFI Pierre", 8: "BARATGIN Julian", 9: "MOUDENS Alexis",
+    10: "COURREGES Romain", 11: "BOURREC Anthony", 12: "LAUDET Jean Baptiste",
+    13: "KAPFER Bastien", 14: "JOUNAUX Joris", 15: "SALLES Fabien",
+    16: "STEFANI Titouan", 17: "SOUVILLE Quentin", 18: "CESCA Sacha",
+    19: "ROBERT Jimmy", 20: "MULLIER Martin", 21: "SALLES Dorian",
+    22: "POUJOLS Dylan"
+  };
+  const LIGNE_BANC = { 16: "Avant", 17: "Avant", 18: "Avant",
+                       19: "Trois-quarts", 20: "Avant", 21: "Trois-quarts",
+                       22: "Trois-quarts" };
+
+  const GROUPES = ["Avant", "Trois-quarts", "Collectif", "?"];
+
+  /* ==================================================================
+     Vocabulaire repris du classeur
+  ================================================================== */
+
+  const ISSUE_TOUCHE = { G: "Touche à nous conservée", P: "Touche à nous perdue",
+                         ND: "Touche à nous pas droite" };
+  const ISSUE_TOUCHE_ADV = { G: "Touche à eux volée", P: "Touche à eux perdue",
+                             ND: "Touche à eux pas droite" };
+  const ISSUE_MELEE = { G: "Mêlée à nous gagnée", P: "Mêlée à nous perdue" };
+  const ISSUE_MELEE_ADV = { G: "Mêlée à eux volée", P: "Mêlée à eux perdue" };
+
+  const ZONE_SAUT = ["Z0", "Z1", "Z1,5", "Z2", "Z3"];
+  const ALIGNEMENT = ["2", "3", "4", "5", "6", "Complet"];
+  const BALLON = ["C", "F"];
+  const UTILISATION = ["Avants", "Trois-quart", "Pied"];
+  const ZONE_LONGUEUR = ["N en-but","N 15m","N 22m","N 30m","N 40m","50m",
+                         "E 40m","E 30m","E 22m","E 15m","E en-but"];
+  const ZONE_LARGEUR = ["Gauche", "Milieu", "Droit"];
+
+  const MOTIFS_PEN = [
+    "En-avant volontaire","En-avant repris devant","Maul - Entrer sur le côté",
+    "Maul - Ecroulement","Melee - Poussee avant introduction","Touche - Saisie bras sauteur",
+    "Touche - Plaquage sauteur avant retombée","Touche - Poussée avant retombée sauteur",
+    "Ruck - Va au-delà","Ruck - Soutient couché sur porteur","Ruck - Retard soutient",
+    "Ruck - Garde le ballon au sol","Ruck - Déblayage sur le coté","Ruck - Saisie relayeur",
+    "Ruck - Talonnage à la main","Ruck - Plaqueur qui ne sort pas","Ruck - 4 appuis",
+    "Ruck - Gratteur ne relâche pas","Plaquage - à 2","Plaquage - haut",
+    "Plaquage - sans ballon","Plaquage - à retardement","Plaquage - en l'air",
+    "Brutalité","Porteur roule au sol","Passage à vide","Hors-jeu","10m de plus",
+    "10m de plus - contestation","Parle arbitre","Autre","?"
+  ];
+  const MOTIFS_CF = [
+    "Melee - Mise en place trop longue","Melee - Engagement anticipé",
+    "Melee - Poussée anticipée","Melee - Introduction irreguliere",
+    "Melee - Talonnage irregulier","Melee - Poussée après talonnage",
+    "Touche - Mise en place trop longue","Touche - Alignement irregulier",
+    "Touche - Lancer non conforme","Touche - Saut ou soutien premature",
+    "Touche - Sauteur mal redescendu","Touche - Soutient devant sauteur retombée",
+    "Touche - Lancer dans les 5 m","Ruck - Fausse sortie","Perte de temps",
+    "Jeu à la main - mauvaise remise en jeu","Passage à vide","Ecran",
+    "Jeu-rapide 10m de plus","10m de plus - contestation","Autre","?"
+  ];
+
+  const REPRISES = ["Reprise du jeu sur touche","Reprise du jeu sur melée",
+                    "Reprise du jeu sur renvoi","Reprise du jeu à la main"];
+  const ARRET = "Arret du jeu";
+  const PLAQUAGES = ["Plaquage normal","Plaquage offensif","Plaquage raté",
+                     "Plaquage à 2","Plaquage haut"];
+
+  const PALETTE = [
+    { col: 1, titre: "Points", items: [
+      { l: "essai", a: "Essai", c: "pts", joueur: "si-nous", bascule: true, arret: true },
+      { l: "essai de pénalité", a: "Essai de pénalité", c: "pts", bascule: true, arret: true },
+      { l: "transfo", a: "Transformation", c: "pts", joueur: "si-nous" },
+      { l: "pénalité", a: "Pénalité", c: "pts", joueur: "si-nous" },
+      { l: "drop", a: "Drop", c: "pts", joueur: "si-nous", bascule: true, arret: true }
+    ]},
+    { col: 1, titre: "Reprise du jeu, ou arrêt", items: [
+      { l: "touche", a: "Reprise du jeu sur touche", reprise: true },
+      { l: "mêlée", a: "Reprise du jeu sur melée", reprise: true },
+      { l: "renvoi", a: "Reprise du jeu sur renvoi", reprise: true },
+      { l: "à la main", a: "Reprise du jeu à la main", reprise: true },
+      { l: "arrêt du jeu", a: ARRET, c: "arret", stoppe: true }
+    ]},
+    { col: 2, titre: "Cartons", items: [
+      { l: "", titre: "Carton rouge", a: "Carton rouge contre adversaire", c: "carton r", carton: "rouge" },
+      { l: "", titre: "Carton jaune", a: "Carton jaune contre adversaire", c: "carton j", carton: "jaune" },
+      { l: "", titre: "Carton blanc", a: "Carton blanc contre adversaire", c: "carton b", carton: "blanc" },
+      { l: "", titre: "Carton bleu", a: "Carton bleu contre adversaire", c: "carton u", carton: "bleu" },
+      { l: "retour", a: "retour", retour: true }
+    ]},
+    { col: 2, titre: "Touches", items: [
+      { l: "gagnée", popup: "touche", issue: "G" },
+      { l: "perdue", popup: "touche", issue: "P" },
+      { l: "pas droit", popup: "touche", issue: "ND" }
+    ]},
+    { col: 2, titre: "Mêlées", items: [
+      { l: "gagnée", popup: "melee", issue: "G" },
+      { l: "perdue", popup: "melee", issue: "P" }
+    ]},
+    { col: 3, titre: "Plaquages", items: [
+      { l: "offensif", a: "Plaquage offensif", joueur: "si-adv" },
+      { l: "normal", a: "Plaquage normal", joueur: "si-adv" },
+      { l: "raté", a: "Plaquage raté", joueur: "si-adv" },
+      { l: "à 2", a: "Plaquage à 2", joueur: "si-adv" },
+      { l: "haut", a: "Plaquage haut", joueur: "si-adv" }
+    ]},
+    { col: 3, titre: "Attitudes au contact", items: [
+      { l: "franchissement", a: "Franchissement", joueur: "si-nous" },
+      { l: "avancée", a: "Avancée au contact", joueur: "si-nous" },
+      { l: "stoppé / recul", a: "Recul ou sans progression", joueur: "si-nous" }
+    ]},
+    { col: 4, titre: "Changement de possession", items: [
+      { l: "en-avant", a: "En avant", joueur: "si-nous", bascule: true },
+      { l: "jeu au pied", a: "Jeu au pied", joueur: "si-nous" },
+      { l: "réception nous", a: "Réception nous", force: "Nous", joueur: true },
+      { l: "réception Adv", a: "Réception adversaire", force: "Adv" },
+      { l: "grattage", duo: ["Grattage - récupération du ballon",
+                             "Grattage - perte du ballon"], joueur: true, bascule: true },
+      { l: "contre-ruck", duo: ["Contre-ruck - récupération du ballon",
+                                "Contre-ruck - perte du ballon"], joueur: true, bascule: true },
+      { l: "arrachage", duo: ["Arrachage - récupération du ballon",
+                              "Arrachage - perte du ballon"], joueur: true, bascule: true },
+      { l: "turn-over", duo: ["Turn-over - récupération du ballon",
+                              "Turn-over - perte du ballon"], joueur: true, bascule: true }
+    ]},
+    { col: 5, titre: "Pénalité", items: [
+      { l: "contre adversaire", a: "Pénalité contre adversaire", popup: "pen", pour: "Nous" },
+      { l: "contre nous", a: "Pénalité contre nous", popup: "pen", pour: "Adv" }
+    ]},
+    { col: 6, titre: "Coup franc", items: [
+      { l: "contre adversaire", a: "Coup-franc contre adversaire", popup: "cf", pour: "Nous" },
+      { l: "contre nous", a: "Coup-franc contre nous", popup: "cf", pour: "Adv" }
+    ]}
+  ];
+
+  /* ==================================================================
+     Etat
+  ================================================================== */
+
+  const etat = {
+    possession: "Nous",
+    miTemps: "MT1",
+    journal: [],
+    attente: null,
+    cartons: {},                  // numero de maillot -> couleur
+    feuille: Object.assign({}, FEUILLE),
+    ligneBanc: Object.assign({}, LIGNE_BANC),
+    surTerrain: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+    passages: {},                 // numero -> [{ entre, sorti }]
+    vue: "saisie", onglet: "journal", stat: "poss"
+  };
+  etat.surTerrain.forEach(n => etat.passages[n] = [{ entre: 0, sorti: null }]);
+  for (let n = 16; n <= 22; n++) etat.passages[n] = [];
+
+  const $ = (s) => document.querySelector(s);
+  const video = $("#video");
+  const dlg = $("#dlg");
+
+  const nomDe = (n) => etat.feuille[n] || "";
+  const etiquette = (n) => n + " " + nomDe(n);
+  const ligneDe = (n) => (n <= 8 ? "Avant" : n <= 15 ? "Trois-quarts" : etat.ligneBanc[n]);
+
+  const mmss = (s) => {
+    s = Math.max(0, s || 0);
+    const m = Math.floor(s / 60), r = s % 60;
+    return m + ":" + (r < 10 ? "0" : "") + r.toFixed(1).replace(".", ",");
+  };
+  const court = (s) => {
+    s = Math.max(0, Math.floor(s || 0));
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  };
+  const tempsCourant = () => (video.src ? video.currentTime : 0);
+  const finMatch = () => etat.journal.reduce((m, e) => Math.max(m, e.t), tempsCourant());
+
+  /* L'etat du jeu se juge a la position video, pas a la fin du match. */
+  function jeuOuvert(t) {
+    const borne = (t === undefined ? tempsCourant() : t) + 0.5;
+    let meilleur = -1, derniere = "";
+    for (const e of etat.journal) {
+      if (e.mt !== etat.miTemps || e.t > borne) continue;
+      if (e.action !== ARRET && REPRISES.indexOf(e.action) === -1) continue;
+      if (e.t > meilleur) { meilleur = e.t; derniere = e.action; }
+    }
+    return REPRISES.indexOf(derniere) !== -1;
+  }
+
+  function ajouter(action, opts) {
+    opts = opts || {};
+    const ligne = {
+      t: opts.t !== undefined ? opts.t : tempsCourant(),
+      mt: etat.miTemps,
+      joueur: opts.joueur || "",
+      action: action,
+      motif: opts.motif || "",
+      detail: opts.detail || "",
+      possession: opts.possession || etat.possession
+    };
+    etat.journal.push(ligne);
+    etat.journal.sort((a, b) => b.t - a.t);
+    return ligne;
+  }
+
+  function appliquerSuites(item, ligne) {
+    if (item.force) majPossession(item.force);
+    else if (item.bascule) majPossession(etat.possession === "Nous" ? "Adv" : "Nous");
+    if (item.arret && !etat.journal.some(e => e.action === ARRET && Math.abs(e.t - ligne.t) < 0.01)) {
+      ajouter(ARRET, { t: ligne.t });
+    }
+  }
+
+  /* ==================================================================
+     Rendu — palettes
+  ================================================================== */
+
+  function rendreJoueurs() {
+    const hote = $("#joueurs");
+    hote.innerHTML = "";
+    const bloc = (cle, num, nom, special, entre) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "joueur" + (special ? " special" : "") + (entre ? " entre" : "");
+      const carton = etat.cartons[cle];
+      if (carton) b.classList.add("carton-" + carton);
+      if (etat.attente) b.classList.add("attente");
+      b.innerHTML = '<span class="num">' + num + "</span>" +
+                    (nom ? '<span class="nom">' + nom.split(" ")[0] + "</span>" : "");
+      b.addEventListener("click", () => clicJoueur(cle));
+      if (carton && !(etat.attente && etat.attente.carton)) {
+        b.disabled = true;
+        b.title = "Sous carton " + carton + " — déclarer son retour d'abord";
+      }
+      hote.appendChild(b);
+    };
+    // Les numeros affiches sont ceux des maillots presents, dans
+    // l'ordre des postes qu'ils occupent.
+    etat.surTerrain.forEach(n => bloc(String(n), n, nomDe(n), false, n > 15));
+    GROUPES.forEach(g => bloc(g, g, "", true, false));
+  }
+
+  function rendreActions() {
+    const hote = $("#actions");
+    hote.innerHTML = "";
+    const ouvert = jeuOuvert();
+    const colonnes = {};
+    PALETTE.forEach(fam => (colonnes[fam.col] = colonnes[fam.col] || []).push(fam));
+    Object.keys(colonnes).sort().forEach(num => {
+      const col = document.createElement("div");
+      colonnes[num].forEach(fam => {
+        const d = document.createElement("div");
+        d.className = "famille";
+        const h = document.createElement("h3");
+        h.textContent = fam.titre;
+        d.appendChild(h);
+        const ligne = document.createElement("div");
+        ligne.className = "actions";
+        fam.items.forEach(item => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "act" + (item.c ? " " + item.c : "");
+          b.textContent = item.l;
+          if (item.titre) b.title = item.titre;
+          if (!ouvert && !item.reprise && !item.stoppe && !item.popup
+              && !item.carton && !item.retour) {
+            b.disabled = true;
+            b.title = "Le jeu n'est pas ouvert : saisir d'abord une reprise";
+          }
+          if (item.retour && !Object.keys(etat.cartons).length) {
+            b.disabled = true;
+            b.title = "Aucun joueur sous carton";
+          }
+          b.addEventListener("click", () => clicAction(item));
+          ligne.appendChild(b);
+        });
+        d.appendChild(ligne);
+        col.appendChild(d);
+      });
+      hote.appendChild(col);
+    });
+  }
+
+  /* ==================================================================
+     Rendu — tableaux
+  ================================================================== */
+
+  function rendreJournal() {
+    const h = $("#panneau-journal");
+    $("#compte").textContent = etat.journal.length +
+      (etat.journal.length > 1 ? " actions" : " action");
+    if (!etat.journal.length) {
+      h.innerHTML = '<p class="vide">Le journal se remplit à chaque clic sur la palette.<br>' +
+        'Chaque ligne garde le temps vidéo exact et y renvoie.</p>';
+      return;
+    }
+    let t = '<table><thead><tr><th>Temps</th><th>MT</th><th>Joueur</th>' +
+            '<th>Action</th><th>Détail</th><th>Poss.</th><th></th></tr></thead><tbody>';
+    etat.journal.forEach((e, i) => {
+      t += '<tr><td class="t-temps" data-saut="' + e.t + '">' + mmss(e.t) + "</td>" +
+           "<td>" + e.mt + "</td><td>" + (e.joueur || "—") + "</td>" +
+           "<td>" + e.action + "</td>" +
+           "<td>" + [e.motif, e.detail].filter(Boolean).join(" · ") + "</td>" +
+           '<td><span class="puce ' + (e.possession === "Nous" ? "nous" : "adv") + '">' +
+           e.possession + "</span></td>" +
+           '<td><button type="button" class="sup" data-sup="' + i +
+           '" aria-label="Supprimer">×</button></td></tr>';
+    });
+    h.innerHTML = t + "</tbody></table>";
+  }
+
+  function tempsDeJeu() {
+    const fin = finMatch();
+    const lignes = [];
+    Object.keys(etat.passages).forEach(n => {
+      const p = etat.passages[n];
+      if (!p.length) return;
+      let total = 0;
+      p.forEach(x => total += (x.sorti === null ? fin : x.sorti) - x.entre);
+      lignes.push({ num: Number(n), nom: nomDe(n), s: Math.max(0, total),
+                    present: etat.surTerrain.indexOf(Number(n)) !== -1 });
+    });
+    return lignes.sort((a, b) => b.s - a.s);
+  }
+
+  function rendreTdj() {
+    const lignes = tempsDeJeu();
+    const max = lignes.reduce((m, l) => Math.max(m, l.s), 1);
+    let t = '<table><thead><tr><th>N°</th><th>Joueur</th><th>Ligne</th>' +
+            '<th class="t-num">Temps de jeu</th><th style="width:30%"></th>' +
+            "</tr></thead><tbody>";
+    lignes.forEach(l => {
+      t += "<tr><td>" + l.num + "</td><td>" + l.nom + "</td><td>" + ligneDe(l.num) +
+           '</td><td class="t-num">' + court(l.s) + (l.present ? "" : " ·sorti") + "</td>" +
+           '<td><span class="barre-jauge" style="width:' +
+           Math.round(l.s * 100 / max) + '%"></span></td></tr>';
+    });
+    $("#panneau-tdj").innerHTML = t + "</tbody></table>";
+  }
+
+  function sequencesPossession() {
+    const seqs = [];
+    ["MT1", "MT2"].forEach(mt => {
+      let ouv = false, eq = "", deb = 0, arrete = true;
+      etat.journal.slice().sort((a, b) => a.t - b.t)
+        .filter(e => e.mt === mt).forEach(e => {
+          if (e.action === ARRET) {
+            if (ouv) seqs.push({ eq: eq, d: e.t - deb });
+            ouv = false; arrete = true;
+          } else if (REPRISES.indexOf(e.action) !== -1) {
+            if (ouv) seqs.push({ eq: eq, d: e.t - deb });
+            ouv = true; eq = e.possession; deb = e.t; arrete = false;
+          } else if (!arrete) {
+            if (!ouv) { ouv = true; eq = e.possession; deb = e.t; }
+            else if (e.possession !== eq) {
+              seqs.push({ eq: eq, d: e.t - deb });
+              eq = e.possession; deb = e.t;
+            }
+          }
+        });
+    });
+    return seqs;
+  }
+
+  function rendreStatPoss() {
+    const seqs = sequencesPossession();
+    const tranches = ["0-20 s","20-40 s","40-60 s","60-90 s","> 90 s"];
+    const rang = (d) => d < 20 ? 0 : d < 40 ? 1 : d < 60 ? 2 : d < 90 ? 3 : 4;
+    const grille = { Nous: [0,0,0,0,0], Adv: [0,0,0,0,0] };
+    const cumul = { Nous: 0, Adv: 0 };
+    seqs.forEach(s => {
+      if (!grille[s.eq]) return;
+      grille[s.eq][rang(s.d)]++; cumul[s.eq] += s.d;
+    });
+    const total = cumul.Nous + cumul.Adv;
+    const pct = (v) => total > 0 ? Math.round(v * 100 / total) + " %" : "—";
+    let t = '<table><thead><tr><th>Durée des séquences</th><th class="t-num">Nous</th>' +
+            '<th class="t-num">Adversaire</th></tr></thead><tbody>';
+    tranches.forEach((nom, i) => {
+      t += "<tr><td>" + nom + '</td><td class="t-num">' + grille.Nous[i] +
+           '</td><td class="t-num">' + grille.Adv[i] + "</td></tr>";
+    });
+    t += '<tr><td><strong>Temps cumulé</strong></td>' +
+         '<td class="t-num"><strong>' + court(cumul.Nous) + " · " + pct(cumul.Nous) +
+         '</strong></td><td class="t-num"><strong>' + court(cumul.Adv) + " · " +
+         pct(cumul.Adv) + "</strong></td></tr>";
+    t += '<tr><td>Séquences jouées</td><td class="t-num">' +
+         seqs.filter(s => s.eq === "Nous").length + '</td><td class="t-num">' +
+         seqs.filter(s => s.eq === "Adv").length + "</td></tr>";
+    $("#stat-poss").innerHTML = t + "</tbody></table>";
+  }
+
+  function rendreStatJoueurs() {
+    const parJoueur = {};
+    etat.journal.forEach(e => {
+      if (!e.joueur) return;
+      const j = parJoueur[e.joueur] = parJoueur[e.joueur] ||
+        { pl: 0, av: 0, to: 0, pen: 0, autres: 0 };
+      if (PLAQUAGES.indexOf(e.action) !== -1) j.pl++;
+      else if (e.action.indexOf("Avancée") === 0 || e.action.indexOf("Franchissement") === 0) j.av++;
+      else if (e.action.indexOf("Turn-over") === 0 || e.action.indexOf("Grattage") === 0 ||
+               e.action.indexOf("Contre-ruck") === 0 || e.action.indexOf("Arrachage") === 0) j.to++;
+      else if (e.action.indexOf("Pénalité contre") === 0 ||
+               e.action.indexOf("Coup-franc contre") === 0) j.pen++;
+      else j.autres++;
+    });
+    const noms = Object.keys(parJoueur).sort((a, b) =>
+      (parJoueur[b].pl + parJoueur[b].av) - (parJoueur[a].pl + parJoueur[a].av));
+    if (!noms.length) {
+      $("#stat-joueurs").innerHTML =
+        '<p class="vide">Les actions attribuées à un joueur apparaîtront ici.</p>';
+      return;
+    }
+    let t = '<table><thead><tr><th>Joueur</th><th class="t-num">Plaquages</th>' +
+            '<th class="t-num">Avancées</th><th class="t-num">Ballons récupérés</th>' +
+            '<th class="t-num">Fautes</th><th class="t-num">Autres</th>' +
+            "</tr></thead><tbody>";
+    noms.forEach(n => {
+      const j = parJoueur[n];
+      t += "<tr><td>" + n + '</td><td class="t-num">' + j.pl + '</td><td class="t-num">' +
+           j.av + '</td><td class="t-num">' + j.to + '</td><td class="t-num">' + j.pen +
+           '</td><td class="t-num">' + j.autres + "</td></tr>";
+    });
+    $("#stat-joueurs").innerHTML = t + "</tbody></table>";
+  }
+
+  function rendreStatTouches() {
+    const lignes = etat.journal.filter(e =>
+      e.action.indexOf("Touche") === 0 || e.action.indexOf("Mêlée") === 0);
+    if (!lignes.length) {
+      $("#stat-touches").innerHTML =
+        '<p class="vide">Les touches et mêlées saisies apparaîtront ici avec leur détail.</p>';
+      return;
+    }
+    let t = '<table><thead><tr><th>Temps</th><th>MT</th><th>Sauteur</th>' +
+            '<th>Issue</th><th>Détail</th></tr></thead><tbody>';
+    lignes.slice().sort((a, b) => a.t - b.t).forEach(e => {
+      t += '<tr><td class="t-temps" data-saut="' + e.t + '">' + mmss(e.t) + "</td><td>" +
+           e.mt + "</td><td>" + (e.joueur || "—") + "</td><td>" + e.action +
+           "</td><td>" + (e.detail || "—") + "</td></tr>";
+    });
+    $("#stat-touches").innerHTML = t + "</tbody></table>";
+  }
+
+  /* ==================================================================
+     Composition : saisie assistee par l'effectif du club
+  ================================================================== */
+
+  function remplirListeClub() {
+    const dl = $("#liste-club");
+    dl.innerHTML = "";
+    CLUB.forEach(([nom]) => {
+      const o = document.createElement("option");
+      o.value = nom;
+      dl.appendChild(o);
+    });
+  }
+
+  function rendreCompo() {
+    const ligneDom = (num, zone, modifiable) => {
+      const d = document.createElement("div");
+      d.className = "compo-ligne";
+
+      const poste = document.createElement("span");
+      poste.className = "poste";
+      poste.textContent = num;
+      d.appendChild(poste);
+
+      const champ = document.createElement("input");
+      champ.type = "text";
+      champ.setAttribute("list", "liste-club");
+      champ.value = nomDe(num);
+      champ.setAttribute("aria-label", "Joueur numéro " + num);
+      champ.placeholder = "nom ou prénom…";
+      champ.addEventListener("input", () => {
+        etat.feuille[num] = champ.value.trim();
+        // Un joueur connu du club apporte sa ligne avec lui.
+        if (modifiable && LIGNE_CLUB[champ.value.trim()]) {
+          etat.ligneBanc[num] = LIGNE_CLUB[champ.value.trim()];
+          const sel = d.querySelector("select");
+          if (sel) sel.value = etat.ligneBanc[num];
+          majResumeBanc();
+        }
+        rendreJoueurs(); rendreTdj();
+      });
+      d.appendChild(champ);
+
+      if (modifiable) {
+        const sel = document.createElement("select");
+        sel.setAttribute("aria-label", "Ligne du joueur " + num);
+        ["Avant", "Trois-quarts"].forEach(l => {
+          const o = document.createElement("option");
+          o.value = o.textContent = l;
+          if (etat.ligneBanc[num] === l) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener("change", () => {
+          etat.ligneBanc[num] = sel.value;
+          majResumeBanc(); rendreTdj();
+        });
+        d.appendChild(sel);
+      } else {
+        const l = document.createElement("span");
+        l.className = "ligne-fixe";
+        l.textContent = ligneDe(num);
+        d.appendChild(l);
+      }
+      zone.appendChild(d);
+    };
+
+    const av = $("#compo-avants"), ar = $("#compo-arrieres"), bc = $("#compo-banc");
+    av.innerHTML = ar.innerHTML = bc.innerHTML = "";
+    for (let p = 1; p <= 8; p++) ligneDom(p, av, false);
+    for (let p = 9; p <= 15; p++) ligneDom(p, ar, false);
+    for (let p = 16; p <= 22; p++) ligneDom(p, bc, true);
+    majResumeBanc();
+  }
+
+  function majResumeBanc() {
+    let a = 0, tq = 0;
+    for (let p = 16; p <= 22; p++) {
+      if (!nomDe(p)) continue;
+      etat.ligneBanc[p] === "Avant" ? a++ : tq++;
+    }
+    $("#resume-banc").textContent =
+      "Banc : " + a + " avant" + (a > 1 ? "s" : "") + " · " +
+      tq + " trois-quart" + (tq > 1 ? "s" : "");
+  }
+
+  function rendre() {
+    rendreJoueurs(); rendreActions(); rendreJournal(); rendreTdj();
+    rendreStatPoss(); rendreStatJoueurs(); rendreStatTouches();
+    const e = $("#etat-jeu"), ouvert = jeuOuvert();
+    e.textContent = ouvert ? "Jeu ouvert" : "Reprise attendue";
+    e.className = "etat-jeu " + (ouvert ? "ouvert" : "ferme");
+    const barre = $("#attente");
+    if (etat.attente) {
+      barre.classList.add("on");
+      $("#attente-txt").textContent = etat.attente.libelle + " — désignez le joueur";
+    } else barre.classList.remove("on");
+  }
+
+  function majPossession(v) {
+    etat.possession = v;
+    document.querySelectorAll("#seg-poss button").forEach(b =>
+      b.setAttribute("aria-pressed", String(b.dataset.poss === v)));
+  }
+
+  /* ==================================================================
+     Clics
+  ================================================================== */
+
+  function clicAction(item) {
+    if (item.retour) return dialogueRetourCarton();
+    if (item.popup === "touche" || item.popup === "melee") return dialogueTouche(item);
+    if (item.popup === "pen" || item.popup === "cf") return dialoguePenalite(item);
+
+    let action = item.a;
+    if (item.duo) action = etat.possession === "Adv" ? item.duo[0] : item.duo[1];
+
+    if (item.carton) {
+      etat.attente = { libelle: "Carton " + item.carton, action: action,
+                       carton: item.carton, item: item, t: tempsCourant() };
+      return rendre();
+    }
+    const attendJoueur = item.joueur === true ||
+      (item.joueur === "si-nous" && etat.possession === "Nous") ||
+      (item.joueur === "si-adv" && etat.possession === "Adv");
+
+    if (attendJoueur) {
+      etat.attente = { libelle: action, action: action, item: item, t: tempsCourant() };
+      return rendre();
+    }
+    appliquerSuites(item, ajouter(action));
+    rendre();
+  }
+
+  function clicJoueur(cle) {
+    if (!etat.attente) return;
+    const a = etat.attente;
+    let action = a.action;
+
+    // Un joueur designe vaut carton pour notre camp : la palette ne
+    // porte que nos joueurs.
+    if (a.carton) {
+      action = action.replace("contre adversaire", "contre nous");
+      if (!isNaN(Number(cle))) etat.cartons[cle] = a.carton;
+    }
+    const nom = isNaN(Number(cle)) ? cle : etiquette(Number(cle));
+
+    const ligne = ajouter(action, { joueur: nom.trim(), t: a.t });
+    etat.attente = null;
+    if (a.item) appliquerSuites(a.item, ligne);
+    rendre();
+  }
+
+  /* ==================================================================
+     Dialogues
+  ================================================================== */
+
+  function groupeChoix(titre, options, nom, defaut) {
+    let h = '<div class="champ"><label>' + titre + '</label><div class="choix" data-champ="' +
+            nom + '">';
+    // Rien n'est preselectionne : un bouton ne s'allume qu'au clic,
+    // pour qu'aucune valeur ne parte au journal sans avoir ete choisie.
+    options.forEach((o) => {
+      h += '<button type="button" data-val="' + String(o).replace(/"/g, "&quot;") +
+           '" aria-pressed="' + (o === defaut ? "true" : "false") + '">' +
+           o + "</button>";
+    });
+    return h + "</div></div>";
+  }
+  function brancherChoix() {
+    dlg.querySelectorAll(".choix").forEach(g => {
+      g.addEventListener("click", ev => {
+        const b = ev.target.closest("button");
+        if (!b) return;
+        g.querySelectorAll("button").forEach(x =>
+          x.setAttribute("aria-pressed", String(x === b)));
+      });
+    });
+  }
+  const valeur = (nom) => {
+    const b = dlg.querySelector('[data-champ="' + nom + '"] button[aria-pressed="true"]');
+    return b ? b.dataset.val : "";
+  };
+
+  function ouvrirDialogue(titre, sous, corps, valider, apres) {
+    dlg.innerHTML =
+      '<div class="dlg-tete"><h3>' + titre + "</h3><p>" + sous + "</p></div>" +
+      '<div class="dlg-corps">' + corps + "</div>" +
+      '<div class="dlg-pied"><button type="button" class="btn-vide" id="dlg-annul">Annuler</button>' +
+      '<button type="button" class="btn-plein" id="dlg-ok">Valider</button></div>';
+    brancherChoix();
+    if (apres) apres();
+    // Un valider qui rend false laisse la popup ouverte : il manque
+    // un choix, et la fermer ferait disparaitre la saisie sans rien dire.
+    $("#dlg-ok").addEventListener("click", () => {
+      if (valider() === false) return;
+      dlg.close();
+    });
+    $("#dlg-annul").addEventListener("click", () => dlg.close());
+    dlg.showModal();
+  }
+
+  function dialogueTouche(item) {
+    const estTouche = item.popup === "touche";
+    const t = tempsCourant();
+    let corps = "";
+    if (estTouche) {
+      // Les sauteurs proposes sont les avants presents, quel que soit
+      // leur numero. "Autre" deplie les trois-quarts : des equipes en
+      // font sauter un, sans que la popup ait a montrer tout le monde.
+      const avants = etat.surTerrain.filter(n => ligneDe(n) === "Avant").map(etiquette);
+      const autres = etat.surTerrain.filter(n => ligneDe(n) !== "Avant").map(etiquette);
+      corps += groupeChoix("Sauteur", avants.concat(["Autre"]), "sauteur");
+      corps += '<div class="champ" id="champ-autre" hidden><label>Qui a sauté</label>' +
+               '<div class="choix" data-champ="sauteur-autre">' +
+               autres.map(e => '<button type="button" data-val="' + e +
+                               '" aria-pressed="false">' + e + "</button>").join("") +
+               "</div></div>";
+      corps += groupeChoix("Zone de saut", ZONE_SAUT, "saut");
+      corps += groupeChoix("Alignement", ALIGNEMENT, "align");
+      corps += groupeChoix("Ballon", BALLON, "ballon");
+    }
+    corps += groupeChoix("Zone (longueur)", ZONE_LONGUEUR, "long");
+    corps += groupeChoix("Zone (largeur)", ZONE_LARGEUR, "larg");
+    corps += groupeChoix("Utilisation", UTILISATION, "util");
+
+    ouvrirDialogue(estTouche ? "Touche" : "Mêlée",
+      "Issue " + item.issue + " · possession " + etat.possession + " · " + mmss(t),
+      corps, () => {
+        const pourNous = etat.possession === "Nous";
+        const table = estTouche ? (pourNous ? ISSUE_TOUCHE : ISSUE_TOUCHE_ADV)
+                                : (pourNous ? ISSUE_MELEE : ISSUE_MELEE_ADV);
+        const detail = [valeur("saut"), valeur("align"), valeur("ballon"),
+                        valeur("long"), valeur("larg"), valeur("util")]
+                       .filter(Boolean).join(" / ");
+        let sauteur = valeur("sauteur");
+        if (sauteur === "Autre") sauteur = valeur("sauteur-autre") || "Autre";
+        const ligne = ajouter(table[item.issue],
+          { joueur: sauteur, detail: detail, t: t });
+        // G rend le ballon a Nous, P le laisse a Adv, ND le rejoue a l'autre.
+        if (item.issue === "G") majPossession("Nous");
+        else if (item.issue === "P") majPossession("Adv");
+        else majPossession(etat.possession === "Nous" ? "Adv" : "Nous");
+        ligne.possession = etat.possession;
+        rendre();
+      },
+      () => {
+        // Le choix "Autre" fait apparaitre les trois-quarts presents.
+        const grp = dlg.querySelector('[data-champ="sauteur"]');
+        const champ = dlg.querySelector("#champ-autre");
+        if (!grp || !champ) return;
+        grp.addEventListener("click", () => {
+          const choisi = grp.querySelector('button[aria-pressed="true"]');
+          champ.hidden = !choisi || choisi.dataset.val !== "Autre";
+        });
+      });
+  }
+
+  function dialoguePenalite(item) {
+    const t = tempsCourant();
+    const liste = item.popup === "cf" ? MOTIFS_CF : MOTIFS_PEN;
+    const familles = {};
+    liste.forEach(m => {
+      const i = m.indexOf(" - ");
+      const fam = i > 0 ? m.slice(0, i) : "Autres";
+      (familles[fam] = familles[fam] || []).push(m);
+    });
+    let corps = '<div class="champ"><label>Motif</label>';
+    Object.keys(familles).forEach(fam => {
+      corps += '<div class="motifs-famille"><h4>' + fam + '</h4><div class="choix motif-grp">';
+      familles[fam].forEach(m => {
+        const et = m.indexOf(" - ") > 0 ? m.slice(m.indexOf(" - ") + 3) : m;
+        corps += '<button type="button" data-val="' + m.replace(/"/g, "&quot;") +
+                 '" aria-pressed="false">' + et + "</button>";
+      });
+      corps += "</div></div>";
+    });
+    corps += "</div>";
+    const fautifs = ["—"].concat(etat.surTerrain.map(etiquette))
+                         .concat(["Avant", "Trois-quarts"]);
+    corps += groupeChoix("Fautif (notre camp)", fautifs, "fautif", "—");
+
+    ouvrirDialogue(item.popup === "cf" ? "Coup franc" : "Pénalité",
+      item.a + " · " + mmss(t), corps, () => {
+        let motif = "";
+        dlg.querySelectorAll(".motif-grp button[aria-pressed='true']")
+           .forEach(b => motif = b.dataset.val);
+        const f = valeur("fautif");
+        const ligne = ajouter(item.a, {
+          motif: motif || "?",
+          joueur: item.pour === "Adv" && f !== "—" ? f : "",
+          t: t
+        });
+        majPossession(item.pour);
+        ligne.possession = item.pour;
+        // Penalite comme coup franc arretent le jeu.
+        ajouter(ARRET, { t: t, possession: item.pour });
+        rendre();
+      },
+      () => {
+        dlg.querySelectorAll(".motif-grp").forEach(g => {
+          g.addEventListener("click", ev => {
+            const b = ev.target.closest("button");
+            if (!b) return;
+            dlg.querySelectorAll(".motif-grp button").forEach(x =>
+              x.setAttribute("aria-pressed", String(x === b)));
+          });
+        });
+      });
+  }
+
+  function dialogueRemplacement() {
+    const t = tempsCourant();
+    const sortants = etat.surTerrain.map(etiquette);
+    // Tous ceux de la feuille qui ne sont pas sur le terrain : le banc,
+    // mais aussi un joueur deja sorti, qui peut revenir — remplacement
+    // temporaire en premiere ligne, retour apres soin.
+    const entrants = [];
+    for (let n = 1; n <= 22; n++) {
+      if (nomDe(n) && etat.surTerrain.indexOf(n) === -1) entrants.push(etiquette(n));
+    }
+    if (!entrants.length) {
+      return ouvrirDialogue("Remplacement", "Personne à faire entrer",
+        '<p class="note">Tous les joueurs de la feuille sont sur le terrain. ' +
+        'Complétez le banc depuis la vue Composition.</p>', () => {});
+    }
+    ouvrirDialogue("Remplacement",
+      "Le remplaçant entre avec son propre numéro · " + mmss(t),
+      groupeChoix("Sort", sortants, "sort") + groupeChoix("Entre", entrants, "entre"),
+      () => {
+        const sort = valeur("sort"), entre = valeur("entre");
+        if (!sort || !entre) return false;
+        const nSort = Number(sort.split(" ")[0]);
+        const nEntre = Number(entre.split(" ")[0]);
+        const place = etat.surTerrain.indexOf(nSort);
+        if (place === -1) return;
+
+        const passage = (etat.passages[nSort] || []).filter(p => p.sorti === null).pop();
+        if (passage) passage.sorti = t;
+        etat.passages[nEntre] = etat.passages[nEntre] || [];
+        etat.passages[nEntre].push({ entre: t, sorti: null });
+
+        // Le numero du maillot suit le joueur : le bouton porte
+        // desormais celui de l'entrant, a la place du sortant.
+        etat.surTerrain[place] = nEntre;
+        if (etat.cartons[nSort]) delete etat.cartons[nSort];
+
+        ajouter("Remplacement", {
+          joueur: etiquette(nEntre),
+          detail: "entre pour " + etiquette(nSort),
+          t: t
+        });
+        rendre();
+      });
+  }
+
+  function dialogueRetourCarton() {
+    const sous = Object.keys(etat.cartons);
+    if (!sous.length) return;
+    const liste = sous.map(n => etiquette(Number(n)) + " — " + etat.cartons[n]);
+    ouvrirDialogue("Retour de carton",
+      "Le joueur revient sur le terrain · " + mmss(tempsCourant()),
+      groupeChoix("Joueur", liste, "qui"), () => {
+        const v = valeur("qui");
+        if (!v) return false;
+        const n = v.split(" ")[0];
+        const couleur = etat.cartons[n];
+        delete etat.cartons[n];
+        ajouter("Retour de carton " + couleur + " - nous",
+          { joueur: etiquette(Number(n)) });
+        rendre();
+      });
+  }
+
+  /* ==================================================================
+     Vidéo
+  ================================================================== */
+
+  let arriere = null;
+  function chargerFichier(f) {
+    if (!f) return;
+    video.src = URL.createObjectURL(f);
+    $("#accueil").hidden = true;
+    video.play().catch(() => {});
+  }
+  $("#fichier").addEventListener("change", e => chargerFichier(e.target.files[0]));
+  const zone = $("#zone-video");
+  ["dragover", "drop"].forEach(n => zone.addEventListener(n, e => e.preventDefault()));
+  zone.addEventListener("drop", e => {
+    const f = e.dataTransfer && e.dataTransfer.files[0];
+    if (f && f.type.indexOf("video/") === 0) chargerFichier(f);
+  });
+  video.addEventListener("timeupdate", () => {
+    $("#chrono").textContent = court(video.currentTime);
+  });
+  video.addEventListener("play", () => $("#btn-play").textContent = "Pause");
+  video.addEventListener("pause", () => $("#btn-play").textContent = "Lecture");
+  $("#btn-play").addEventListener("click", () => {
+    if (!video.src) return $("#fichier").click();
+    video.paused ? video.play() : video.pause();
+  });
+  $("#btn-moins").addEventListener("click", () =>
+    video.currentTime = Math.max(0, video.currentTime - 5));
+  $("#btn-plus").addEventListener("click", () => video.currentTime += 5);
+  $("#vitesse").addEventListener("change", e => video.playbackRate = Number(e.target.value));
+
+  // Aucun navigateur ne lit a l'envers : on recule par petits pas.
+  $("#btn-arriere").addEventListener("click", function () {
+    if (arriere) {
+      clearInterval(arriere); arriere = null;
+      this.textContent = "◀ Arrière";
+      return;
+    }
+    video.pause();
+    this.textContent = "■ Stop";
+    arriere = setInterval(() => {
+      video.currentTime = Math.max(0, video.currentTime - 0.2);
+      if (video.currentTime <= 0) {
+        clearInterval(arriere); arriere = null;
+        $("#btn-arriere").textContent = "◀ Arrière";
+      }
+    }, 100);
+  });
+
+  /* ==================================================================
+     Redimensionnement
+  ================================================================== */
+
+  const tailles = { largeurGauche: 56, hauteurVideo: 60, hauteurJoueurs: 26 };
+  function appliquerTailles() {
+    $("#pan-gauche").style.width = tailles.largeurGauche + "%";
+    $("#pan-droite").style.width = (100 - tailles.largeurGauche) + "%";
+    $("#bloc-video").style.height = tailles.hauteurVideo + "%";
+    $("#bloc-journal").style.height = (100 - tailles.hauteurVideo) + "%";
+    $("#bloc-joueurs").style.height = tailles.hauteurJoueurs + "%";
+  }
+
+  function glisser(poignee, surMouvement) {
+    poignee.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      poignee.setPointerCapture(ev.pointerId);
+      poignee.classList.add("actif");
+      document.body.classList.add("redimensionne");
+      const bouge = (e) => surMouvement(e);
+      const fin = () => {
+        poignee.removeEventListener("pointermove", bouge);
+        poignee.classList.remove("actif");
+        document.body.classList.remove("redimensionne");
+      };
+      poignee.addEventListener("pointermove", bouge);
+      poignee.addEventListener("pointerup", fin, { once: true });
+      poignee.addEventListener("pointercancel", fin, { once: true });
+    });
+  }
+
+  glisser($("#sep-v"), (e) => {
+    const r = $("#vue-saisie").getBoundingClientRect();
+    tailles.largeurGauche =
+      Math.min(76, Math.max(26, ((e.clientX - r.left) / r.width) * 100));
+    appliquerTailles();
+  });
+  glisser($("#sep-h"), (e) => {
+    const r = $("#pan-gauche").getBoundingClientRect();
+    tailles.hauteurVideo =
+      Math.min(88, Math.max(24, ((e.clientY - r.top) / r.height) * 100));
+    appliquerTailles();
+  });
+  glisser($("#sep-h2"), (e) => {
+    const r = $("#pan-droite").getBoundingClientRect();
+    tailles.hauteurJoueurs =
+      Math.min(70, Math.max(12, ((e.clientY - r.top) / r.height) * 100));
+    appliquerTailles();
+  });
+
+  function flechesSur(poignee, cle, min, max, horizontal) {
+    poignee.addEventListener("keydown", (e) => {
+      const moins = horizontal ? "ArrowLeft" : "ArrowUp";
+      const plus = horizontal ? "ArrowRight" : "ArrowDown";
+      if (e.key === moins) tailles[cle] = Math.max(min, tailles[cle] - 2);
+      else if (e.key === plus) tailles[cle] = Math.min(max, tailles[cle] + 2);
+      else return;
+      e.preventDefault(); appliquerTailles();
+    });
+  }
+  flechesSur($("#sep-v"), "largeurGauche", 26, 76, true);
+  flechesSur($("#sep-h"), "hauteurVideo", 24, 88, false);
+  flechesSur($("#sep-h2"), "hauteurJoueurs", 12, 70, false);
+
+  /* ==================================================================
+     Navigation et branchements
+  ================================================================== */
+
+  document.querySelectorAll(".vues button").forEach(b =>
+    b.addEventListener("click", () => {
+      etat.vue = b.dataset.vue;
+      document.querySelectorAll(".vues button").forEach(x =>
+        x.setAttribute("aria-selected", String(x === b)));
+      $("#vue-saisie").hidden = etat.vue !== "saisie";
+      $("#vue-compo").hidden = etat.vue !== "compo";
+      $("#vue-stats").hidden = etat.vue !== "stats";
+      if (etat.vue === "compo") rendreCompo();
+      if (etat.vue === "saisie") appliquerTailles();
+    }));
+
+  document.querySelectorAll("#seg-poss button").forEach(b =>
+    b.addEventListener("click", () => { majPossession(b.dataset.poss); rendre(); }));
+
+  document.querySelectorAll("#seg-mt button").forEach(b =>
+    b.addEventListener("click", () => {
+      etat.miTemps = b.dataset.mt;
+      document.querySelectorAll("#seg-mt button").forEach(x =>
+        x.setAttribute("aria-pressed", String(x === b)));
+      rendre();
+    }));
+
+  document.querySelectorAll(".onglets [data-ong]").forEach(b =>
+    b.addEventListener("click", () => {
+      etat.onglet = b.dataset.ong;
+      document.querySelectorAll(".onglets [data-ong]").forEach(x =>
+        x.setAttribute("aria-selected", String(x === b)));
+      $("#panneau-journal").hidden = etat.onglet !== "journal";
+      $("#panneau-tdj").hidden = etat.onglet !== "tdj";
+    }));
+
+  document.querySelectorAll(".onglets [data-stat]").forEach(b =>
+    b.addEventListener("click", () => {
+      etat.stat = b.dataset.stat;
+      document.querySelectorAll(".onglets [data-stat]").forEach(x =>
+        x.setAttribute("aria-selected", String(x === b)));
+      $("#stat-poss").hidden = etat.stat !== "poss";
+      $("#stat-joueurs").hidden = etat.stat !== "joueurs";
+      $("#stat-touches").hidden = etat.stat !== "touches";
+    }));
+
+  $("#btn-remp").addEventListener("click", dialogueRemplacement);
+  $("#attente-annul").addEventListener("click", () => { etat.attente = null; rendre(); });
+
+  document.addEventListener("click", (e) => {
+    const s = e.target.closest("[data-sup]");
+    if (s) { etat.journal.splice(Number(s.dataset.sup), 1); return rendre(); }
+    const t = e.target.closest("[data-saut]");
+    if (t && video.src) {
+      video.currentTime = Number(t.dataset.saut);
+      video.pause();
+      if (etat.vue !== "saisie") document.querySelector('[data-vue="saisie"]').click();
+    }
+  });
+
+  document.addEventListener("keydown", e => {
+    if (dlg.open || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.target.classList && e.target.classList.contains("sep")) return;
+    if (e.code === "Space") { e.preventDefault(); $("#btn-play").click(); }
+    if (e.code === "ArrowLeft") { e.preventDefault(); $("#btn-moins").click(); }
+    if (e.code === "ArrowRight") { e.preventDefault(); $("#btn-plus").click(); }
+  });
+
+  // Quelques actions pour que la page s'ouvre sur un match en cours.
+  [["Reprise du jeu sur renvoi", 224, "Adv", ""],
+   ["Réception nous", 227, "Nous", "15 SALLES Fabien"],
+   ["Avancée au contact", 232, "Nous", "12 LAUDET Jean Baptiste"],
+   ["Plaquage normal", 238, "Adv", "7 BIFFI Pierre"],
+   ["Turn-over - récupération du ballon", 246, "Nous", "8 BARATGIN Julian"]
+  ].forEach(([a, t, p, j]) => etat.journal.push(
+    { t: t, mt: "MT1", joueur: j, action: a, motif: "", detail: "", possession: p }));
+  etat.journal.sort((a, b) => b.t - a.t);
+
+  remplirListeClub();
+  appliquerTailles();
+  rendreCompo();
+  rendre();
+})();
+</script>
+
+</body>
+</html>
