@@ -1,0 +1,4 @@
+.env
+api/bin/
+web/node_modules/
+web/dist/

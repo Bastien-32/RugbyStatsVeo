@@ -1,0 +1,102 @@
+/* Vert de touche herite du classeur, ardoise froide autour. */
+:root {
+  --bg: #eef1ee;
+  --surface: #ffffff;
+  --surface-2: #f6f8f6;
+  --line: #d4dbd4;
+  --fg: #16201a;
+  --fg-soft: #5c6a60;
+  --vert: #3f8f28;
+  --vert-clair: #e4f2dd;
+  --vert-fonce: #2c6b1a;
+  --alerte: #b4402a;
+  --titre: "Barlow Condensed", "Helvetica Neue", sans-serif;
+  --corps: Inter, system-ui, -apple-system, sans-serif;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1511; --surface: #18211b; --surface-2: #131b16;
+    --line: #2c3a30; --fg: #e8efe8; --fg-soft: #9aab9f;
+    --vert: #5fb642; --vert-clair: #203320; --vert-fonce: #7ccb5c;
+    --alerte: #e0705a;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--corps); font-size: 14px; line-height: 1.5;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--vert); outline-offset: 2px; }
+
+.page {
+  max-width: 1100px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 40px;
+}
+
+header.appli { display: flex; align-items: baseline; gap: 14px;
+  flex-wrap: wrap; margin-bottom: 20px; }
+header.appli h1 { font-family: var(--titre); font-size: 30px; margin: 0;
+  letter-spacing: .01em; }
+header.appli p { margin: 0; color: var(--fg-soft); font-size: 13px; }
+
+.etat { margin-left: auto; display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 20px;
+  background: var(--surface-2); border: 1px solid var(--line); }
+.pastille { width: 8px; height: 8px; border-radius: 50%; background: var(--fg-soft); }
+.etat.ok .pastille { background: var(--vert); }
+.etat.panne .pastille { background: var(--alerte); }
+
+.cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px; align-items: start; }
+.carte { background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 16px; min-width: 0; }
+.carte h2 { font-family: var(--titre); font-size: 17px; margin: 0 0 4px;
+  letter-spacing: .02em; }
+.carte .sous { color: var(--fg-soft); font-size: 12px; margin: 0 0 12px; }
+
+.compteur { font-family: var(--titre); font-size: 34px; font-weight: 700;
+  color: var(--vert-fonce); line-height: 1; font-variant-numeric: tabular-nums; }
+.compteur + .libelle { color: var(--fg-soft); font-size: 12px;
+  text-transform: uppercase; letter-spacing: .07em; }
+
+ul.liste { list-style: none; margin: 0; padding: 0; }
+ul.liste li { padding: 7px 0; border-bottom: 1px solid var(--line);
+  display: flex; gap: 10px; align-items: baseline; }
+ul.liste li:last-child { border-bottom: 0; }
+ul.liste .code { font-family: ui-monospace, monospace; font-size: 11px;
+  color: var(--fg-soft); flex: none; min-width: 112px; }
+ul.liste .nom { min-width: 0; overflow-wrap: anywhere; }
+
+.familles { display: flex; flex-wrap: wrap; gap: 5px; }
+.familles span { border: 1px solid var(--line); background: var(--surface-2);
+  border-radius: 20px; padding: 3px 10px; font-size: 11.5px; }
+.familles span b { font-weight: 700; color: var(--vert-fonce); }
+
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { text-align: left; font-size: 10px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--fg-soft); font-weight: 600;
+  padding: 7px 6px; border-bottom: 1px solid var(--line); }
+td { padding: 7px 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+
+.vide { color: var(--fg-soft); font-size: 12.5px; padding: 10px 0; }
+.erreur { background: color-mix(in srgb, var(--alerte) 12%, transparent);
+  border: 1px solid var(--alerte); color: var(--alerte);
+  border-radius: 8px; padding: 10px 13px; font-size: 13px; margin-bottom: 16px; }
+
+form.ligne { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+form.ligne input, form.ligne select {
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 7px; padding: 7px 9px; font: inherit; font-size: 12.5px;
+  min-width: 0; flex: 1 1 120px; }
+form.ligne button { background: var(--vert); color: #fff; border: 1px solid var(--vert);
+  border-radius: 7px; padding: 7px 15px; font-weight: 600; font-size: 12.5px;
+  flex: none; }
+
+.pied { margin-top: 28px; color: var(--fg-soft); font-size: 11.5px;
+  text-align: center; }
