@@ -66,9 +66,10 @@ chiffres.
 
 2. Ouvrir l'éditeur VBA (`Outils → Macro → Éditeur Visual Basic`).
 
-3. Pour chacun des quatre fichiers de ce dossier, dans l'ordre :
+3. Pour chacun des modules de ce dossier, dans l'ordre :
    `modRecapBase.bas`, `modRecapConstruction.bas`, `modRecapImport.bas`,
-   `modRecapCalcul.bas` — faire `Fichier → Importer un fichier…` et le
+   `modRecapCalcul.bas`, `modRecapPalmares.bas`,
+   `modRecapDistribution.bas` — faire `Fichier → Importer un fichier…` et le
    sélectionner.
 
    (Ou, si l'import de fichier n'est pas disponible : `Insertion → Module`,
@@ -188,19 +189,72 @@ match** mais pas comme un **match joué** : c'est un remplaçant resté sur le
 banc. Un joueur sans minute saisie apparaît donc au classement en mode
 *Totaux*, mais ses cases restent vides en mode *Par 80 minutes*.
 
-## Les sept feuilles
+## Les feuilles
 
 | Feuille | Contenu |
 |---|---|
 | **Classement** | Une ligne par joueur, une colonne par statistique. |
 | **Temps de jeu** | Matchs et minutes par catégorie, puis cumulés. |
+| **Tops** / **Flops** | Un petit classement par statistique choisie : rang, joueur, valeur. |
+| **Pénalités** | Les pénalités contre nous classées par motif, un tableau par catégorie. |
 | **Filtres** | Les critères, et le mode d'affichage. |
 | **Matchs** | Les matchs de la base : inventaire, sélection, réimport, retrait. |
 | **Journal actions** | La base : une ligne par action, tous matchs confondus. |
 | **Compositions** | La base : une ligne par joueur et par match, avec les minutes. |
-| **Parametres** | Statistiques affichées, et listes des menus. |
+| **Parametres** | Statistiques affichées, listes des menus, et classements des Tops et Flops. |
 
 **Journal actions** et **Compositions** sont les deux feuilles qui portent les
 données. Elles restent visibles : on peut y brancher un tableau croisé
 dynamique monté à la main. La colonne *Mi-temps* du journal y est conservée
 pour cet usage, même si le classement ne s'en sert pas.
+
+## Tops et flops
+
+Les feuilles **Tops** et **Flops** sont créées au premier calcul, juste après
+**Temps de jeu**. Elles sont réécrites à chaque calcul, avec les mêmes
+filtres, le même seuil de minutes et le même mode d'affichage que le
+classement.
+
+La liste des classements se règle dans **Parametres**, dans le tableau
+*Tops et flops* (colonne P). Il compte une ligne par classement :
+
+| Colonne | Rôle |
+|---|---|
+| *Sens* | `Top` ou `Flop` : la feuille où le classement apparaît. |
+| *Statistique* | Le libellé d'une ligne du tableau des statistiques, colonne *Colonne*. Elle n'a pas besoin d'être cochée. |
+| *Places* | Le nombre de places, 10 par défaut. |
+
+L'ordre des lignes donne l'ordre des blocs, posés par rangées de trois. Pour
+ajouter un classement, il suffit d'ajouter une ligne ; pour en retirer un, de
+supprimer la sienne.
+
+Les deux feuilles classent les joueurs par valeur décroissante : un flop des
+plaquages ratés met donc en tête celui qui en rate le plus. Un joueur à zéro
+n'est pas classé.
+
+**Les ex aequo partagent le même rang**, et le rang suivant saute d'autant :
+1, 2, 2, 4. Tous les joueurs à égalité sur la dernière place retenue sont
+montrés : un Top 10 peut donc compter plus de dix noms. En moyenne par match
+ou ramenée à 80 minutes, l'égalité se juge sur la valeur affichée, arrondie à
+deux décimales.
+
+## Pénalités par motif
+
+La feuille **Pénalités** est créée au premier calcul, après **Flops**. Elle
+porte un tableau par catégorie, côte à côte : **Première** à gauche,
+**Réserve** à droite. Chacun classe les motifs de pénalités de son équipe,
+avec leur nombre et leur **part dans le total de cette équipe** : les deux
+équipes ne commettent ni les mêmes fautes ni autant, leurs parts ne se
+mélangent pas.
+
+C'est un bilan d'équipe : toutes les pénalités contre nous des matchs retenus
+comptent, qu'un joueur soit nommé ou non. Les filtres s'appliquent ; le mode
+d'affichage et le seuil de minutes, réglages du classement individuel, non.
+
+Un même motif écrit de deux façons au fil des versions de la saisie
+(« Plaquage à 2 » et « Plaquage - à 2 ») n'est compté qu'une fois, sous son
+libellé actuel.
+
+Les pénalités sans motif (« ? » ou case vide) ne sont pas classées : elles
+ferment le tableau, juste avant le total, et entrent dans le total sur lequel
+se calculent les parts. Les ex aequo partagent le même rang.

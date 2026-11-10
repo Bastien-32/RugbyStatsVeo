@@ -220,6 +220,14 @@ Public Sub AppliquerFiltres()
         NomsCategories, NbCategories, _
         MinutesCat, MatchsCat, Feuilles, Joues
 
+    EcrirePalmares _
+        Matchs, Joueurs, NomsJoueurs, NbJoueurs, _
+        MinutesCat, NbCategories, Joues, _
+        Filtres.Mode, Filtres.MinutesMini
+
+    EcrirePenalites _
+        Matchs, Categories, NomsCategories, NbCategories
+
     ActualiserLibelleMode Filtres.Mode
 
     Application.ScreenUpdating = EtatAffichage
@@ -907,7 +915,7 @@ End Function
 ' mi-temps : la statistique d'un match est le total des
 ' deux periodes.
 ' =========================================================
-Private Sub CompterActions( _
+Public Sub CompterActions( _
     ByVal Matchs As Collection, _
     ByVal Joueurs As Collection, _
     ByVal IndexAction As Collection, _
@@ -1652,7 +1660,7 @@ End Sub
 ' denominateur manque : un joueur sans minute saisie ne
 ' peut pas etre ramene a 80 minutes.
 ' =========================================================
-Private Function ValeurAffichee( _
+Public Function ValeurAffichee( _
     ByVal Total As Double, _
     ByVal MatchsJoues As Long, _
     ByVal Minutes As Double, _

@@ -844,7 +844,7 @@ Private Sub EffacerBoutons(ByVal ws As Worksheet)
 End Sub
 
 
-Private Sub PoserBouton( _
+Public Sub PoserBouton( _
     ByVal ws As Worksheet, _
     ByVal Libelle As String, _
     ByVal Macro As String, _
