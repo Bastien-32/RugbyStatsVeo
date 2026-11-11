@@ -48,3 +48,7 @@ logiciels à installer/*.pkg
 # Kit de construction hors ligne du moteur Windows : non versionne.
 VeoVideoControl/Engine/wheels/
 logiciels à installer/python-*.exe
+
+# Le site (plateforme/ et webapp/) vit sur la branche site.
+plateforme/
+webapp/
