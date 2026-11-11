@@ -44,3 +44,7 @@ __pycache__/
 logiciels à installer/*.dmg
 logiciels à installer/*.exe
 logiciels à installer/*.pkg
+
+# Kit de construction hors ligne du moteur Windows : non versionne.
+VeoVideoControl/Engine/wheels/
+logiciels à installer/python-*.exe

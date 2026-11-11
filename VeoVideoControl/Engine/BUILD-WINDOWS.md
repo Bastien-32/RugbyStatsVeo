@@ -36,6 +36,22 @@ Pour transmettre aussi des fichiers de match, les glisser **un par un** dans
 le dossier `Matchs` du poste — ne pas remplacer le dossier entier, ce qui
 effacerait les matchs saisis sur place.
 
+### Sans connexion internet
+
+Le script télécharge ses dépendances, sauf s'il trouve un dossier `wheels`
+à côté de lui. Pour le préparer sur le Mac, avec la version de Python qui
+sera installée sur le PC :
+
+```
+.venv/bin/python -m pip download -r VeoVideoControl/Engine/requirements-windows.txt \
+    pefile pywin32-ctypes colorama -d wheels \
+    --platform win_amd64 --python-version 3.13 --implementation cp --only-binary=:all:
+```
+
+`pefile`, `pywin32-ctypes` et `colorama` sont nommés à part : ce sont des
+dépendances propres à Windows, que `pip download` omet depuis un Mac.
+Emporter aussi l'installeur Python Windows (`python-3.13.x-amd64.exe`).
+
 ### Pourquoi pas une machine virtuelle sur le Mac
 
 Un Mac Apple Silicon fait tourner un Windows **ARM64**. PyInstaller y produit
