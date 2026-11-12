@@ -150,7 +150,7 @@ Public Sub DemarrerVeoVideoControl()
 
         AttendreCourteDuree 0.25
 
-    Loop While DureeEcoulee(HeureDebut) < 15
+    Loop While DureeEcoulee(HeureDebut) < 45
 
     MsgBox _
         "VeoVideoControl a ete lance, mais le moteur ne repond pas.", _
