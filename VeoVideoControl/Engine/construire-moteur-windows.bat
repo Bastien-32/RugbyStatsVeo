@@ -94,8 +94,18 @@ set PYTHON=.venv-windows\Scripts\python.exe
 echo Installation des dependances...
 echo.
 
-"%PYTHON%" -m pip install --upgrade pip --quiet
-"%PYTHON%" -m pip install -r requirements-windows.txt --quiet
+rem  Un dossier wheels a cote de ce script permet de construire
+rem  sans internet : les dependances y ont ete telechargees
+rem  a l'avance, depuis le Mac.
+
+if exist "wheels\" (
+    echo Mode hors ligne : dependances lues dans le dossier wheels.
+    echo.
+    "%PYTHON%" -m pip install --no-index --find-links wheels -r requirements-windows.txt --quiet
+) else (
+    "%PYTHON%" -m pip install --upgrade pip --quiet
+    "%PYTHON%" -m pip install -r requirements-windows.txt --quiet
+)
 if errorlevel 1 (
     echo [ERREUR] L'installation des dependances a echoue.
     pause
