@@ -310,6 +310,15 @@ Public Sub BasculerRewindVideo()
 
 End Sub
 
+' Clic sur un temps du journal d'actions.
+Public Sub AllerAuTempsVideo(ByVal Secondes As Double)
+
+    ' Le moteur attend un point decimal, quels que soient
+    ' les reglages regionaux.
+    EnvoyerCommandeVideo _
+        "seek_to/" & Replace(Format(Secondes, "0.0"), ",", ".")
+
+End Sub
 
 ' ---------------------------------------------------------
 ' PAUSE AUTOUR D'UNE POPUP

@@ -117,6 +117,13 @@ class VLCController:
         value = f"{sign}{abs(seconds)}S"
         self._request_status(command="seek", value=value)
 
+    def seek_absolute(self, seconds: float) -> None:
+        # VLC ne positionne qu'a la seconde pres.
+        self._request_status(
+            command="seek",
+            value=str(max(0, int(round(seconds)))),
+        )
+
     def reset(self) -> None:
         state = self._request_status(command="seek", value="0")
 

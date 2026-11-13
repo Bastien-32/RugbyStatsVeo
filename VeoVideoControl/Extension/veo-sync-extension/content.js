@@ -430,6 +430,33 @@ async function executerCommande(command) {
         arreterRewind();
     }
 
+    /*
+     * Clic sur un temps du journal d'actions : le moteur
+     * transmet "seek_to:<secondes>".
+     */
+    if (command.startsWith("seek_to:")) {
+        const temps = Number(command.slice("seek_to:".length));
+
+        if (!Number.isFinite(temps)) {
+            console.warn(
+                "VeoVideoControl : temps invalide",
+                command
+            );
+
+            return;
+        }
+
+        video.currentTime = Math.min(
+            Number.isFinite(video.duration)
+                ? video.duration
+                : Number.POSITIVE_INFINITY,
+            Math.max(0, temps)
+        );
+
+        envoyerEtatVideo(video);
+        return;
+    }
+
     switch (command) {
         case "rewind_toggle":
             if (rewindActif()) {

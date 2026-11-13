@@ -61,8 +61,8 @@ if IS_MACOS:
         info_plist={
             "CFBundleName": APPLICATION_NAME,
             "CFBundleDisplayName": APPLICATION_NAME,
-            "CFBundleShortVersionString": "0.5.0",
-            "CFBundleVersion": "0.5.0",
+            "CFBundleShortVersionString": "0.6.0",
+            "CFBundleVersion": "0.6.0",
             "LSBackgroundOnly": True,
         },
     )

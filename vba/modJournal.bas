@@ -104,9 +104,182 @@ Public Sub AjouterAction( _
 
     End With
 
+    PoserLienTempsVideo _
+        NouvelleLigne.Range.Cells(1, lo.ListColumns("Temps video").Index)
+
     AppliquerValidationsJournal NouvelleLigne.Range, lo
 
 End Sub
+
+' =========================================================
+' LIENS VERS LA VIDEO
+'
+' Chaque temps du journal est un lien vers la cellule
+' Joueur de sa ligne : un clic y amene directement, et
+' declenche Worksheet_FollowHyperlink, qui positionne la
+' video a cet instant.
+'
+' Un lien ne reagit qu'a la souris : parcourir le journal
+' au clavier ne fait pas sauter la video.
+'
+' Excel fige l'adresse d'un lien a sa pose. Les actions
+' s'ajoutant en tete du journal, les lignes descendent et
+' leurs liens visent des lignes plus hautes : on les
+' recale a l'ouverture du journal.
+' =========================================================
+
+Public Sub PoserLienTempsVideo(ByVal Cellule As Range)
+
+    Dim FormatTemps As String
+
+    If Not EstTempsVideo(Cellule) Then Exit Sub
+
+    If Cellule.Hyperlinks.Count > 0 Then
+
+        If Not LienAJour(Cellule) Then
+            Cellule.Hyperlinks(1).SubAddress = CibleLien(Cellule)
+        End If
+
+        Exit Sub
+
+    End If
+
+    FormatTemps = Cellule.NumberFormat
+
+    Cellule.Worksheet.Hyperlinks.Add _
+        Anchor:=Cellule, _
+        Address:="", _
+        SubAddress:=CibleLien(Cellule), _
+        ScreenTip:="Aller " & ChrW(224) & " ce moment de la vid" & _
+            ChrW(233) & "o"
+
+    ' Le style Lien hypertexte ne doit pas changer
+    ' l'affichage du temps.
+    Cellule.NumberFormat = FormatTemps
+
+End Sub
+
+' Pose les liens manquants, ceux des lignes saisies avant
+' leur apparition, et recale ceux que les ajouts ont
+' decales. Les ajouts se faisant en tete, la premiere et
+' la derniere ligne a jour suffisent a tout savoir a jour.
+Public Sub PoserLiensTempsVideo()
+
+    Dim ws As Worksheet
+    Dim lo As ListObject
+    Dim Temps As Range
+    Dim Cellule As Range
+
+    Set ws = Sheets("Journal actions")
+    Set lo = ws.ListObjects("JournalActions")
+
+    If lo.DataBodyRange Is Nothing Then Exit Sub
+
+    Set Temps = lo.ListColumns("Temps video").DataBodyRange
+
+    If ws.Hyperlinks.Count >= lo.ListRows.Count Then
+
+        If LienAJour(Temps.Cells(1)) And _
+           LienAJour(Temps.Cells(Temps.Cells.Count)) Then
+
+            Exit Sub
+
+        End If
+
+    End If
+
+    Application.ScreenUpdating = False
+
+    For Each Cellule In Temps.Cells
+
+        PoserLienTempsVideo Cellule
+
+    Next Cellule
+
+    Application.ScreenUpdating = True
+
+End Sub
+
+Public Sub SuivreLienTempsVideo(ByVal Lien As Hyperlink)
+
+    Dim Cellule As Range
+
+    Set Cellule = Lien.Range
+
+    If Not EstTempsVideo(Cellule) Then Exit Sub
+
+    ' Le journal stocke des jours, le moteur attend des
+    ' secondes.
+    AllerAuTempsVideo Cellule.Value * 86400#
+
+    ' Filet de securite : une ligne supprimee depuis
+    ' l'ouverture du journal a pu decaler le lien.
+    If Not LienAJour(Cellule) Then
+        CelluleJoueur(Cellule).Select
+    End If
+
+End Sub
+
+Private Function CelluleJoueur(ByVal Cellule As Range) As Range
+
+    Dim lo As ListObject
+
+    Set lo = Cellule.Worksheet.ListObjects("JournalActions")
+
+    Set CelluleJoueur = Cellule.Worksheet.Cells( _
+        Cellule.Row, _
+        lo.ListColumns("Joueur").Range.Column)
+
+End Function
+
+Private Function CibleLien(ByVal Cellule As Range) As String
+
+    CibleLien = _
+        "'" & Cellule.Worksheet.Name & "'!" & _
+        CelluleJoueur(Cellule).Address(False, False)
+
+End Function
+
+' Compare la cible du lien a la cellule Joueur de sa
+' ligne, quelle que soit la facon dont Excel a reecrit
+' l'adresse (guillemets, dollars).
+Private Function LienAJour(ByVal Cellule As Range) As Boolean
+
+    Dim Cible As String
+
+    If Cellule.Hyperlinks.Count = 0 Then Exit Function
+
+    Cible = Cellule.Hyperlinks(1).SubAddress
+    Cible = Mid(Cible, InStr(Cible, "!") + 1)
+    Cible = Replace(Cible, "$", "")
+
+    LienAJour = _
+        (Cible = CelluleJoueur(Cellule).Address(False, False))
+
+End Function
+
+Private Function EstTempsVideo(ByVal Cellule As Range) As Boolean
+
+    Dim lo As ListObject
+
+    Set lo = Cellule.Worksheet.ListObjects("JournalActions")
+
+    If lo.DataBodyRange Is Nothing Then Exit Function
+
+    If Intersect( _
+        Cellule, _
+        lo.ListColumns("Temps video").DataBodyRange) Is Nothing Then
+
+        Exit Function
+
+    End If
+
+    If IsEmpty(Cellule.Value) Then Exit Function
+    If Not IsNumeric(Cellule.Value) Then Exit Function
+
+    EstTempsVideo = True
+
+End Function
 
 Public Sub AppliquerValidationsJournal( _
     ByVal LigneJournal As Range, _

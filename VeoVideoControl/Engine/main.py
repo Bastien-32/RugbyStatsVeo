@@ -19,7 +19,7 @@ from vlc_controller import VLCController
 
 
 APP_NAME = "VeoVideoControl Engine"
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 
 VideoTarget = Literal["browser", "vlc"]
 
@@ -406,6 +406,51 @@ def connection_state():
 # =========================================================
 # COMMANDES VIDÉO
 # =========================================================
+@app.post("/command/active/seek_to/{seconds}")
+def seek_active(seconds: float):
+    """
+    Positionne la video a un instant donne, depuis un lien
+    du journal d'actions.
+
+    L'extension recoit l'ordre sous la forme "seek_to:<s>",
+    la file de commandes ne transportant que du texte.
+    """
+
+    if active_target is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Aucun lecteur vidéo connecté.",
+        )
+
+    if seconds < 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Temps négatif : {seconds}",
+        )
+
+    if active_target == "vlc":
+        try:
+            vlc.seek_absolute(seconds)
+
+        except (ConnectionError, OSError, RuntimeError) as error:
+            raise HTTPException(
+                status_code=503,
+                detail=str(error),
+            ) from error
+
+    else:
+        with command_lock:
+            command_queues["browser"].append(
+                f"seek_to:{seconds}"
+            )
+
+    return {
+        "ok": True,
+        "target": active_target,
+        "command": "seek_to",
+        "seconds": seconds,
+    }
+
 @app.post("/command/active/{command}")
 def send_active_command(command: str):
 

@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/base_library.zip</key>
 		<data>
-		42Rw+yCs1tEstgid0yNetHU/POg=
+		pn+pKGXTV5dJSWqIhdcQ0HFArqc=
 		</data>
 		<key>Resources/click-8.4.2.dist-info/INSTALLER</key>
 		<data>
@@ -104,10 +104,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			BsSnL75CwDtKP0VbwOSIIe7t6to=
+			nSr8WqSytY8BkatYyhyoZ9WJtOM=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"06c4a72fbe42c03b4a3f455bc0e48821eeedeada"</string>
+			<string>cdhash H"9d2afc5aa4b2b58f0191ab58ca1ca867d589b4e3"</string>
 		</dict>
 		<key>Frameworks/libmpdec.4.dylib</key>
 		<dict>
@@ -642,7 +642,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			lE/W3QkezhucFnNnuiwnyo9Gf41CDjN8vSwJkIMgYG0=
+			ajIpBn6XWnFuxoQrJ1AGSwJcEYOg7TQ/dvSDUFN6vgU=
 			</data>
 		</dict>
 		<key>Resources/click-8.4.2.dist-info/INSTALLER</key>
