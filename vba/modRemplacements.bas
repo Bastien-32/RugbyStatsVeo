@@ -52,8 +52,9 @@ Private Const NB_TITULAIRES As Long = 15
 
 Private Const NB_LIGNES_SAISIE As Long = 5
 
-' Duree de reference d'un match, pour le temps de jeu de
-' qui termine la rencontre sur le terrain.
+' Duree d'un match sans prolongation. La duree reelle se
+' regle dans Compo (MATCH_DUREE) : 100 minutes avec les
+' deux prolongations de 10 minutes des phases finales.
 Private Const DUREE_MATCH As Long = 80
 
 ' Minute la plus tardive acceptee : au-dela des 80, pour
@@ -957,11 +958,36 @@ Private Function TempsDuPoste( _
 
     Next i
 
-    If SurLeTerrain Then
-        Total = Total + (DUREE_MATCH - Entree)
+    ' Une entree saisie au-dela de la duree du match ne
+    ' doit pas retrancher de minutes : zero au pire.
+    If SurLeTerrain And DureeMatch(ws) > Entree Then
+        Total = Total + (DureeMatch(ws) - Entree)
     End If
 
     TempsDuPoste = Total
+
+End Function
+
+
+' La duree saisie dans Compo, ou 80 minutes si la cellule
+' est absente, vide ou invalide : les fichiers de match
+' crees avant elle n'en ont pas.
+Private Function DureeMatch(ByVal ws As Worksheet) As Long
+
+    Dim Valeur As Variant
+
+    DureeMatch = DUREE_MATCH
+
+    On Error Resume Next
+    Valeur = ws.Range("MATCH_DUREE").Value
+    On Error GoTo 0
+
+    If IsEmpty(Valeur) Then Exit Function
+    If Not IsNumeric(Valeur) Then Exit Function
+    If CLng(Valeur) < DUREE_MATCH Then Exit Function
+    If CLng(Valeur) > MINUTE_MAX Then Exit Function
+
+    DureeMatch = CLng(Valeur)
 
 End Function
 

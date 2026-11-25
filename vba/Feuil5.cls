@@ -15,6 +15,16 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     On Error GoTo SortiePropre
 
+    EtatEvenements = Application.EnableEvents
+
+    If ToucheTempsDeJeu(Target) Then
+
+        Application.EnableEvents = False
+        RecalculerTempsDeJeu
+        Application.EnableEvents = EtatEvenements
+
+    End If
+
     Set ColNomJoueur = _
         Me.ListObjects("COMPO") _
             .ListColumns("Nom du joueur") _
@@ -24,7 +34,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         Exit Sub
     End If
 
-    EtatEvenements = Application.EnableEvents
     Application.EnableEvents = False
 
     shSaisieVideo.ActualiserListeJoueursJournal
@@ -35,4 +44,31 @@ SortiePropre:
     Application.EnableEvents = EtatEvenements
 
 End Sub
+
+
+' La duree du match, ou une minute ou une marque de
+' remplacement corrigee a la main : colonnes I et
+' suivantes, de la ligne des minutes (6) a la derniere
+' ligne de joueur (28).
+Private Function ToucheTempsDeJeu(ByVal Target As Range) As Boolean
+
+    Dim Zone As Range
+
+    On Error Resume Next
+    Set Zone = Me.Range("MATCH_DUREE")
+    On Error GoTo 0
+
+    If Not Zone Is Nothing Then
+        If Not Intersect(Target, Zone) Is Nothing Then
+            ToucheTempsDeJeu = True
+            Exit Function
+        End If
+    End If
+
+    Set Zone = Me.Range(Me.Cells(6, 9), Me.Cells(28, Me.Columns.Count))
+
+    ToucheTempsDeJeu = Not Intersect(Target, Zone) Is Nothing
+
+End Function
+
 

@@ -403,6 +403,11 @@ Private Sub ViderEnteteMatch()
 
     Next Champ
 
+    ' La duree n'est pas videe : elle repart a 80 minutes.
+    On Error Resume Next
+    ThisWorkbook.Names("MATCH_DUREE").RefersToRange.Value = 80
+    On Error GoTo 0
+    
 End Sub
 
 
