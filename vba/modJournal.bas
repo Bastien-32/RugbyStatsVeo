@@ -77,7 +77,7 @@ Public Sub AjouterAction( _
             "[m]:ss"
 
         .Cells(1, lo.ListColumns("Mi-temps").Index).Value = _
-            CurrentHalf
+            MiTempsDeLAction(TempsVideoSecondes)
 
         .Cells(1, lo.ListColumns("Joueur").Index).Value = _
             Joueur
@@ -110,6 +110,85 @@ Public Sub AjouterAction( _
     AppliquerValidationsJournal NouvelleLigne.Range, lo
 
 End Sub
+
+' =========================================================
+' MI-TEMPS D'UNE ACTION
+'
+' Une action saisie apres coup, en revenant en arriere
+' dans la video, appartient a la mi-temps de ce moment-la,
+' et non a celle selectionnee dans la palette. On la lit
+' sur les actions qui l'encadrent : si celle d'avant et
+' celle d'apres dans la video sont de la meme mi-temps,
+' c'est la sienne.
+'
+' Sinon - journal vide, action la plus recente, ou pile
+' pendant la pause - la mi-temps selectionnee fait foi,
+' comme lors d'une saisie en direct.
+' =========================================================
+
+Public Function MiTempsDeLAction( _
+    ByVal TempsVideoSecondes As Double) As String
+
+    Dim lo As ListObject
+    Dim Temps As Variant
+    Dim MiTemps As Variant
+    Dim i As Long
+    Dim T As Double
+    Dim Avant As Double
+    Dim Apres As Double
+    Dim MiTempsAvant As String
+    Dim MiTempsApres As String
+
+    MiTempsDeLAction = CurrentHalf
+
+    Set lo = Sheets("Journal actions").ListObjects("JournalActions")
+
+    ' Il faut une action de chaque cote, et .Value ne rend
+    ' un tableau qu'a partir de deux lignes.
+    If lo.ListRows.Count < 2 Then Exit Function
+
+    Temps = lo.ListColumns("Temps video").DataBodyRange.Value
+    MiTemps = lo.ListColumns("Mi-temps").DataBodyRange.Value
+
+    Avant = -1
+    Apres = -1
+
+    For i = 1 To UBound(Temps, 1)
+
+        If Not IsEmpty(Temps(i, 1)) And IsNumeric(Temps(i, 1)) Then
+
+            ' Le journal stocke des jours.
+            T = CDbl(Temps(i, 1)) * 86400#
+
+            ' Une action au meme instant, l'arret de jeu
+            ' automatique par exemple, n'encadre rien.
+            If T < TempsVideoSecondes And T > Avant Then
+
+                Avant = T
+                MiTempsAvant = Trim(CStr(MiTemps(i, 1)))
+
+            ElseIf T > TempsVideoSecondes And _
+                (Apres < 0 Or T < Apres) Then
+
+                Apres = T
+                MiTempsApres = Trim(CStr(MiTemps(i, 1)))
+
+            End If
+
+        End If
+
+    Next i
+
+    If Avant < 0 Or Apres < 0 Then Exit Function
+    If MiTempsAvant = "" Then Exit Function
+
+    If StrComp(MiTempsAvant, MiTempsApres, vbTextCompare) <> 0 Then
+        Exit Function
+    End If
+
+    MiTempsDeLAction = MiTempsAvant
+
+End Function
 
 ' =========================================================
 ' LIENS VERS LA VIDEO

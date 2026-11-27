@@ -245,6 +245,14 @@ Private Sub AnalyserSequencesMiTemps( _
     Dim IndiceMiTemps As Long
     Dim JeuArrete As Boolean
 
+    ' Derniere action de la sequence : un coup de pied
+    ' (renvoi ou jeu au pied) que l'equipe n'a pas encore
+    ' recupere. CoupDePiedSeul : la sequence ne contient
+    ' que ce coup de pied.
+    Dim CoupDePiedEnCours As Boolean
+    Dim CoupDePiedSeul As Boolean
+    Dim TempsCoupDePied As Double
+
     JeuArrete = True
     IndiceMiTemps = IIf( _
         UCase(MiTempsRecherchee) = "MT2", 2, 1)
@@ -272,10 +280,13 @@ Private Sub AnalyserSequencesMiTemps( _
 
                 If SequenceOuverte Then
 
-                    ComptabiliserSequence _
+                    CloreSequence _
                         EquipeSequence, _
                         DebutSequence, _
                         TempsAction, _
+                        CoupDePiedEnCours, _
+                        CoupDePiedSeul, _
+                        TempsCoupDePied, _
                         IndiceMiTemps, _
                         CompteursNous, _
                         CompteursAdv
@@ -298,10 +309,13 @@ Private Sub AnalyserSequencesMiTemps( _
                 ' encore ouverte avant la reprise.
                 If SequenceOuverte Then
 
-                    ComptabiliserSequence _
+                    CloreSequence _
                         EquipeSequence, _
                         DebutSequence, _
                         TempsAction, _
+                        CoupDePiedEnCours, _
+                        CoupDePiedSeul, _
+                        TempsCoupDePied, _
                         IndiceMiTemps, _
                         CompteursNous, _
                         CompteursAdv
@@ -319,6 +333,11 @@ Private Sub AnalyserSequencesMiTemps( _
                     SequenceOuverte = True
                     EquipeSequence = PossessionAction
                     DebutSequence = TempsAction
+
+                    CoupDePiedEnCours = _
+                        EstCoupDePied(ActionTexte)
+                    CoupDePiedSeul = CoupDePiedEnCours
+                    TempsCoupDePied = TempsAction
 
                 End If
 
@@ -338,6 +357,11 @@ Private Sub AnalyserSequencesMiTemps( _
                     EquipeSequence = PossessionAction
                     DebutSequence = TempsAction
 
+                    CoupDePiedEnCours = _
+                        EstCoupDePied(ActionTexte)
+                    CoupDePiedSeul = CoupDePiedEnCours
+                    TempsCoupDePied = TempsAction
+
                 ElseIf StrComp( _
                     PossessionAction, _
                     EquipeSequence, _
@@ -348,16 +372,41 @@ Private Sub AnalyserSequencesMiTemps( _
                     ' fin de l'ancienne sequence et debut
                     ' immediat de la nouvelle.
 
-                    ComptabiliserSequence _
+                    CloreSequence _
                         EquipeSequence, _
                         DebutSequence, _
                         TempsAction, _
+                        CoupDePiedEnCours, _
+                        CoupDePiedSeul, _
+                        TempsCoupDePied, _
                         IndiceMiTemps, _
                         CompteursNous, _
                         CompteursAdv
 
                     EquipeSequence = PossessionAction
                     DebutSequence = TempsAction
+
+                    CoupDePiedEnCours = _
+                        EstCoupDePied(ActionTexte)
+                    CoupDePiedSeul = CoupDePiedEnCours
+                    TempsCoupDePied = TempsAction
+
+                Else
+
+                    ' Meme equipe : elle garde ou recupere
+                    ' le ballon, la sequence continue.
+                    CoupDePiedSeul = False
+
+                    If EstCoupDePied(ActionTexte) Then
+
+                        CoupDePiedEnCours = True
+                        TempsCoupDePied = TempsAction
+
+                    Else
+
+                        CoupDePiedEnCours = False
+
+                    End If
 
                 End If
 
@@ -372,6 +421,71 @@ Private Sub AnalyserSequencesMiTemps( _
     ' Elle peut simplement correspondre a une saisie en cours.
 
 End Sub
+
+
+' ---------------------------------------------------------
+' Une equipe qui botte sans recuperer le ballon perd la
+' possession au moment du coup de pied : le temps de vol
+' n'est compte a personne. Un renvoi ou un coup de pied
+' qui forme a lui seul la sequence n'est pas une
+' possession et n'est pas compte.
+' ---------------------------------------------------------
+Private Sub CloreSequence( _
+    ByVal Equipe As String, _
+    ByVal TempsDebut As Double, _
+    ByVal TempsAction As Double, _
+    ByVal CoupDePiedEnCours As Boolean, _
+    ByVal CoupDePiedSeul As Boolean, _
+    ByVal TempsCoupDePied As Double, _
+    ByVal IndiceMiTemps As Long, _
+    ByRef CompteursNous() As Long, _
+    ByRef CompteursAdv() As Long _
+)
+
+    If CoupDePiedEnCours Then
+
+        If CoupDePiedSeul Then Exit Sub
+
+        ComptabiliserSequence _
+            Equipe, _
+            TempsDebut, _
+            TempsCoupDePied, _
+            IndiceMiTemps, _
+            CompteursNous, _
+            CompteursAdv
+
+    Else
+
+        ComptabiliserSequence _
+            Equipe, _
+            TempsDebut, _
+            TempsAction, _
+            IndiceMiTemps, _
+            CompteursNous, _
+            CompteursAdv
+
+    End If
+
+End Sub
+
+
+Private Function EstCoupDePied( _
+    ByVal ActionTexte As String _
+) As Boolean
+
+    EstCoupDePied = _
+        StrComp( _
+            ActionTexte, _
+            CStr(Range("ACT_JEU_AU_PIED").Value), _
+            vbTextCompare _
+        ) = 0 _
+        Or StrComp( _
+            ActionTexte, _
+            CStr(Range("ACT_REPRISE_RENVOI").Value), _
+            vbTextCompare _
+        ) = 0
+
+End Function
 
 
 Private Sub ComptabiliserSequence( _

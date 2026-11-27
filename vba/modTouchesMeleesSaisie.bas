@@ -248,7 +248,7 @@ Private Sub AfficherPopup( _
         ' "64:48" comme 64 heures 48 et affiche 16:48.
         .Cells(1, 1).NumberFormat = "@"
         .Cells(1, 1).Value = FormaterTemps(PopupTemps)
-        .Cells(2, 1).Value = CurrentHalf
+        .Cells(2, 1).Value = MiTempsDeLAction(PopupTemps)
         .Cells(3, 1).Value = EquipeEnToutesLettres(PopupLancePour)
         .Cells(4, 1).Value = IssueEnToutesLettres(PopupIssue)
     End With
@@ -415,7 +415,7 @@ Private Sub EcrireTouche( _
     Application.EnableEvents = False
 
     EcrireTemps Ligne, "Temps video", PopupTemps
-    EcrireCellule Ligne, "Mi-temps", CurrentHalf
+    EcrireCellule Ligne, "Mi-temps", MiTempsDeLAction(PopupTemps)
     EcrireCellule Ligne, "Lance pour", PopupLancePour
     EcrireCellule Ligne, "Issue", PopupIssue
     EcrireCellule Ligne, "Sauteur", Sauteur
@@ -465,7 +465,7 @@ Private Sub EcrireMelee( _
     Application.EnableEvents = False
 
     EcrireTemps Ligne, "Temps video", PopupTemps
-    EcrireCellule Ligne, "Mi-temps", CurrentHalf
+    EcrireCellule Ligne, "Mi-temps", MiTempsDeLAction(PopupTemps)
     EcrireCellule Ligne, "Introduction pour", PopupLancePour
     EcrireCellule Ligne, "Issue", PopupIssue
     EcrireCellule Ligne, "Zone longueur", ZoneLongueur

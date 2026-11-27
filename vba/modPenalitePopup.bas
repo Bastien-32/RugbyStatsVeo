@@ -902,7 +902,7 @@ Private Sub OuvrirPopupFaute( _
         ' "64:48" comme 64 heures 48 et affiche 16:48.
         .Cells(1, 1).NumberFormat = "@"
         .Cells(1, 1).Value = FormaterTemps(TempsVideo)
-        .Cells(2, 1).Value = CurrentHalf
+        .Cells(2, 1).Value = MiTempsDeLAction(TempsVideo)
         ' Equipe est la possession qui suit la penalite :
         ' si le ballon nous revient, c'est l'adversaire
         ' qui a commis la faute.

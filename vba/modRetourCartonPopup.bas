@@ -329,7 +329,7 @@ Public Sub OuvrirPopupRetourCarton(ByVal TempsVideo As Double)
         ' comme 64 heures 48 et affiche 16:48.
         .Cells(1, 1).NumberFormat = "@"
         .Cells(1, 1).Value = FormaterTemps(TempsVideo)
-        .Cells(2, 1).Value = CurrentHalf
+        .Cells(2, 1).Value = MiTempsDeLAction(TempsVideo)
     End With
 
     RemplirListe ws, Cartons
